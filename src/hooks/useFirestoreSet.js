@@ -1,14 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const COLLECTION = 'kitchen';
 
-/**
- * Drop-in replacement for useLocalStorageSet.
- * Stores a Set of IDs in Firestore (collection: "kitchen", doc: docId, field: "data").
- * Uses localStorage as an instant-display cache and offline fallback.
- */
 export function useFirestoreSet(docId) {
   const lsKey = `fs_cache_${docId}`;
 
@@ -22,28 +17,30 @@ export function useFirestoreSet(docId) {
   }
 
   const [value, setValue] = useState(readCache);
+  const valueRef = useRef(value);
   const unsubRef = useRef(null);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   useEffect(() => {
     if (!docId) return;
 
-    // Reload cache when docId changes
     setValue(readCache());
 
-    // Subscribe to Firestore
     const ref = doc(db, COLLECTION, docId);
+    console.log('[Firestore] subscribing to', docId);
+
     unsubRef.current = onSnapshot(ref, snap => {
+      console.log('[Firestore] snapshot received for', docId, 'exists:', snap.exists());
       if (snap.exists()) {
         const arr = snap.data().data || [];
-        const set = new Set(arr);
-        setValue(set);
+        setValue(new Set(arr));
         localStorage.setItem(lsKey, JSON.stringify(arr));
-      } else {
-        setValue(new Set());
-        localStorage.removeItem(lsKey);
       }
     }, err => {
-      console.error('[useFirestoreSet] Firestore error:', docId, err.code, err.message);
+      console.error('[Firestore] error on', docId, err.code, err.message);
     });
 
     return () => {
@@ -52,15 +49,21 @@ export function useFirestoreSet(docId) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docId]);
 
-  function set(updater) {
-    setValue(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      const arr = [...next];
-      localStorage.setItem(lsKey, JSON.stringify(arr));
-      setDoc(doc(db, COLLECTION, docId), { data: arr }, { merge: false });
-      return next;
-    });
-  }
+  const set = useCallback((updater) => {
+    const prev = valueRef.current;
+    const next = typeof updater === 'function' ? updater(prev) : updater;
+    const arr = [...next];
+
+    setValue(next);
+    valueRef.current = next;
+    localStorage.setItem(lsKey, JSON.stringify(arr));
+
+    console.log('[Firestore] writing to', docId, arr);
+    setDoc(doc(db, COLLECTION, docId), { data: arr })
+      .then(() => console.log('[Firestore] write OK:', docId))
+      .catch(err => console.error('[Firestore] write FAILED:', docId, err.code, err.message));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docId]);
 
   return [value, set];
 }
