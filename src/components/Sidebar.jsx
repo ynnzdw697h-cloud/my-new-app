@@ -13,16 +13,13 @@ export default function Sidebar({ currentView, onNavigate, station, user, onChan
   return (
     <aside
       dir="rtl"
-      className={[
-        // Base styles
-        'w-64 bg-slate-900 border-l border-slate-700 flex flex-col',
-        // Desktop: always visible in normal flow
-        'md:relative md:translate-x-0 md:flex',
-        // Mobile: fixed overlay, slides in/out from the right
-        'fixed top-0 right-0 h-full z-50',
-        'transition-transform duration-300 ease-in-out',
-        isOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0',
-      ].join(' ')}
+      className={`
+        w-64 bg-slate-900 border-l border-slate-700 flex flex-col
+        fixed top-0 right-0 h-full z-50
+        transition-transform duration-300 ease-in-out
+        md:relative md:translate-x-0
+        ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+      `}
     >
 
       {/* Logo + close button */}
