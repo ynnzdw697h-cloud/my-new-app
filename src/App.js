@@ -6,7 +6,7 @@ import PrepChecklist from './components/PrepChecklist';
 import RecipeDatabase from './components/RecipeDatabase';
 import WeeklyTasks from './components/WeeklyTasks';
 import ShiftNotes from './components/ShiftNotes';
-import { useLocalStorageSet } from './hooks/useLocalStorageSet';
+import { useFirestoreSet } from './hooks/useFirestoreSet';
 import { STATIONS } from './data/stations';
 
 function App() {
@@ -16,7 +16,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const stationKey = station || 'init';
-  const [completedTasks, setCompletedTasks] = useLocalStorageSet(`kitchen_prep_tasks_${stationKey}`);
+  const [completedTasks, setCompletedTasks] = useFirestoreSet(`prep_tasks_${stationKey}`);
 
   function handleLogin(name, stationId) {
     setUser(name);

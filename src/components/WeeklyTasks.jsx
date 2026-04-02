@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { WEEKLY_TASKS, DAYS, CATEGORIES } from '../data/weeklyTasks';
 import { STATIONS } from '../data/stations';
-import { useLocalStorageSet } from '../hooks/useLocalStorageSet';
+import { useFirestoreSet } from '../hooks/useFirestoreSet';
 
 export default function WeeklyTasks({ station }) {
-  const [completedWeekly, setCompletedWeekly] = useLocalStorageSet(`kitchen_weekly_tasks_${station}`);
+  const [completedWeekly, setCompletedWeekly] = useFirestoreSet(`weekly_${station}`);
   const [dayFilter, setDayFilter] = useState('הכל');
   const [catFilter, setCatFilter] = useState('הכל');
   const [stationFilter, setStationFilter] = useState('הכל');

@@ -1,17 +1,17 @@
 import { useState } from 'react';
-import { useLocalStorageArray } from '../hooks/useLocalStorageArray';
+import { useFirestoreArray } from '../hooks/useFirestoreArray';
 
 // Both lists are global (shared across all stations/cooks)
-const MISSING_KEY = 'kitchen_missing_items';
-const NOTES_KEY   = 'kitchen_shift_notes';
+const MISSING_KEY = 'missing_items';
+const NOTES_KEY   = 'shift_notes';
 
 function nowLabel() {
   return new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function ShiftNotes({ user }) {
-  const [missingItems, setMissingItems] = useLocalStorageArray(MISSING_KEY);
-  const [shiftNotes,   setShiftNotes]   = useLocalStorageArray(NOTES_KEY);
+  const [missingItems, setMissingItems] = useFirestoreArray(MISSING_KEY);
+  const [shiftNotes,   setShiftNotes]   = useFirestoreArray(NOTES_KEY);
 
   const [missingInput,    setMissingInput]    = useState('');
   const [showMissingForm, setShowMissingForm] = useState(false);

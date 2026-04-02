@@ -1,13 +1,13 @@
 import { STATIONS } from '../data/stations';
 import { PREP_TASKS } from '../data/prepTasks';
-import { useLocalStorageSet } from '../hooks/useLocalStorageSet';
+import { useFirestoreSet } from '../hooks/useFirestoreSet';
 
 const SHIFTS = ['הכנות בוקר', 'הכנות צהריים'];
 const SHIFT_KEYS = { 'הכנות בוקר': 'בוקר', 'הכנות צהריים': 'צהריים' };
 const SHIFT_ICONS = { 'הכנות בוקר': '🌅', 'הכנות צהריים': '☀️' };
 
 export default function PrepChecklist({ station, completedTasks, onToggle, onReset }) {
-  const [completedSubs, setCompletedSubs] = useLocalStorageSet(`kitchen_prep_subs_${station}`);
+  const [completedSubs, setCompletedSubs] = useFirestoreSet(`prep_subs_${station}`);
 
   const st = STATIONS[station];
   const tasks = PREP_TASKS[station] || [];
