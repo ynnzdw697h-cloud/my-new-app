@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import PrepChecklist from './components/PrepChecklist';
 import RecipeDatabase from './components/RecipeDatabase';
 import WeeklyTasks from './components/WeeklyTasks';
+import ShiftNotes from './components/ShiftNotes';
 import { useLocalStorageSet } from './hooks/useLocalStorageSet';
 import { STATIONS } from './data/stations';
 
@@ -123,6 +124,7 @@ function App() {
         )}
         {view === 'recipes' && <RecipeDatabase station={station} />}
         {view === 'weekly' && <WeeklyTasks station={station} />}
+        {view === 'shift'  && <ShiftNotes user={user} />}
       </main>
     </div>
   );

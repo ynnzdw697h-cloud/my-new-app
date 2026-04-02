@@ -1,10 +1,11 @@
 import { STATIONS } from '../data/stations';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', label: 'דשבורד',          icon: '🏠' },
-  { id: 'prep',      label: 'רשימת פריפ',       icon: '📋' },
-  { id: 'recipes',   label: 'מתכונים',          icon: '📖' },
-  { id: 'weekly',    label: 'משימות שבועיות',   icon: '📅' },
+  { id: 'dashboard', label: 'דשבורד',            icon: '🏠' },
+  { id: 'prep',      label: 'רשימת פריפ',         icon: '📋' },
+  { id: 'recipes',   label: 'מתכונים',            icon: '📖' },
+  { id: 'weekly',    label: 'משימות שבועיות',     icon: '📅' },
+  { id: 'shift',     label: 'חוסרים והערות',      icon: '📝' },
 ];
 
 export default function Sidebar({ currentView, onNavigate, station, user, onChangeCook, isOpen, onClose }) {
