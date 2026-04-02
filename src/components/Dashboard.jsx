@@ -53,7 +53,7 @@ export default function Dashboard({ station, completedTasks, onNavigate }) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
           icon="📋"
           label="משימות פריפ"
@@ -78,38 +78,30 @@ export default function Dashboard({ station, completedTasks, onNavigate }) {
           color={st.color}
           onClick={() => onNavigate('weekly')}
         />
-        <StatCard
-          icon="⚡"
-          label="עדיפות גבוהה"
-          value={myTasks.filter(t => t.priority === 'גבוהה' && !completedTasks.has(t.id)).length}
-          sub="נותרו"
-          color="#EF4444"
-          onClick={() => onNavigate('prep')}
-        />
       </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Upcoming high priority tasks */}
+        {/* Next pending tasks */}
         <div className="bg-slate-800 rounded-2xl p-5 border border-slate-700">
           <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-            <span>🔥</span> משימות דחופות
+            <span>📋</span> משימות ממתינות
           </h3>
           <div className="space-y-2">
             {myTasks
-              .filter(t => t.priority === 'גבוהה' && !completedTasks.has(t.id))
+              .filter(t => !completedTasks.has(t.id))
               .slice(0, 4)
               .map(task => (
                 <div key={task.id} className="flex items-center justify-between bg-slate-700 rounded-xl px-4 py-2.5 gap-2">
                   <span className="text-slate-300 text-sm min-w-0 truncate">{task.task}</span>
-                  <span className="text-red-400 text-xs font-medium bg-red-900 px-2 py-0.5 rounded-lg flex-shrink-0">
+                  <span className="text-slate-400 text-xs font-medium bg-slate-600 px-2 py-0.5 rounded-lg flex-shrink-0">
                     {task.estimatedTime}
                   </span>
                 </div>
               ))}
-            {myTasks.filter(t => t.priority === 'גבוהה' && !completedTasks.has(t.id)).length === 0 && (
+            {myTasks.filter(t => !completedTasks.has(t.id)).length === 0 && (
               <div className="text-emerald-400 text-sm flex items-center gap-2 py-2">
-                <span>✅</span> כל המשימות הדחופות הושלמו!
+                <span>✅</span> כל המשימות הושלמו!
               </div>
             )}
           </div>

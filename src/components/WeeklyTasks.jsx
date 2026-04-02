@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { WEEKLY_TASKS, DAYS, CATEGORIES } from '../data/weeklyTasks';
 import { STATIONS } from '../data/stations';
-import { PRIORITY_COLORS } from '../data/prepTasks';
 import { useLocalStorageSet } from '../hooks/useLocalStorageSet';
 
 export default function WeeklyTasks({ station }) {
@@ -151,7 +150,6 @@ function DayGroup({ day, tasks, completedWeekly, onToggle, stationById }) {
       <div className="space-y-3">
         {tasks.map(task => {
           const isDone = completedWeekly.has(task.id);
-          const pc = PRIORITY_COLORS[task.priority];
           const taskStation = stationById[task.assignedTo];
           return (
             <div
@@ -197,11 +195,6 @@ function DayGroup({ day, tasks, completedWeekly, onToggle, stationById }) {
                   </div>
                 </div>
 
-                {/* Priority */}
-                <div className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold ${pc.bg} ${pc.text}`}>
-                  <div className={`w-1.5 h-1.5 rounded-full ${pc.dot}`}></div>
-                  {task.priority}
-                </div>
               </div>
             </div>
           );

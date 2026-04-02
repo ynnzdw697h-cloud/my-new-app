@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { STATIONS } from '../data/stations';
-import { PREP_TASKS, PRIORITY_COLORS } from '../data/prepTasks';
+import { PREP_TASKS } from '../data/prepTasks';
 import { useLocalStorageSet } from '../hooks/useLocalStorageSet';
 
 const SHIFTS = ['הכנות בוקר', 'הכנות צהריים'];
@@ -8,7 +7,6 @@ const SHIFT_KEYS = { 'הכנות בוקר': 'בוקר', 'הכנות צהריים
 const SHIFT_ICONS = { 'הכנות בוקר': '🌅', 'הכנות צהריים': '☀️' };
 
 export default function PrepChecklist({ station, completedTasks, onToggle, onReset }) {
-  const [priorityFilter, setPriorityFilter] = useState('הכל');
   const [completedSubs, setCompletedSubs] = useLocalStorageSet(`kitchen_prep_subs_${station}`);
 
   const st = STATIONS[station];
@@ -37,10 +35,7 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
     onReset();
   }
 
-  const priorities = ['הכל', 'גבוהה', 'בינונית', 'נמוכה'];
-
-  const applyFilter = (list) =>
-    priorityFilter === 'הכל' ? list : list.filter(t => t.priority === priorityFilter);
+  const applyFilter = (list) => list;
 
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-5" dir="rtl">
@@ -99,24 +94,6 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
         <div className="flex justify-between mt-2 text-slate-600 text-xs">
           <span>0%</span><span>50%</span><span>100%</span>
         </div>
-      </div>
-
-      {/* ── Priority Filter ── */}
-      <div className="flex gap-2 flex-wrap">
-        {priorities.map(p => (
-          <button
-            key={p}
-            onClick={() => setPriorityFilter(p)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150
-              ${priorityFilter === p
-                ? 'text-white shadow-md'
-                : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
-              }`}
-            style={priorityFilter === p ? { backgroundColor: st.color } : {}}
-          >
-            {p}
-          </button>
-        ))}
       </div>
 
       {/* ── Shift Sections ── */}
@@ -187,7 +164,6 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
 }
 
 function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggleSub }) {
-  const pc = PRIORITY_COLORS[task.priority];
   const hasSubItems = !!task.subItems;
 
   return (
@@ -237,11 +213,6 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
           <div className="text-slate-600 text-xs mt-1">⏱ {task.estimatedTime}</div>
         </div>
 
-        {/* Priority badge */}
-        <div className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold ${pc.bg} ${pc.text}`}>
-          <div className={`w-2 h-2 rounded-full ${pc.dot}`} />
-          {task.priority}
-        </div>
       </div>
 
       {/* Sub-items */}
