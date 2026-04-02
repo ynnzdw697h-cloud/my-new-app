@@ -44,7 +44,7 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-black text-white flex items-center gap-2">
-            <span>📋</span> רשימת פריפ יומית
+            <span>📋</span> צ׳ק ליסט יומי
           </h2>
           <p className="text-slate-400 mt-1">{st.emoji} {st.name}</p>
         </div>

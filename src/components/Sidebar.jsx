@@ -2,7 +2,7 @@ import { STATIONS } from '../data/stations';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'דשבורד',            icon: '🏠' },
-  { id: 'prep',      label: 'רשימת פריפ',         icon: '📋' },
+  { id: 'prep',      label: "צ'ק ליסט יומי",        icon: '📋' },
   { id: 'recipes',   label: 'מתכונים',            icon: '📖' },
   { id: 'weekly',    label: 'משימות שבועיות',     icon: '📅' },
   { id: 'shift',     label: 'חוסרים והערות',      icon: '📝' },

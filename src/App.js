@@ -112,7 +112,7 @@ function App() {
 
         {/* Page content */}
         {view === 'dashboard' && (
-          <Dashboard station={station} completedTasks={completedTasks} onNavigate={navigate} />
+          <Dashboard station={station} user={user} completedTasks={completedTasks} onNavigate={navigate} />
         )}
         {view === 'prep' && (
           <PrepChecklist

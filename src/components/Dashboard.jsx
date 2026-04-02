@@ -3,7 +3,7 @@ import { PREP_TASKS } from '../data/prepTasks';
 import { RECIPES } from '../data/recipes';
 import { WEEKLY_TASKS } from '../data/weeklyTasks';
 
-export default function Dashboard({ station, completedTasks, onNavigate }) {
+export default function Dashboard({ station, user, completedTasks, onNavigate }) {
   const st = STATIONS[station];
   const myTasks = PREP_TASKS[station] || [];
   const done = myTasks.filter(t => completedTasks.has(t.id)).length;
@@ -28,7 +28,7 @@ export default function Dashboard({ station, completedTasks, onNavigate }) {
           <div>
             <div className="text-3xl mb-1">{st.emoji}</div>
             <h1 className="text-2xl md:text-3xl font-black text-white">
-              שלום, <span style={{ color: st.color }}>{st.name}</span>
+              שלום, <span style={{ color: st.color }}>{user}</span>
             </h1>
             <p className="text-slate-400 mt-1 text-sm">{today}</p>
           </div>
@@ -83,9 +83,14 @@ export default function Dashboard({ station, completedTasks, onNavigate }) {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Next pending tasks */}
-        <div className="bg-slate-800 rounded-2xl p-5 border border-slate-700">
+        <button
+          onClick={() => onNavigate('prep')}
+          className="bg-slate-800 rounded-2xl p-5 border border-slate-700 text-right w-full
+                     hover:border-slate-600 hover:bg-slate-750 transition-all duration-150"
+        >
           <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
             <span>📋</span> משימות ממתינות
+            <span className="mr-auto text-slate-500 text-sm font-normal">← לצ׳ק ליסט</span>
           </h3>
           <div className="space-y-2">
             {myTasks
@@ -105,7 +110,7 @@ export default function Dashboard({ station, completedTasks, onNavigate }) {
               </div>
             )}
           </div>
-        </div>
+        </button>
 
         {/* All stations status */}
         <div className="bg-slate-800 rounded-2xl p-5 border border-slate-700">
