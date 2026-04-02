@@ -42,8 +42,8 @@ export function useFirestoreSet(docId) {
         setValue(new Set());
         localStorage.removeItem(lsKey);
       }
-    }, () => {
-      // On error, keep existing cache value
+    }, err => {
+      console.error('[useFirestoreSet] Firestore error:', docId, err.code, err.message);
     });
 
     return () => {
