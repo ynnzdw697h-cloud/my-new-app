@@ -43,7 +43,7 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
     priorityFilter === 'הכל' ? list : list.filter(t => t.priority === priorityFilter);
 
   return (
-    <div className="p-6 space-y-5" dir="rtl">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-5" dir="rtl">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between flex-wrap gap-4">

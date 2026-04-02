@@ -18,23 +18,23 @@ export default function Dashboard({ station, completedTasks, onNavigate }) {
   });
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
       {/* Welcome Header */}
       <div
-        className="rounded-2xl p-6 border"
+        className="rounded-2xl p-4 md:p-6 border"
         style={{ borderColor: st.color + '40', background: `linear-gradient(135deg, ${st.color}15, ${st.color}05)` }}
       >
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <div className="text-4xl mb-2">{st.emoji}</div>
-            <h1 className="text-3xl font-black text-white">
+            <div className="text-3xl mb-1">{st.emoji}</div>
+            <h1 className="text-2xl md:text-3xl font-black text-white">
               שלום, <span style={{ color: st.color }}>{st.name}</span>
             </h1>
-            <p className="text-slate-400 mt-1">{today}</p>
+            <p className="text-slate-400 mt-1 text-sm">{today}</p>
           </div>
           <div className="text-left">
             <div className="text-slate-400 text-sm mb-1">התקדמות יומית</div>
-            <div className="text-5xl font-black" style={{ color: st.color }}>{pct}%</div>
+            <div className="text-4xl md:text-5xl font-black" style={{ color: st.color }}>{pct}%</div>
           </div>
         </div>
 
@@ -100,9 +100,9 @@ export default function Dashboard({ station, completedTasks, onNavigate }) {
               .filter(t => t.priority === 'גבוהה' && !completedTasks.has(t.id))
               .slice(0, 4)
               .map(task => (
-                <div key={task.id} className="flex items-center justify-between bg-slate-700 rounded-xl px-4 py-2.5">
-                  <span className="text-slate-300 text-sm">{task.task}</span>
-                  <span className="text-red-400 text-xs font-medium bg-red-900 px-2 py-0.5 rounded-lg">
+                <div key={task.id} className="flex items-center justify-between bg-slate-700 rounded-xl px-4 py-2.5 gap-2">
+                  <span className="text-slate-300 text-sm min-w-0 truncate">{task.task}</span>
+                  <span className="text-red-400 text-xs font-medium bg-red-900 px-2 py-0.5 rounded-lg flex-shrink-0">
                     {task.estimatedTime}
                   </span>
                 </div>

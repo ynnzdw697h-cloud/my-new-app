@@ -33,7 +33,7 @@ export default function RecipeDatabase({ station }) {
   const scaleFactor = selectedRecipe ? batches / selectedRecipe.batches : 1;
 
   return (
-    <div className="p-6" dir="rtl">
+    <div className="p-4 md:p-6" dir="rtl">
       {selectedRecipe ? (
         <RecipeDetail
           recipe={selectedRecipe}
@@ -156,10 +156,10 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
 
       {/* Header */}
       <div
-        className="rounded-2xl p-6 mb-6 border"
+        className="rounded-2xl p-4 md:p-6 mb-6 border"
         style={{ borderColor: stationColor + '40', background: `${stationColor}10` }}
       >
-        <h2 className="text-3xl font-black text-white mb-1">{recipe.name}</h2>
+        <h2 className="text-2xl md:text-3xl font-black text-white mb-1">{recipe.name}</h2>
         <p className="text-slate-400 mb-3">{recipe.description}</p>
         <div className="flex gap-4 text-sm text-slate-400 flex-wrap">
           <span>⏱️ {recipe.prepTime}</span>
@@ -198,27 +198,29 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
         </div>
 
         {/* Manual input */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => onUpdateBatches(Math.max(0.25, batches - recipe.batches * 0.5))}
-            className="w-10 h-10 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-600 transition-colors text-xl flex items-center justify-center flex-shrink-0"
-          >−</button>
-          <div className="text-center">
-            <input
-              type="number"
-              value={batches}
-              step={recipe.batches}
-              min={0.25}
-              onChange={e => onUpdateBatches(e.target.value)}
-              className="w-20 bg-slate-700 border border-slate-600 rounded-xl text-white text-center py-2 text-lg font-bold
-                         focus:outline-none focus:border-slate-500"
-            />
-            <div className="text-slate-500 text-xs mt-1">{recipe.batchUnit}</div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => onUpdateBatches(Math.max(0.25, batches - recipe.batches * 0.5))}
+              className="w-10 h-10 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-600 transition-colors text-xl flex items-center justify-center flex-shrink-0"
+            >−</button>
+            <div className="text-center">
+              <input
+                type="number"
+                value={batches}
+                step={recipe.batches}
+                min={0.25}
+                onChange={e => onUpdateBatches(e.target.value)}
+                className="w-20 bg-slate-700 border border-slate-600 rounded-xl text-white text-center py-2 text-lg font-bold
+                           focus:outline-none focus:border-slate-500"
+              />
+              <div className="text-slate-500 text-xs mt-1">{recipe.batchUnit}</div>
+            </div>
+            <button
+              onClick={() => onUpdateBatches(batches + recipe.batches * 0.5)}
+              className="w-10 h-10 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-600 transition-colors text-xl flex items-center justify-center flex-shrink-0"
+            >+</button>
           </div>
-          <button
-            onClick={() => onUpdateBatches(batches + recipe.batches * 0.5)}
-            className="w-10 h-10 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-600 transition-colors text-xl flex items-center justify-center flex-shrink-0"
-          >+</button>
 
           {scaleFactor !== 1 && (
             <div

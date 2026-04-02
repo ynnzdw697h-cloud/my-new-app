@@ -7,14 +7,26 @@ const NAV_ITEMS = [
   { id: 'weekly',    label: 'משימות שבועיות',   icon: '📅' },
 ];
 
-export default function Sidebar({ currentView, onNavigate, station, user, onChangeCook }) {
+export default function Sidebar({ currentView, onNavigate, station, user, onChangeCook, isOpen, onClose }) {
   const st = STATIONS[station];
 
   return (
-    <aside className="w-64 bg-slate-900 border-l border-slate-700 flex flex-col min-h-screen" dir="rtl">
+    <aside
+      dir="rtl"
+      className={[
+        // Base styles
+        'w-64 bg-slate-900 border-l border-slate-700 flex flex-col',
+        // Desktop: always visible in normal flow
+        'md:relative md:translate-x-0 md:flex',
+        // Mobile: fixed overlay, slides in/out from the right
+        'fixed top-0 right-0 h-full z-50',
+        'transition-transform duration-300 ease-in-out',
+        isOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0',
+      ].join(' ')}
+    >
 
-      {/* Logo */}
-      <div className="p-5 border-b border-slate-700">
+      {/* Logo + close button */}
+      <div className="p-5 border-b border-slate-700 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-3xl">🍽️</span>
           <div>
@@ -22,11 +34,20 @@ export default function Sidebar({ currentView, onNavigate, station, user, onChan
             <div className="text-slate-500 text-xs">מערכת ניהול מטבח</div>
           </div>
         </div>
+        {/* Close button — mobile only */}
+        <button
+          onClick={onClose}
+          className="md:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+          aria-label="סגור תפריט"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
       {/* Cook + Station */}
       <div className="p-4 border-b border-slate-700 space-y-3">
-        {/* Cook name */}
         <div className="flex items-center gap-2.5 bg-slate-800 rounded-xl px-3 py-2.5 border border-slate-700">
           <span className="text-xl">👤</span>
           <div className="min-w-0">
@@ -35,7 +56,6 @@ export default function Sidebar({ currentView, onNavigate, station, user, onChan
           </div>
         </div>
 
-        {/* Station badge */}
         <div
           className="flex items-center gap-2 rounded-xl px-3 py-2.5 border"
           style={{ borderColor: st.color + '60', backgroundColor: st.color + '15' }}
