@@ -6,6 +6,7 @@ import PrepChecklist from './components/PrepChecklist';
 import RecipeDatabase from './components/RecipeDatabase';
 import WeeklyTasks from './components/WeeklyTasks';
 import ShiftNotes from './components/ShiftNotes';
+import ProteinCount from './components/ProteinCount';
 import { useFirestoreSet } from './hooks/useFirestoreSet';
 import { STATIONS } from './data/stations';
 
@@ -124,7 +125,8 @@ function App() {
         )}
         {view === 'recipes' && <RecipeDatabase station={station} />}
         {view === 'weekly' && <WeeklyTasks station={station} />}
-        {view === 'shift'  && <ShiftNotes user={user} />}
+        {view === 'shift'    && <ShiftNotes user={user} />}
+        {view === 'proteins' && <ProteinCount />}
       </main>
     </div>
   );

@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { id: 'recipes',   label: 'מתכונים',            icon: '📖' },
   { id: 'weekly',    label: 'משימות שבועיות',     icon: '📅' },
   { id: 'shift',     label: 'חוסרים והערות',      icon: '📝' },
+  { id: 'proteins',  label: 'חיות — ספירת סוף יום', icon: '🐟' },
 ];
 
 export default function Sidebar({ currentView, onNavigate, station, user, onChangeCook, isOpen, onClose }) {
