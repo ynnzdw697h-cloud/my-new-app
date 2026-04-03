@@ -89,7 +89,7 @@ export default function SupplierOrder() {
       if (active.length === 0) continue;
       hasAny = true;
       text += `*${cat.name}:*\n`;
-      active.forEach(item => { text += `• ${item} — ${q[item]}\n`; });
+      for (const item of active) { text += `• ${item} — ${q[item]}\n`; }
       text += '\n';
     }
 
