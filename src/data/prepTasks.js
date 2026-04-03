@@ -222,6 +222,61 @@ export const PREP_TASKS = {
         { id: 'cw16', label: 'קולורבי',           unit: '' },
       ],
     },
+
+    // ─── אורז צ׳יראשי ───
+    {
+      id: 'c_chirashi_rice',
+      shift: 'צהריים',
+      category: "אורז צ'יראשי",
+      categoryIcon: '🍚',
+      task: "הכנת אורז צ'יראשי",
+      details: '',
+      estimatedTime: '30 דק׳',
+      subItems: [
+        { id: 'crice1', label: 'אורז סושי בקומבי סטימר לפי מתכון', unit: '' },
+        { id: 'crice2', label: "וידוא חומץ צ'יראשי (אם אין — להכין)", unit: '' },
+        { id: 'crice3', label: 'דייקון שיפונד',                      unit: '' },
+        { id: 'crice4', label: 'מלפפון חצי אמנסה אלכסון',           unit: '' },
+        { id: 'crice5', label: "מנות טרטר צ'יראשי שקולות 60 גרם",   unit: '' },
+      ],
+    },
+
+    // ─── טרטר צלחת ───
+    {
+      id: 'c_tartar_plate',
+      shift: 'צהריים',
+      category: 'טרטר צלחת',
+      categoryIcon: '🐟',
+      task: 'הכנת טרטר צלחת',
+      details: '',
+      estimatedTime: '20 דק׳',
+      subItems: [
+        { id: 'ctar1', label: 'מנות טרטר אקאמי שקולות',      unit: '' },
+        { id: 'ctar2', label: "סקוויזר מי צ'ילי מותסס",       unit: '' },
+        { id: 'ctar3', label: 'תשיעית יוגורט מצומצם',         unit: '' },
+        { id: 'ctar4', label: 'קססה',                         unit: '' },
+        { id: 'ctar5', label: 'בצל סגול חצי אמנסה',          unit: '' },
+        { id: 'ctar6', label: "צ'ילי ירוק אמנסה",             unit: '' },
+      ],
+    },
+
+    // ─── סלט קיסר ───
+    {
+      id: 'c_caesar_salad',
+      shift: 'צהריים',
+      category: 'סלט קיסר',
+      categoryIcon: '🥗',
+      task: 'הכנת סלט קיסר',
+      details: '',
+      estimatedTime: '20 דק׳',
+      subItems: [
+        { id: 'ccaes1', label: 'לבבות קיסר חתוך לרבעים',  unit: '' },
+        { id: 'ccaes2', label: 'סקוויזר רוטב קיסר',        unit: '' },
+        { id: 'ccaes3', label: 'פרמזן מיקרופליים',          unit: '' },
+        { id: 'ccaes4', label: 'קייל מטוגן',               unit: '' },
+        { id: 'ccaes5', label: 'פירורי לחם מתובלים',        unit: '' },
+      ],
+    },
   ],
 
   hot: [
