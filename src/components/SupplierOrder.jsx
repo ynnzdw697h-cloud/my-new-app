@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 
 const SUPPLIER_NAME = 'עלה עלה';
 const DOC_ID = 'order_aleh_aleh';
+const UNITS = ['יח׳', 'ק"ג'];
 
 const CATEGORIES = [
   {
@@ -36,23 +37,49 @@ function todayLabel() {
   });
 }
 
+// Normalize backwards compat: old data stored plain numbers, new stores { qty, unit }
+function normalize(raw) {
+  const result = {};
+  for (const [key, val] of Object.entries(raw)) {
+    if (typeof val === 'number') {
+      result[key] = { qty: val, unit: 'יח׳' };
+    } else if (val && typeof val === 'object') {
+      result[key] = { qty: val.qty || 0, unit: val.unit || 'יח׳' };
+    }
+  }
+  return result;
+}
+
+function getQty(quantities, item) {
+  const v = quantities[item];
+  if (!v) return 0;
+  return typeof v === 'number' ? v : (v.qty || 0);
+}
+
+function getUnit(quantities, item) {
+  const v = quantities[item];
+  if (!v || typeof v === 'number') return 'יח׳';
+  return v.unit || 'יח׳';
+}
+
 export default function SupplierOrder() {
   const [quantities, setQuantities] = useState({});
   const [confirmReset, setConfirmReset] = useState(false);
   const [copyDone, setCopyDone] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const printRef = useRef(null);
-  const quantitiesRef = useRef(quantities);
+  const qRef = useRef(quantities);
 
-  useEffect(() => { quantitiesRef.current = quantities; }, [quantities]);
+  useEffect(() => { qRef.current = quantities; }, [quantities]);
 
   useEffect(() => {
     const ref = doc(db, 'kitchen', DOC_ID);
     const unsub = onSnapshot(ref, snap => {
       if (snap.exists()) {
-        const q = snap.data().quantities || {};
+        const raw = snap.data().quantities || {};
+        const q = normalize(raw);
         setQuantities(q);
-        quantitiesRef.current = q;
+        qRef.current = q;
       }
     }, err => console.error('[SupplierOrder]', err.code));
     return () => unsub();
@@ -60,15 +87,23 @@ export default function SupplierOrder() {
 
   function persist(next) {
     setQuantities(next);
-    quantitiesRef.current = next;
+    qRef.current = next;
     setDoc(doc(db, 'kitchen', DOC_ID), { quantities: next })
       .catch(err => console.error('[SupplierOrder] write failed:', err.code));
   }
 
   function changeQty(item, delta) {
-    const current = quantitiesRef.current[item] || 0;
-    const next = Math.max(0, current + delta);
-    persist({ ...quantitiesRef.current, [item]: next });
+    const current = getQty(qRef.current, item);
+    const unit = getUnit(qRef.current, item);
+    const newQty = Math.max(0, current + delta);
+    persist({ ...qRef.current, [item]: { qty: newQty, unit } });
+  }
+
+  function toggleUnit(item) {
+    const currentUnit = getUnit(qRef.current, item);
+    const nextUnit = UNITS[(UNITS.indexOf(currentUnit) + 1) % UNITS.length];
+    const currentQty = getQty(qRef.current, item);
+    persist({ ...qRef.current, [item]: { qty: currentQty, unit: nextUnit } });
   }
 
   function resetAll() {
@@ -76,20 +111,24 @@ export default function SupplierOrder() {
     setConfirmReset(false);
   }
 
-  const totalItems = Object.values(quantities).filter(q => q > 0).length;
+  const totalItems = Object.values(quantities).filter(v =>
+    (typeof v === 'number' ? v : v?.qty) > 0
+  ).length;
 
   // ── Copy to clipboard ──
   function copyOrder() {
-    const q = quantitiesRef.current;
+    const q = qRef.current;
     let text = `🛒 הזמנה — ${SUPPLIER_NAME}\n📅 ${todayLabel()}\n\n`;
     let hasAny = false;
 
     for (const cat of CATEGORIES) {
-      const active = cat.items.filter(item => (q[item] || 0) > 0);
+      const active = cat.items.filter(item => getQty(q, item) > 0);
       if (active.length === 0) continue;
       hasAny = true;
       text += `*${cat.name}:*\n`;
-      for (const item of active) { text += `• ${item} — ${q[item]}\n`; }
+      for (const item of active) {
+        text += `• ${item} — ${getQty(q, item)} ${getUnit(q, item)}\n`;
+      }
       text += '\n';
     }
 
@@ -108,15 +147,11 @@ export default function SupplierOrder() {
     setPdfLoading(true);
     try {
       el.style.display = 'block';
-      await new Promise(r => setTimeout(r, 50)); // let browser render
+      await new Promise(r => setTimeout(r, 50));
 
       const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
+        scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false,
       });
-
       el.style.display = 'none';
 
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -137,7 +172,6 @@ export default function SupplierOrder() {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
         ctx.drawImage(canvas, 0, sourceY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-
         if (sourceY > 0) pdf.addPage();
         pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW, sliceH / ratio);
         sourceY += sliceH;
@@ -185,32 +219,45 @@ export default function SupplierOrder() {
       {/* Categories */}
       {CATEGORIES.map(cat => (
         <section key={cat.name} className="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
-          {/* Category header */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700 bg-slate-750">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
             <span className="text-lg">{cat.emoji}</span>
             <h3 className="text-white font-bold text-base">{cat.name}</h3>
             <span className="mr-auto text-slate-500 text-xs">
-              {cat.items.filter(item => (quantities[item] || 0) > 0).length} נבחרו
+              {cat.items.filter(item => getQty(quantities, item) > 0).length} נבחרו
             </span>
           </div>
 
-          {/* Items */}
           <div className="divide-y divide-slate-700/60">
             {cat.items.map(item => {
-              const qty = quantities[item] || 0;
+              const qty  = getQty(quantities, item);
+              const unit = getUnit(quantities, item);
+              const active = qty > 0;
               return (
                 <div
                   key={item}
-                  className={`flex items-center gap-3 px-4 py-3 transition-colors duration-150
-                    ${qty > 0 ? 'bg-slate-700/30' : ''}`}
+                  className={`flex items-center gap-2 px-4 py-3 transition-colors duration-150
+                    ${active ? 'bg-slate-700/30' : ''}`}
                 >
                   {/* Item name */}
-                  <span className={`flex-1 text-base font-medium ${qty > 0 ? 'text-white' : 'text-slate-400'}`}>
+                  <span className={`flex-1 text-base font-medium ${active ? 'text-white' : 'text-slate-400'}`}>
                     {item}
                   </span>
 
+                  {/* Unit toggle */}
+                  <button
+                    onClick={() => toggleUnit(item)}
+                    className={`flex-shrink-0 w-12 h-9 rounded-lg text-xs font-bold
+                                border transition-all duration-150 touch-manipulation select-none
+                                ${unit === 'ק"ג'
+                                  ? 'bg-amber-900/60 border-amber-700 text-amber-300'
+                                  : 'bg-slate-700 border-slate-600 text-slate-400'
+                                }`}
+                  >
+                    {unit}
+                  </button>
+
                   {/* Counter */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button
                       onClick={() => changeQty(item, -1)}
                       disabled={qty === 0}
@@ -221,9 +268,9 @@ export default function SupplierOrder() {
                     >
                       −
                     </button>
-                    <span className={`w-9 text-center font-black text-xl tabular-nums select-none
-                      ${qty > 0 ? 'text-white' : 'text-slate-600'}`}>
-                      {qty > 0 ? qty : '·'}
+                    <span className={`w-8 text-center font-black text-xl tabular-nums select-none
+                      ${active ? 'text-white' : 'text-slate-600'}`}>
+                      {active ? qty : '·'}
                     </span>
                     <button
                       onClick={() => changeQty(item, +1)}
@@ -241,7 +288,7 @@ export default function SupplierOrder() {
         </section>
       ))}
 
-      {/* Bottom action bar — fixed */}
+      {/* Bottom action bar */}
       <div
         className="fixed bottom-0 inset-x-0 z-20 p-4 bg-slate-900/95 backdrop-blur border-t border-slate-700"
         dir="rtl"
@@ -251,9 +298,7 @@ export default function SupplierOrder() {
             onClick={copyOrder}
             className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl
                         font-bold text-base transition-all duration-150 touch-manipulation
-                        ${copyDone
-                          ? 'bg-emerald-700 text-white'
-                          : 'bg-slate-700 text-white hover:bg-slate-600'}`}
+                        ${copyDone ? 'bg-emerald-700 text-white' : 'bg-slate-700 text-white hover:bg-slate-600'}`}
           >
             <span className="text-xl">{copyDone ? '✅' : '📋'}</span>
             {copyDone ? 'הועתק!' : 'העתק הזמנה'}
@@ -272,39 +317,29 @@ export default function SupplierOrder() {
         </div>
       </div>
 
-      {/* Hidden print template for PDF */}
+      {/* Hidden print template */}
       <div
         ref={printRef}
         style={{
-          display: 'none',
-          position: 'fixed',
-          left: '-9999px',
-          top: 0,
-          width: '794px',
-          backgroundColor: '#ffffff',
-          padding: '48px',
-          fontFamily: 'Arial, Helvetica, sans-serif',
-          direction: 'rtl',
-          color: '#111',
+          display: 'none', position: 'fixed', left: '-9999px', top: 0,
+          width: '794px', backgroundColor: '#ffffff', padding: '48px',
+          fontFamily: 'Arial, Helvetica, sans-serif', direction: 'rtl', color: '#111',
         }}
       >
-        {/* Logo + title */}
         <div style={{ textAlign: 'center', borderBottom: '2px solid #1e293b', paddingBottom: '20px', marginBottom: '28px' }}>
           <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '4px' }}>🍽️ וילה אכדיה</div>
           <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#334155' }}>הזמנה — {SUPPLIER_NAME}</div>
           <div style={{ fontSize: '14px', color: '#64748b', marginTop: '6px' }}>{todayLabel()}</div>
         </div>
 
-        {/* Categories */}
         {CATEGORIES.map(cat => {
-          const active = cat.items.filter(item => (quantities[item] || 0) > 0);
+          const active = cat.items.filter(item => getQty(quantities, item) > 0);
           if (active.length === 0) return null;
           return (
             <div key={cat.name} style={{ marginBottom: '24px' }}>
               <div style={{
-                fontSize: '15px', fontWeight: 'bold',
-                backgroundColor: '#f1f5f9', padding: '8px 14px',
-                borderRadius: '6px', marginBottom: '8px',
+                fontSize: '15px', fontWeight: 'bold', backgroundColor: '#f1f5f9',
+                padding: '8px 14px', borderRadius: '6px', marginBottom: '8px',
                 borderRight: '4px solid #0f172a',
               }}>
                 {cat.emoji} {cat.name}
@@ -314,8 +349,8 @@ export default function SupplierOrder() {
                   {active.map((item, i) => (
                     <tr key={item} style={{ backgroundColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' }}>
                       <td style={{ padding: '7px 14px', fontSize: '14px', borderBottom: '1px solid #e2e8f0' }}>{item}</td>
-                      <td style={{ padding: '7px 14px', fontSize: '14px', fontWeight: 'bold', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#1e40af' }}>
-                        {quantities[item]}
+                      <td style={{ padding: '7px 14px', fontSize: '14px', fontWeight: 'bold', borderBottom: '1px solid #e2e8f0', color: '#1e40af', textAlign: 'left' }}>
+                        {getQty(quantities, item)} {getUnit(quantities, item)}
                       </td>
                     </tr>
                   ))}
@@ -325,7 +360,6 @@ export default function SupplierOrder() {
           );
         })}
 
-        {/* Footer */}
         <div style={{ marginTop: '32px', borderTop: '1px solid #cbd5e1', paddingTop: '12px', fontSize: '13px', color: '#64748b', textAlign: 'center' }}>
           סה״כ {totalItems} פריטים | הודפס מתוך מערכת וילה אכדיה
         </div>
