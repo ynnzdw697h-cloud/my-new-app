@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
+const Anthropic = require('@anthropic-ai/sdk');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -21,7 +21,7 @@ The JSON must match this schema exactly:
 }
 Preserve Hebrew text exactly as it appears. Include all line items, even if price is 0.`;
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
   }
