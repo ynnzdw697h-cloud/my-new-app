@@ -201,8 +201,14 @@ function StatCard({ label, value, sub, color, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="rounded-2xl p-4 text-right active:scale-95 transition-transform w-full"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+      className="glow-btn rounded-2xl p-4 text-right w-full"
+      style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        '--gc': color,
+        '--gca': color + '50',
+        '--gcb': color + '18',
+      }}
     >
       <div className="text-2xl font-black mb-0.5" style={{ color }}>
         {value}
@@ -218,7 +224,7 @@ function SectionCard({ title, icon, children, onClick }) {
   return (
     <Wrapper
       onClick={onClick}
-      className={`rounded-3xl p-5 w-full text-right ${onClick ? 'active:scale-[0.99] transition-transform' : ''}`}
+      className={`rounded-3xl p-5 w-full text-right ${onClick ? 'glow-btn' : ''}`}
       style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
     >
       <div className="flex items-center gap-2 mb-4">
@@ -237,10 +243,13 @@ function QuickAction({ emoji, label, sub, color, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="rounded-3xl p-5 text-right active:scale-95 transition-all w-full"
+      className="glow-btn rounded-3xl p-5 text-right w-full"
       style={{
         background: color + '12',
         border: `1px solid ${color}25`,
+        '--gc': color,
+        '--gca': color + '50',
+        '--gcb': color + '18',
       }}
     >
       <span

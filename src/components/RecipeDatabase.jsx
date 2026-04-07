@@ -112,7 +112,7 @@ export default function RecipeDatabase({ station }) {
             <button
               key={c}
               onClick={() => setCategory(c)}
-              className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-2xl text-sm font-semibold transition-all active:scale-95"
+              className="glow-btn flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-2xl text-sm font-semibold"
               style={{
                 background: active ? st.color : 'var(--bg-card)',
                 border: active ? `1px solid ${st.color}` : '1px solid var(--border)',
@@ -141,7 +141,7 @@ export default function RecipeDatabase({ station }) {
             <button
               key={recipe.id}
               onClick={() => openRecipe(recipe)}
-              className="rounded-3xl overflow-hidden text-right active:scale-95 transition-all"
+              className="glow-btn rounded-3xl overflow-hidden text-right"
               style={{
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border)',
@@ -367,7 +367,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
                 <button
                   key={m}
                   onClick={() => onUpdateBatches(target)}
-                  className="flex-1 py-2.5 rounded-2xl text-sm font-bold transition-all active:scale-95"
+                  className="glow-btn flex-1 py-2.5 rounded-2xl text-sm font-bold"
                   style={{
                     background: active ? stationColor : 'rgba(255,255,255,0.06)',
                     color: active ? '#fff' : 'rgba(255,255,255,0.5)',

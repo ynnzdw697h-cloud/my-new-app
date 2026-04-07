@@ -81,8 +81,7 @@ function NameStep({ onSelect }) {
           <button
             key={name}
             onClick={() => onSelect(name)}
-            className="rounded-2xl px-4 py-5 text-white font-bold text-base text-center
-                       active:scale-95 transition-all duration-150"
+            className="glow-btn rounded-2xl px-4 py-5 text-white font-bold text-base text-center"
             style={{
               background: 'var(--bg-card)',
               border: '1px solid var(--border)',
@@ -134,12 +133,14 @@ function StationStep({ user, onSelect, onBack }) {
           <button
             key={station.id}
             onClick={() => onSelect(station.id)}
-            className="w-full group relative rounded-3xl p-6 flex items-center gap-5
-                       active:scale-[0.98] transition-all duration-150 overflow-hidden"
+            className="glow-btn w-full group relative rounded-3xl p-6 flex items-center gap-5 overflow-hidden"
             style={{
               background: 'var(--bg-card)',
               border: `1px solid ${station.color}30`,
               boxShadow: `0 4px 20px ${station.color}12`,
+              '--gc': station.color,
+              '--gca': station.color + '55',
+              '--gcb': station.color + '1a',
             }}
           >
             {/* BG glow */}

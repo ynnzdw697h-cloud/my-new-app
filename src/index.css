@@ -71,7 +71,21 @@ body::before {
   border-radius: 24px;
 }
 
-/* ── Accent glow utility ── */
-.accent-glow {
-  box-shadow: 0 4px 20px rgba(212,237,49,0.35);
+/* ── Glow hover effect ──
+   Usage: className="glow-btn"
+   Override color with: style={{ '--gc':'#3b82f6', '--gca':'rgba(59,130,246,0.4)' }}
+── */
+.glow-btn {
+  transition: box-shadow 0.28s ease, border-color 0.28s ease, background 0.28s ease !important;
+}
+.glow-btn:hover {
+  box-shadow:
+    0 0 0 1px var(--gc, #D4ED31),
+    0 0 20px var(--gca, rgba(212,237,49,0.42)),
+    0 0 55px var(--gcb, rgba(212,237,49,0.14)) !important;
+  border-color: var(--gc, #D4ED31) !important;
+}
+.glow-btn:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease !important;
 }
