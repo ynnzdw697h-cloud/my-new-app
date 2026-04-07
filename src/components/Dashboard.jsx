@@ -145,17 +145,23 @@ function useChefAvatars() {
 }
 
 /* ── Avatar — shows photo or initials, tap to change ── */
-function Avatar({ name, color, avatarUrl, onUpload }) {
+function Avatar({ name, color, avatarData, onUpload }) {
   const fileRef = useRef();
   const [uploading, setUploading] = useState(false);
+  const [cropUrl, setCropUrl]     = useState(null);
+
+  // Support both legacy string format and new { url, x, y } format
+  const avatarUrl = avatarData?.url || (typeof avatarData === 'string' ? avatarData : null);
+  const objX      = avatarData?.x ?? 50;
+  const objY      = avatarData?.y ?? 50;
 
   async function handleFile(e) {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
     try {
-      const base64 = await compressImage(file, 300, 0.82);
-      await onUpload(base64);
+      const base64 = await compressImage(file, 600, 0.88);
+      setCropUrl(base64);
     } catch (err) {
       console.error(err);
     } finally {
@@ -164,44 +170,151 @@ function Avatar({ name, color, avatarUrl, onUpload }) {
     }
   }
 
-  return (
-    <div style={{ position: 'relative', flexShrink: 0 }}>
-      <motion.button
-        whileTap={{ scale: 0.9 }}
-        onClick={() => fileRef.current.click()}
-        style={{
-          width: 48, height: 48,
-          borderRadius: '50%',
-          overflow: 'hidden',
-          border: `2px solid ${color}55`,
-          boxShadow: `0 0 14px ${color}40`,
-          cursor: 'pointer',
-          background: color + '25',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 0,
-        }}
-      >
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          <span style={{ fontSize: 20, fontWeight: 900, color }}>{name ? name.slice(0, 1) : '?'}</span>
-        )}
-      </motion.button>
+  async function handleCropConfirm({ x, y }) {
+    await onUpload({ url: cropUrl, x, y });
+    setCropUrl(null);
+  }
 
-      {/* Camera badge */}
-      <div
-        style={{
-          position: 'absolute', bottom: -2, left: -2,
-          width: 18, height: 18, borderRadius: '50%',
-          background: color, border: '2px solid #121212',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 9, pointerEvents: 'none',
-        }}
-      >
-        {uploading ? '…' : '📷'}
+  return (
+    <>
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={() => fileRef.current.click()}
+          style={{
+            width: 48, height: 48,
+            borderRadius: '50%',
+            overflow: 'hidden',
+            border: `2px solid ${color}55`,
+            boxShadow: `0 0 14px ${color}40`,
+            cursor: 'pointer',
+            background: color + '25',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 0,
+          }}
+        >
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${objX}% ${objY}%` }}
+            />
+          ) : (
+            <span style={{ fontSize: 20, fontWeight: 900, color }}>{name ? name.slice(0, 1) : '?'}</span>
+          )}
+        </motion.button>
+
+        {/* Camera badge */}
+        <div
+          style={{
+            position: 'absolute', bottom: -2, left: -2,
+            width: 18, height: 18, borderRadius: '50%',
+            background: color, border: '2px solid #121212',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 9, pointerEvents: 'none',
+          }}
+        >
+          {uploading ? '…' : '📷'}
+        </div>
+
+        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
       </div>
 
-      <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
+      {cropUrl && (
+        <CropModal
+          url={cropUrl}
+          color={color}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropUrl(null)}
+        />
+      )}
+    </>
+  );
+}
+
+/* ── Crop Modal — drag to position face in the circle ── */
+function CropModal({ url, color, onConfirm, onCancel }) {
+  const [pos, setPos]     = useState({ x: 50, y: 50 });
+  const [saving, setSaving] = useState(false);
+  const dragRef           = useRef(null);
+
+  function onPointerDown(e) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { startX: e.clientX, startY: e.clientY, posX: pos.x, posY: pos.y };
+  }
+
+  function onPointerMove(e) {
+    if (!dragRef.current) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    // 0.3 → each 100px drag shifts position ~30%
+    const s  = 0.3;
+    setPos({
+      x: Math.max(0, Math.min(100, dragRef.current.posX - dx * s)),
+      y: Math.max(0, Math.min(100, dragRef.current.posY - dy * s)),
+    });
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    await onConfirm(pos);
+    setSaving(false);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 p-6"
+      style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(14px)' }}
+      dir="rtl"
+    >
+      <p className="text-white font-bold text-lg">מרכז את התמונה</p>
+      <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>גרור כדי למקם את הפנים</p>
+
+      <div
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={() => { dragRef.current = null; }}
+        style={{
+          width: 220, height: 220,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          border: `3px solid ${color}`,
+          boxShadow: `0 0 40px ${color}55`,
+          cursor: 'grab',
+          touchAction: 'none',
+          userSelect: 'none',
+        }}
+      >
+        <img
+          src={url}
+          alt=""
+          draggable={false}
+          style={{
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            objectPosition: `${pos.x}% ${pos.y}%`,
+            pointerEvents: 'none',
+          }}
+        />
+      </div>
+
+      <div className="flex gap-3 w-full max-w-xs">
+        <button
+          onClick={onCancel}
+          className="flex-1 rounded-2xl py-3.5 font-bold text-sm"
+          style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}
+        >
+          ביטול
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex-1 rounded-2xl py-3.5 font-bold text-sm"
+          style={{ background: color, color: '#fff', opacity: saving ? 0.7 : 1, boxShadow: `0 0 20px ${color}60` }}
+        >
+          {saving ? '...' : 'שמור'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -273,7 +386,7 @@ export default function Dashboard({ station, user, completedTasks, onNavigate })
 
           {/* Avatar + Greeting */}
           <div className="flex items-center gap-3 mb-1">
-            <Avatar name={user} color={palette.primary} avatarUrl={avatars[user]} onUpload={b => saveAvatar(user, b)} />
+            <Avatar name={user} color={palette.primary} avatarData={avatars[user]} onUpload={data => saveAvatar(user, data)} />
             <div>
               <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>
                 {GREETING[tod]}
