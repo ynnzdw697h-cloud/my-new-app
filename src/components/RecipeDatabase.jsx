@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { RECIPES, CATEGORIES } from '../data/recipes';
 import { STATIONS } from '../data/stations';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // ─── Category metadata (gradient + emoji placeholder) ───
 const CAT_META = {
@@ -230,13 +229,11 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
     setUploading(true);
     setUploadError(null);
     try {
-      const storageRef = ref(storage, `recipes/${recipe.id}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      await onSaveImage(url);
+      const base64 = await compressImage(file, 900, 0.72);
+      await onSaveImage(base64);
     } catch (err) {
       console.error('Upload failed', err);
-      setUploadError(err.code || err.message);
+      setUploadError(err.message || 'שגיאה בהעלאה');
     } finally {
       setUploading(false);
     }
@@ -503,6 +500,27 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
       </div>
     </div>
   );
+}
+
+/* ─── Compress image to base64 using Canvas ─── */
+function compressImage(file, maxWidth = 900, quality = 0.72) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidth / img.width);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => reject(new Error('לא ניתן לקרוא את הקובץ'));
+    img.src = url;
+  });
 }
 
 function InfoChip({ icon, text }) {
