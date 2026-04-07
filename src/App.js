@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import LoginFlow from './components/LoginFlow';
-import Sidebar from './components/Sidebar';
+import BottomNav from './components/BottomNav';
 import Dashboard from './components/Dashboard';
 import PrepChecklist from './components/PrepChecklist';
 import RecipeDatabase from './components/RecipeDatabase';
@@ -11,11 +11,20 @@ import SupplierOrder from './components/SupplierOrder';
 import { useFirestoreSet } from './hooks/useFirestoreSet';
 import { STATIONS } from './data/stations';
 
+const PAGE_TITLES = {
+  dashboard: 'וילה אכדיה',
+  prep:      'צ׳ק ליסט יומי',
+  recipes:   'ספר המתכונים',
+  weekly:    'משימות שבועיות',
+  shift:     'חוסרים והערות',
+  proteins:  'ספירת חיות',
+  supplier:  'הזמנות ספקים',
+};
+
 function App() {
   const [user, setUser] = useState(null);
   const [station, setStation] = useState(null);
   const [view, setView] = useState('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const stationKey = station || 'init';
   const [completedTasks, setCompletedTasks] = useFirestoreSet(`prep_tasks_${stationKey}`);
@@ -43,78 +52,58 @@ function App() {
     setCompletedTasks(new Set());
   }
 
-  function navigate(v) {
-    setView(v);
-    setSidebarOpen(false); // close sidebar on mobile after tap
-  }
-
   if (!user || !station) {
     return <LoginFlow onLogin={handleLogin} />;
   }
 
   const st = STATIONS[station];
+  const isDashboard = view === 'dashboard';
 
   return (
-    <div className="flex min-h-screen bg-slate-900" dir="rtl">
+    <div className="flex flex-col min-h-screen" style={{ background: 'var(--bg)' }} dir="rtl">
 
-      {/* ── Mobile backdrop ── */}
-      {sidebarOpen && (
-        <div
-          className="md:hidden fixed inset-0 bg-black/60 z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* ── Sidebar ── */}
-      <Sidebar
-        currentView={view}
-        onNavigate={navigate}
-        station={station}
-        user={user}
-        onChangeCook={handleChangeCook}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      {/* ── Main ── */}
-      <main className="flex-1 overflow-y-auto min-w-0 pt-14 md:pt-0">
-
-        {/* Mobile top bar */}
-        <div
-          className="md:hidden fixed top-0 inset-x-0 z-30 h-14
-                     bg-slate-900 border-b border-slate-700
-                     flex items-center justify-between px-4"
-          dir="rtl"
-        >
-          {/* Hamburger — right side (RTL start) */}
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="text-slate-300 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
-            aria-label="פתח תפריט"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-
-          {/* App name center */}
-          <span className="text-white font-bold text-base absolute right-1/2 translate-x-1/2">
-            וילה אכדיה
+      {/* ── Top header ── */}
+      <header
+        className="fixed top-0 inset-x-0 z-30 h-16 flex items-center justify-between px-5"
+        style={{
+          background: 'rgba(10,10,13,0.88)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          borderBottom: '1px solid var(--border)',
+        }}
+      >
+        {/* Logo / page title */}
+        <div className="flex items-center gap-2.5">
+          {isDashboard && <span className="text-xl">🍽️</span>}
+          <span className="text-white font-black text-lg tracking-tight">
+            {PAGE_TITLES[view]}
           </span>
-
-          {/* Station badge — left side */}
-          <div
-            className="flex items-center gap-1.5 rounded-xl px-2.5 py-1 border text-sm font-semibold"
-            style={{ borderColor: st.color + '60', backgroundColor: st.color + '15', color: st.color }}
-          >
-            <span>{st.emoji}</span>
-            <span>{st.name}</span>
-          </div>
         </div>
 
-        {/* Page content */}
+        {/* User + station badge */}
+        <div
+          className="flex items-center gap-2 rounded-2xl px-3 py-1.5"
+          style={{
+            background: st.color + '18',
+            border: `1px solid ${st.color}35`,
+          }}
+        >
+          <span className="text-base">{st.emoji}</span>
+          <span className="text-sm font-bold" style={{ color: st.color }}>
+            {user}
+          </span>
+        </div>
+      </header>
+
+      {/* ── Main content ── */}
+      <main className="flex-1 overflow-y-auto" style={{ paddingTop: '64px', paddingBottom: '96px' }}>
         {view === 'dashboard' && (
-          <Dashboard station={station} user={user} completedTasks={completedTasks} onNavigate={navigate} />
+          <Dashboard
+            station={station}
+            user={user}
+            completedTasks={completedTasks}
+            onNavigate={setView}
+          />
         )}
         {view === 'prep' && (
           <PrepChecklist
@@ -124,12 +113,20 @@ function App() {
             onReset={resetDailyTasks}
           />
         )}
-        {view === 'recipes' && <RecipeDatabase station={station} />}
-        {view === 'weekly' && <WeeklyTasks station={station} />}
+        {view === 'recipes'  && <RecipeDatabase station={station} />}
+        {view === 'weekly'   && <WeeklyTasks station={station} />}
         {view === 'shift'    && <ShiftNotes user={user} />}
         {view === 'proteins' && <ProteinCount />}
         {view === 'supplier' && <SupplierOrder />}
       </main>
+
+      {/* ── Bottom nav ── */}
+      <BottomNav
+        currentView={view}
+        onNavigate={setView}
+        station={station}
+        onChangeCook={handleChangeCook}
+      />
     </div>
   );
 }

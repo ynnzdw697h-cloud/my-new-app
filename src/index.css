@@ -4,21 +4,45 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
 
-* {
-  box-sizing: border-box;
+:root {
+  --bg: #0c0c0f;
+  --bg-card: #16161e;
+  --bg-card-2: #1e1e28;
+  --border: rgba(255,255,255,0.07);
+  --border-md: rgba(255,255,255,0.12);
+  --text: #ffffff;
+  --text-2: rgba(255,255,255,0.55);
+  --text-3: rgba(255,255,255,0.28);
 }
+
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
   font-family: 'Heebo', 'Arial Hebrew', Arial, sans-serif;
-  background-color: #0F172A;
-  color: #F1F5F9;
+  background-color: var(--bg);
+  color: var(--text);
   direction: rtl;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-:root {
-  --cold: #3B82F6;
-  --hot: #EF4444;
-  --checker: #10B981;
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 99px; }
+
+/* Safe area for iOS */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Card base */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+.card-2 {
+  background: var(--bg-card-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
 }
