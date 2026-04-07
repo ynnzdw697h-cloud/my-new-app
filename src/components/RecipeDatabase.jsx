@@ -209,6 +209,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
   const meta = CAT_META[recipe.category] || DEFAULT_META;
   const fileRef = useRef();
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
 
   // Group ingredients by section
   const sections = [];
@@ -227,6 +228,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const storageRef = ref(storage, `recipes/${recipe.id}`);
       await uploadBytes(storageRef, file);
@@ -234,6 +236,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
       await onSaveImage(url);
     } catch (err) {
       console.error('Upload failed', err);
+      setUploadError(err.code || err.message);
     } finally {
       setUploading(false);
     }
@@ -298,6 +301,16 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
           )}
         </button>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+
+        {/* Upload error */}
+        {uploadError && (
+          <div
+            className="absolute top-16 left-4 right-4 rounded-2xl px-4 py-2 text-xs font-bold"
+            style={{ background: 'rgba(220,38,38,0.9)', color: 'white', backdropFilter: 'blur(8px)' }}
+          >
+            שגיאה: {uploadError}
+          </div>
+        )}
 
         {/* Recipe name overlay */}
         <div className="absolute bottom-0 inset-x-0 p-5">
