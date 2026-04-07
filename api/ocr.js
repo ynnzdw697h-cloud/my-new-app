@@ -1,6 +1,4 @@
-const Anthropic = require('@anthropic-ai/sdk');
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const { default: Anthropic } = require('@anthropic-ai/sdk');
 
 const SYSTEM_PROMPT = `You are an OCR assistant for a Hebrew kitchen management system.
 Extract delivery invoice data from the image and return ONLY valid JSON — no markdown, no explanation.
@@ -39,7 +37,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-6',
       max_tokens: 2048,
       system: SYSTEM_PROMPT,
       messages: [
