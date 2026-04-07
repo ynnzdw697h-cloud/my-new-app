@@ -1,8 +1,11 @@
 import { motion } from 'framer-motion';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { STATIONS } from '../data/stations';
 import { PREP_TASKS } from '../data/prepTasks';
 import { RECIPES } from '../data/recipes';
 import { WEEKLY_TASKS } from '../data/weeklyTasks';
+import { db } from '../firebase';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 /* ── Time-of-day helpers ── */
 function getTimeOfDay() {
@@ -106,24 +109,99 @@ function Moon() {
   );
 }
 
-/* ── Avatar (initials) ── */
-function Avatar({ name, color }) {
-  const initials = name ? name.slice(0, 1) : '?';
+/* ── Compress image to base64 ── */
+function compressImage(file, maxWidth = 300, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidth / img.width);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => reject(new Error('שגיאה בקריאת התמונה'));
+    img.src = url;
+  });
+}
+
+/* ── Hook: load/save chef avatars from Firestore ── */
+function useChefAvatars() {
+  const [avatars, setAvatars] = useState({});
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'kitchen', 'chef_avatars'), snap => {
+      if (snap.exists()) setAvatars(snap.data());
+    });
+    return unsub;
+  }, []);
+  const saveAvatar = useCallback(async (name, base64) => {
+    await setDoc(doc(db, 'kitchen', 'chef_avatars'), { [name]: base64 }, { merge: true });
+  }, []);
+  return { avatars, saveAvatar };
+}
+
+/* ── Avatar — shows photo or initials, tap to change ── */
+function Avatar({ name, color, avatarUrl, onUpload }) {
+  const fileRef = useRef();
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const base64 = await compressImage(file, 300, 0.82);
+      await onUpload(base64);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  }
+
   return (
-    <div
-      style={{
-        width: 44, height: 44,
-        borderRadius: '50%',
-        background: color + '25',
-        border: `2px solid ${color}55`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 18, fontWeight: 900,
-        color: color,
-        flexShrink: 0,
-        boxShadow: `0 0 14px ${color}40`,
-      }}
-    >
-      {initials}
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      <motion.button
+        whileTap={{ scale: 0.9 }}
+        onClick={() => fileRef.current.click()}
+        style={{
+          width: 48, height: 48,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          border: `2px solid ${color}55`,
+          boxShadow: `0 0 14px ${color}40`,
+          cursor: 'pointer',
+          background: color + '25',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 0,
+        }}
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <span style={{ fontSize: 20, fontWeight: 900, color }}>{name ? name.slice(0, 1) : '?'}</span>
+        )}
+      </motion.button>
+
+      {/* Camera badge */}
+      <div
+        style={{
+          position: 'absolute', bottom: -2, left: -2,
+          width: 18, height: 18, borderRadius: '50%',
+          background: color, border: '2px solid #121212',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 9, pointerEvents: 'none',
+        }}
+      >
+        {uploading ? '…' : '📷'}
+      </div>
+
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
     </div>
   );
 }
@@ -135,6 +213,7 @@ export default function Dashboard({ station, user, completedTasks, onNavigate })
   const st       = STATIONS[station];
   const tod      = getTimeOfDay();
   const palette  = TIME_PALETTE[tod];
+  const { avatars, saveAvatar } = useChefAvatars();
 
   const myTasks   = PREP_TASKS[station] || [];
   const done      = myTasks.filter(t => completedTasks.has(t.id)).length;
@@ -194,7 +273,7 @@ export default function Dashboard({ station, user, completedTasks, onNavigate })
 
           {/* Avatar + Greeting */}
           <div className="flex items-center gap-3 mb-1">
-            <Avatar name={user} color={palette.primary} />
+            <Avatar name={user} color={palette.primary} avatarUrl={avatars[user]} onUpload={b => saveAvatar(user, b)} />
             <div>
               <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>
                 {GREETING[tod]}
