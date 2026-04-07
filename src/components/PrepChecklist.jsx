@@ -223,7 +223,7 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
   const [particles, setParticles] = useState([]);
 
   function handleToggle() {
-    if (hasSubItems || isDone) return;
+    if (hasSubItems) return;
     onToggle();
     // spawn particles only when marking as done
     if (!isDone) {
