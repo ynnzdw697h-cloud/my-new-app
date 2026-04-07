@@ -8,34 +8,41 @@ import WeeklyTasks from './components/WeeklyTasks';
 import ShiftNotes from './components/ShiftNotes';
 import ProteinCount from './components/ProteinCount';
 import SupplierOrder from './components/SupplierOrder';
+import CheckerHub from './components/checker/CheckerHub';
+import CheckerDetail from './components/checker/CheckerDetail';
 import { useFirestoreSet } from './hooks/useFirestoreSet';
 import { STATIONS } from './data/stations';
 import { SESSION_KEY } from './data/chefs';
 
 const PAGE_TITLES = {
-  dashboard: 'וילה אכדיה',
-  prep:      'צ׳ק ליסט יומי',
-  recipes:   'ספר המתכונים',
-  weekly:    'משימות שבועיות',
-  shift:     'חוסרים והערות',
-  proteins:  'ספירת חיות',
-  supplier:  'הזמנות ספקים',
+  dashboard:      'וילה אכדיה',
+  prep:           'צ׳ק ליסט יומי',
+  recipes:        'ספר המתכונים',
+  weekly:         'משימות שבועיות',
+  shift:          'חוסרים והערות',
+  proteins:       'ספירת חיות',
+  supplier:       'הזמנות ספקים',
+  checker_hub:    'קבלת סחורה',
+  checker_detail: 'בדיקת משלוח',
 };
 
 function App() {
-  const [user, setUser]       = useState(null);
-  const [station, setStation] = useState(null);
-  const [view, setView]       = useState('dashboard');
+  const [user, setUser]                     = useState(null);
+  const [station, setStation]               = useState(null);
+  const [view, setView]                     = useState('dashboard');
+  const [role, setRole]                     = useState(null);
+  const [activeDeliveryId, setActiveDeliveryId] = useState(null);
 
   // ── Restore session on mount ──
   useEffect(() => {
     try {
       const saved = localStorage.getItem(SESSION_KEY);
       if (saved) {
-        const { user: u, station: s } = JSON.parse(saved);
+        const { user: u, station: s, role: r } = JSON.parse(saved);
         if (u && s && STATIONS[s]) {
           setUser(u);
           setStation(s);
+          setRole(r || 'chef');
         }
       }
     } catch (_) {
@@ -46,18 +53,25 @@ function App() {
   const stationKey = station || 'init';
   const [completedTasks, setCompletedTasks] = useFirestoreSet(`prep_tasks_${stationKey}`);
 
-  function handleLogin(name, stationId) {
+  function handleLogin(name, stationId, userRole = 'chef') {
     setUser(name);
     setStation(stationId);
-    setView('dashboard');
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ user: name, station: stationId }));
+    setRole(userRole);
+    setView(userRole === 'checker' ? 'checker_hub' : 'dashboard');
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ user: name, station: stationId, role: userRole }));
   }
 
   function handleLogout() {
     localStorage.removeItem(SESSION_KEY);
     setUser(null);
     setStation(null);
+    setRole(null);
     setView('dashboard');
+  }
+
+  function openDelivery(id) {
+    setActiveDeliveryId(id);
+    setView('checker_detail');
   }
 
   function toggleTask(taskId) {
@@ -124,8 +138,10 @@ function App() {
         {view === 'recipes'  && <RecipeDatabase station={station} />}
         {view === 'weekly'   && <WeeklyTasks station={station} />}
         {view === 'shift'    && <ShiftNotes user={user} />}
-        {view === 'proteins' && <ProteinCount />}
-        {view === 'supplier' && <SupplierOrder />}
+        {view === 'proteins'       && <ProteinCount />}
+        {view === 'supplier'       && <SupplierOrder />}
+        {view === 'checker_hub'    && <CheckerHub user={user} onOpenDelivery={openDelivery} />}
+        {view === 'checker_detail' && <CheckerDetail deliveryId={activeDeliveryId} user={user} onBack={() => setView('checker_hub')} />}
       </main>
 
       {/* ── Bottom nav ── */}
@@ -134,6 +150,7 @@ function App() {
         onNavigate={setView}
         station={station}
         onLogout={handleLogout}
+        role={role}
       />
     </div>
   );

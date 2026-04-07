@@ -9,7 +9,9 @@
       "Bash(npm start:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(CI=true npm run build)",
+      "Bash(python3 -c ':*)"
     ]
   }
 }

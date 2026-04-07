@@ -3,14 +3,9 @@ import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { SUPPLIERS } from '../data/suppliers';
 
 const UNITS = ['יח׳', 'ק"ג'];
-
-const SUPPLIERS = [
-  { id: 'aleh_aleh', name: 'עלה עלה',   emoji: '🥦', type: 'ירקות ופירות' },
-  { id: 'dagim',     name: 'ספק דגים',  emoji: '🐟', type: 'דגים ופירות ים' },
-  { id: 'yavesh',    name: 'ספק יבש',   emoji: '🧴', type: 'יבש ורטבים' },
-];
 
 const BASE_CATEGORIES = {
   aleh_aleh: [

@@ -4,7 +4,7 @@ import { STATIONS } from '../data/stations';
 import { CHEFS } from '../data/chefs';
 
 export default function LoginFlow({ onLogin }) {
-  const [step, setStep]               = useState(1); // 1=pick chef, 2=pin, 3=station
+  const [step, setStep]                 = useState(1); // 1=pick chef, 2=pin, 3=station
   const [selectedChef, setSelectedChef] = useState(null);
 
   const today = new Date().toLocaleDateString('he-IL', {
@@ -17,11 +17,15 @@ export default function LoginFlow({ onLogin }) {
   }
 
   function onPinSuccess() {
-    setStep(3);
+    if (selectedChef.role === 'checker') {
+      onLogin(selectedChef.displayName, 'checker', 'checker');
+    } else {
+      setStep(3);
+    }
   }
 
   function pickStation(stationId) {
-    onLogin(selectedChef.displayName, stationId);
+    onLogin(selectedChef.displayName, stationId, selectedChef.role || 'chef');
   }
 
   return (

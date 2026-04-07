@@ -14,13 +14,75 @@ const MORE_NAV = [
   { id: 'supplier', label: 'הזמנות ספקים',          emoji: '🛒' },
 ];
 
-export default function BottomNav({ currentView, onNavigate, station, onLogout }) {
+export default function BottomNav({ currentView, onNavigate, station, onLogout, role }) {
   const [showMore, setShowMore] = useState(false);
-  const st = STATIONS[station];
+  const st = STATIONS[station] || STATIONS['cold'];
+
+  const isChecker = role === 'checker';
 
   function go(id) {
     onNavigate(id);
     setShowMore(false);
+  }
+
+  // Checker gets a simplified 2-tab nav
+  if (isChecker) {
+    return (
+      <nav
+        className="fixed bottom-0 inset-x-0 z-30 pb-safe"
+        style={{
+          background: 'rgba(18,18,18,0.94)',
+          backdropFilter: 'blur(28px)',
+          WebkitBackdropFilter: 'blur(28px)',
+          borderTop: '1px solid rgba(255,255,255,0.07)',
+        }}
+      >
+        <div className="flex items-center justify-around max-w-lg mx-auto px-2" style={{ height: '76px' }}>
+          {[
+            { id: 'checker_hub', label: 'קבלה',  Icon: InboxIcon },
+            { id: 'supplier',    label: 'ספקים', Icon: TruckIcon },
+          ].map(({ id, label, Icon }) => {
+            const active = currentView === id;
+            return (
+              <button
+                key={id}
+                onClick={() => go(id)}
+                className="flex flex-col items-center gap-1 flex-1 transition-all duration-200 active:scale-90 py-2"
+              >
+                <div
+                  className="w-12 h-12 flex items-center justify-center rounded-2xl transition-all duration-200"
+                  style={{
+                    background: active ? st.color : 'transparent',
+                    boxShadow: active ? `0 0 0 1px ${st.color}, 0 0 18px ${st.color}70, 0 0 40px ${st.color}28` : 'none',
+                  }}
+                >
+                  <Icon active={active} color={st.color} />
+                </div>
+                <span
+                  className="text-xs font-semibold transition-colors duration-200"
+                  style={{ color: active ? st.color : 'rgba(255,255,255,0.35)' }}
+                >
+                  {label}
+                </span>
+              </button>
+            );
+          })}
+          <button
+            onClick={onLogout}
+            className="flex flex-col items-center gap-1 flex-1 transition-all duration-200 active:scale-90 py-2"
+          >
+            <div className="w-12 h-12 flex items-center justify-center rounded-2xl" style={{ background: 'transparent' }}>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </div>
+            <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.35)' }}>יציאה</span>
+          </button>
+        </div>
+      </nav>
+    );
   }
 
   return (
@@ -193,6 +255,28 @@ function NoteIcon({ active }) {
       <polyline points="14,2 14,8 20,8"/>
       <line x1="16" y1="13" x2="8" y2="13"/>
       <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+  );
+}
+
+function InboxIcon({ active }) {
+  const c = active ? '#fff' : 'rgba(255,255,255,0.5)';
+  return (
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+      <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+    </svg>
+  );
+}
+
+function TruckIcon({ active }) {
+  const c = active ? '#fff' : 'rgba(255,255,255,0.5)';
+  return (
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="3" width="15" height="13"/>
+      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+      <circle cx="5.5" cy="18.5" r="2.5"/>
+      <circle cx="18.5" cy="18.5" r="2.5"/>
     </svg>
   );
 }
