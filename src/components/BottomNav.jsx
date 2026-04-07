@@ -83,7 +83,7 @@ export default function BottomNav({ currentView, onNavigate, station, onChangeCo
       <nav
         className="fixed bottom-0 inset-x-0 z-30 pb-safe"
         style={{
-          background: 'rgba(10,10,13,0.92)',
+          background: 'rgba(18,18,18,0.94)',
           backdropFilter: 'blur(28px)',
           WebkitBackdropFilter: 'blur(28px)',
           borderTop: '1px solid rgba(255,255,255,0.07)',

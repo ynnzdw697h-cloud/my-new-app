@@ -60,13 +60,13 @@ function App() {
   const isDashboard = view === 'dashboard';
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: 'var(--bg)' }} dir="rtl">
+    <div className="flex flex-col min-h-screen" style={{ background: '#121212' }} dir="rtl">
 
       {/* ── Top header ── */}
       <header
         className="fixed top-0 inset-x-0 z-30 h-16 flex items-center justify-between px-5"
         style={{
-          background: 'rgba(10,10,13,0.88)',
+          background: 'rgba(18,18,18,0.9)',
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
           borderBottom: '1px solid var(--border)',
