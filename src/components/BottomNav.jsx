@@ -14,7 +14,7 @@ const MORE_NAV = [
   { id: 'supplier', label: 'הזמנות ספקים',          emoji: '🛒' },
 ];
 
-export default function BottomNav({ currentView, onNavigate, station, onChangeCook }) {
+export default function BottomNav({ currentView, onNavigate, station, onLogout }) {
   const [showMore, setShowMore] = useState(false);
   const st = STATIONS[station];
 
@@ -61,17 +61,17 @@ export default function BottomNav({ currentView, onNavigate, station, onChangeCo
               <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', margin: '4px 8px' }} />
 
               <button
-                onClick={() => { setShowMore(false); onChangeCook(); }}
+                onClick={() => { setShowMore(false); onLogout(); }}
                 className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-right transition-all active:scale-[0.97]"
               >
                 <span
                   className="w-11 h-11 flex items-center justify-center rounded-2xl text-xl flex-shrink-0"
                   style={{ background: 'rgba(255,255,255,0.06)' }}
                 >
-                  🔄
+                  🔓
                 </span>
                 <span style={{ color: 'rgba(255,255,255,0.7)' }} className="font-medium text-base">
-                  החלף טבח
+                  התנתק
                 </span>
               </button>
             </div>

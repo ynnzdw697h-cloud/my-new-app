@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LoginFlow from './components/LoginFlow';
 import BottomNav from './components/BottomNav';
 import Dashboard from './components/Dashboard';
@@ -10,6 +10,7 @@ import ProteinCount from './components/ProteinCount';
 import SupplierOrder from './components/SupplierOrder';
 import { useFirestoreSet } from './hooks/useFirestoreSet';
 import { STATIONS } from './data/stations';
+import { SESSION_KEY } from './data/chefs';
 
 const PAGE_TITLES = {
   dashboard: 'וילה אכדיה',
@@ -22,9 +23,25 @@ const PAGE_TITLES = {
 };
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser]       = useState(null);
   const [station, setStation] = useState(null);
-  const [view, setView] = useState('dashboard');
+  const [view, setView]       = useState('dashboard');
+
+  // ── Restore session on mount ──
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SESSION_KEY);
+      if (saved) {
+        const { user: u, station: s } = JSON.parse(saved);
+        if (u && s && STATIONS[s]) {
+          setUser(u);
+          setStation(s);
+        }
+      }
+    } catch (_) {
+      localStorage.removeItem(SESSION_KEY);
+    }
+  }, []);
 
   const stationKey = station || 'init';
   const [completedTasks, setCompletedTasks] = useFirestoreSet(`prep_tasks_${stationKey}`);
@@ -33,11 +50,14 @@ function App() {
     setUser(name);
     setStation(stationId);
     setView('dashboard');
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ user: name, station: stationId }));
   }
 
-  function handleChangeCook() {
+  function handleLogout() {
+    localStorage.removeItem(SESSION_KEY);
     setUser(null);
     setStation(null);
+    setView('dashboard');
   }
 
   function toggleTask(taskId) {
@@ -72,7 +92,6 @@ function App() {
           borderBottom: '1px solid var(--border)',
         }}
       >
-        {/* Logo / page title */}
         <div className="flex items-center gap-2.5">
           {isDashboard && <span className="text-xl">🍽️</span>}
           <span className="text-white font-black text-lg tracking-tight">
@@ -80,30 +99,19 @@ function App() {
           </span>
         </div>
 
-        {/* User + station badge */}
         <div
           className="flex items-center gap-2 rounded-2xl px-3 py-1.5"
-          style={{
-            background: st.color + '18',
-            border: `1px solid ${st.color}35`,
-          }}
+          style={{ background: st.color + '18', border: `1px solid ${st.color}35` }}
         >
           <span className="text-base">{st.emoji}</span>
-          <span className="text-sm font-bold" style={{ color: st.color }}>
-            {user}
-          </span>
+          <span className="text-sm font-bold" style={{ color: st.color }}>{user}</span>
         </div>
       </header>
 
       {/* ── Main content ── */}
       <main className="flex-1 overflow-y-auto" style={{ paddingTop: '64px', paddingBottom: '96px' }}>
         {view === 'dashboard' && (
-          <Dashboard
-            station={station}
-            user={user}
-            completedTasks={completedTasks}
-            onNavigate={setView}
-          />
+          <Dashboard station={station} user={user} completedTasks={completedTasks} onNavigate={setView} />
         )}
         {view === 'prep' && (
           <PrepChecklist
@@ -125,7 +133,7 @@ function App() {
         currentView={view}
         onNavigate={setView}
         station={station}
-        onChangeCook={handleChangeCook}
+        onLogout={handleLogout}
       />
     </div>
   );
