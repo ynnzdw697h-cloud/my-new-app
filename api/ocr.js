@@ -1,5 +1,7 @@
 const { default: Anthropic } = require('@anthropic-ai/sdk');
 
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
 const SYSTEM_PROMPT = `You are an OCR assistant for a Hebrew kitchen management system.
 Extract delivery invoice data from the image and return ONLY valid JSON — no markdown, no explanation.
 If a field cannot be determined, use null for strings and 0 for numbers.
