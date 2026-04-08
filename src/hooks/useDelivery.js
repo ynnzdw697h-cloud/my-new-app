@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useTenantId } from '../context/TenantContext';
 
-// Subscribes to a single full delivery document.
-// Returns { delivery, loading, error, updateDelivery(patch) }
 export function useDelivery(deliveryId) {
+  const tenantId               = useTenantId();
   const [delivery, setDelivery] = useState(null);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState(null);
 
   useEffect(() => {
-    if (!deliveryId) { setLoading(false); return; }
+    if (!deliveryId || !tenantId) { setLoading(false); return; }
     setLoading(true);
     setDelivery(null);
     setError(null);
-    const ref = doc(db, 'kitchen', deliveryId);
+    const ref  = doc(db, 'tenants', tenantId, 'kitchen', deliveryId);
     const unsub = onSnapshot(ref,
       snap => {
         setLoading(false);
@@ -27,11 +27,11 @@ export function useDelivery(deliveryId) {
       }
     );
     return unsub;
-  }, [deliveryId]);
+  }, [deliveryId, tenantId]);
 
   async function updateDelivery(patch) {
-    if (!deliveryId) return;
-    await setDoc(doc(db, 'kitchen', deliveryId), patch, { merge: true });
+    if (!deliveryId || !tenantId) return;
+    await setDoc(doc(db, 'tenants', tenantId, 'kitchen', deliveryId), patch, { merge: true });
   }
 
   return { delivery, loading, error, updateDelivery };

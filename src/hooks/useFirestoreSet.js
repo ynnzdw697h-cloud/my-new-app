@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-
-const COLLECTION = 'kitchen';
+import { useTenantId } from '../context/TenantContext';
 
 export function useFirestoreSet(docId) {
-  const lsKey = `fs_cache_${docId}`;
+  const tenantId = useTenantId();
+  const lsKey    = `fs_cache_${tenantId}_${docId}`;
 
   function readCache() {
     try {
@@ -17,23 +17,16 @@ export function useFirestoreSet(docId) {
   }
 
   const [value, setValue] = useState(readCache);
-  const valueRef = useRef(value);
-  const unsubRef = useRef(null);
+  const valueRef  = useRef(value);
+  const unsubRef  = useRef(null);
+
+  useEffect(() => { valueRef.current = value; }, [value]);
 
   useEffect(() => {
-    valueRef.current = value;
-  }, [value]);
-
-  useEffect(() => {
-    if (!docId) return;
-
+    if (!docId || !tenantId) return;
     setValue(readCache());
-
-    const ref = doc(db, COLLECTION, docId);
-    console.log('[Firestore] subscribing to', docId);
-
+    const ref = doc(db, 'tenants', tenantId, 'kitchen', docId);
     unsubRef.current = onSnapshot(ref, snap => {
-      console.log('[Firestore] snapshot received for', docId, 'exists:', snap.exists());
       if (snap.exists()) {
         const arr = snap.data().data || [];
         setValue(new Set(arr));
@@ -42,28 +35,21 @@ export function useFirestoreSet(docId) {
     }, err => {
       console.error('[Firestore] error on', docId, err.code, err.message);
     });
-
-    return () => {
-      if (unsubRef.current) unsubRef.current();
-    };
+    return () => { if (unsubRef.current) unsubRef.current(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docId]);
+  }, [docId, tenantId]);
 
   const set = useCallback((updater) => {
     const prev = valueRef.current;
     const next = typeof updater === 'function' ? updater(prev) : updater;
-    const arr = [...next];
-
+    const arr  = [...next];
     setValue(next);
     valueRef.current = next;
     localStorage.setItem(lsKey, JSON.stringify(arr));
-
-    console.log('[Firestore] writing to', docId, arr);
-    setDoc(doc(db, COLLECTION, docId), { data: arr })
-      .then(() => console.log('[Firestore] write OK:', docId))
+    setDoc(doc(db, 'tenants', tenantId, 'kitchen', docId), { data: arr })
       .catch(err => console.error('[Firestore] write FAILED:', docId, err.code, err.message));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docId, tenantId]);
 
   return [value, set];
 }

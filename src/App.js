@@ -1,4 +1,8 @@
 import { useState, useEffect } from 'react';
+import { signInWithCustomToken, signOut } from 'firebase/auth';
+import { auth } from './firebase';
+import { TenantProvider } from './context/TenantContext';
+import { DEFAULT_TENANT_ID } from './data/tenants';
 import LoginFlow from './components/LoginFlow';
 import BottomNav from './components/BottomNav';
 import Dashboard from './components/Dashboard';
@@ -26,53 +30,13 @@ const PAGE_TITLES = {
   checker_detail: 'בדיקת משלוח',
 };
 
-function App() {
-  const [user, setUser]                     = useState(null);
-  const [station, setStation]               = useState(null);
-  const [view, setView]                     = useState('dashboard');
-  const [role, setRole]                     = useState(null);
+// Inner component — rendered only after login, always inside TenantProvider
+function AppShell({ user, station, role, tenantId, onLogout }) {
+  const [view, setView]                         = useState(role === 'checker' ? 'checker_hub' : 'dashboard');
   const [activeDeliveryId, setActiveDeliveryId] = useState(null);
 
-  // ── Restore session on mount ──
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(SESSION_KEY);
-      if (saved) {
-        const { user: u, station: s, role: r } = JSON.parse(saved);
-        if (u && s && STATIONS[s]) {
-          setUser(u);
-          setStation(s);
-          setRole(r || 'chef');
-        }
-      }
-    } catch (_) {
-      localStorage.removeItem(SESSION_KEY);
-    }
-  }, []);
-
   const stationKey = station || 'init';
-  const [completedTasks, setCompletedTasks] = useFirestoreSet(`prep_tasks_${stationKey}`);
-
-  function handleLogin(name, stationId, userRole = 'chef') {
-    setUser(name);
-    setStation(stationId);
-    setRole(userRole);
-    setView(userRole === 'checker' ? 'checker_hub' : 'dashboard');
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ user: name, station: stationId, role: userRole }));
-  }
-
-  function handleLogout() {
-    localStorage.removeItem(SESSION_KEY);
-    setUser(null);
-    setStation(null);
-    setRole(null);
-    setView('dashboard');
-  }
-
-  function openDelivery(id) {
-    setActiveDeliveryId(id);
-    setView('checker_detail');
-  }
+  const [completedTasks, setCompletedTasks]     = useFirestoreSet(`prep_tasks_${stationKey}`);
 
   function toggleTask(taskId) {
     setCompletedTasks(prev => {
@@ -82,15 +46,12 @@ function App() {
     });
   }
 
-  function resetDailyTasks() {
-    setCompletedTasks(new Set());
+  function openDelivery(id) {
+    setActiveDeliveryId(id);
+    setView('checker_detail');
   }
 
-  if (!user || !station) {
-    return <LoginFlow onLogin={handleLogin} />;
-  }
-
-  const st = STATIONS[station];
+  const st          = STATIONS[station];
   const isDashboard = view === 'dashboard';
 
   return (
@@ -112,7 +73,6 @@ function App() {
             {PAGE_TITLES[view]}
           </span>
         </div>
-
         <div
           className="flex items-center gap-2 rounded-2xl px-3 py-1.5"
           style={{ background: st.color + '18', border: `1px solid ${st.color}35` }}
@@ -132,27 +92,97 @@ function App() {
             station={station}
             completedTasks={completedTasks}
             onToggle={toggleTask}
-            onReset={resetDailyTasks}
+            onReset={() => setCompletedTasks(new Set())}
           />
         )}
-        {view === 'recipes'  && <RecipeDatabase station={station} />}
-        {view === 'weekly'   && <WeeklyTasks station={station} />}
-        {view === 'shift'    && <ShiftNotes user={user} />}
+        {view === 'recipes'        && <RecipeDatabase station={station} />}
+        {view === 'weekly'         && <WeeklyTasks station={station} />}
+        {view === 'shift'          && <ShiftNotes user={user} />}
         {view === 'proteins'       && <ProteinCount />}
         {view === 'supplier'       && <SupplierOrder />}
         {view === 'checker_hub'    && <CheckerHub user={user} onOpenDelivery={openDelivery} />}
         {view === 'checker_detail' && <CheckerDetail deliveryId={activeDeliveryId} user={user} onBack={() => setView('checker_hub')} />}
       </main>
 
-      {/* ── Bottom nav ── */}
       <BottomNav
         currentView={view}
         onNavigate={setView}
         station={station}
-        onLogout={handleLogout}
+        onLogout={onLogout}
         role={role}
       />
     </div>
+  );
+}
+
+// ── Root component ──
+function App() {
+  const [session, setSession] = useState(null); // { user, station, role, tenantId }
+  const [authReady, setAuthReady] = useState(false);
+
+  // Restore session from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SESSION_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.user && parsed.station && STATIONS[parsed.station]) {
+          setSession({
+            user:     parsed.user,
+            station:  parsed.station,
+            role:     parsed.role     || 'chef',
+            tenantId: parsed.tenantId || DEFAULT_TENANT_ID,
+          });
+        }
+      }
+    } catch (_) {
+      localStorage.removeItem(SESSION_KEY);
+    }
+    setAuthReady(true);
+  }, []);
+
+  async function handleLogin(displayName, stationId, role, tenantId, firebaseToken) {
+    // Sign into Firebase if a custom token was provided (new auth flow)
+    if (firebaseToken) {
+      try {
+        await signInWithCustomToken(auth, firebaseToken);
+      } catch (err) {
+        console.warn('[Auth] signInWithCustomToken failed, continuing without Firebase session:', err.message);
+      }
+    }
+
+    const newSession = {
+      user:     displayName,
+      station:  stationId,
+      role:     role     || 'chef',
+      tenantId: tenantId || DEFAULT_TENANT_ID,
+    };
+    setSession(newSession);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+  }
+
+  async function handleLogout() {
+    localStorage.removeItem(SESSION_KEY);
+    setSession(null);
+    try { await signOut(auth); } catch (_) { /* ignore */ }
+  }
+
+  if (!authReady) return null;
+
+  if (!session) {
+    return <LoginFlow onLogin={handleLogin} />;
+  }
+
+  return (
+    <TenantProvider tenantId={session.tenantId}>
+      <AppShell
+        user={session.user}
+        station={session.station}
+        role={session.role}
+        tenantId={session.tenantId}
+        onLogout={handleLogout}
+      />
+    </TenantProvider>
   );
 }
 

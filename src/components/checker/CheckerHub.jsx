@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useDeliveries } from '../../hooks/useDeliveries';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { useTenantId } from '../../context/TenantContext';
 import { SUPPLIERS } from '../../data/suppliers';
 import ScanStep from './ScanStep';
 
@@ -24,6 +25,7 @@ function todayISO() {
 }
 
 export default function CheckerHub({ user, onOpenDelivery }) {
+  const tenantId                    = useTenantId();
   const [deliveries, setDeliveries] = useDeliveries();
   const [showScan, setShowScan]     = useState(false);
 
@@ -36,7 +38,7 @@ export default function CheckerHub({ user, onOpenDelivery }) {
 
   async function handleDeliverySaved(deliveryDoc) {
     // Write full doc
-    await setDoc(doc(db, 'kitchen', deliveryDoc.id), deliveryDoc);
+    await setDoc(doc(db, 'tenants', tenantId, 'kitchen', deliveryDoc.id), deliveryDoc);
     // Update index
     const entry = {
       id: deliveryDoc.id,

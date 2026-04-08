@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useTenantId } from '../context/TenantContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { SUPPLIERS } from '../data/suppliers';
@@ -41,6 +42,7 @@ function getUnit(quantities, item) { const v = quantities[item]; if (!v || typeo
 
 // ─────────────────────────────────────────────────────────────
 export default function SupplierOrder() {
+  const tenantId = useTenantId();
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [quantities,    setQuantities]    = useState({});
   const [customItems,   setCustomItems]   = useState([]);   // permanent custom items (Firebase)
@@ -66,7 +68,7 @@ export default function SupplierOrder() {
     if (!selectedSupplier) return;
     setQuantities({}); qRef.current = {};
 
-    const ref = doc(db, 'kitchen', `order_${selectedSupplier.id}`);
+    const ref = doc(db, 'tenants', tenantId, 'kitchen', `order_${selectedSupplier.id}`);
     const unsub = onSnapshot(ref, snap => {
       if (snap.exists()) {
         const q = normalize(snap.data().quantities || {});
@@ -74,32 +76,32 @@ export default function SupplierOrder() {
       }
     }, err => console.error('[SupplierOrder]', err.code));
     return () => unsub();
-  }, [selectedSupplier]);
+  }, [selectedSupplier, tenantId]);
 
   // ── Subscribe to custom items ──
   useEffect(() => {
     if (!selectedSupplier) return;
     setCustomItems([]); customRef.current = [];
 
-    const ref = doc(db, 'kitchen', `custom_items_${selectedSupplier.id}`);
+    const ref = doc(db, 'tenants', tenantId, 'kitchen', `custom_items_${selectedSupplier.id}`);
     const unsub = onSnapshot(ref, snap => {
       const data = snap.exists() ? (snap.data().data || []) : [];
       setCustomItems(data); customRef.current = data;
     }, err => console.error('[SupplierOrder custom]', err.code));
     return () => unsub();
-  }, [selectedSupplier]);
+  }, [selectedSupplier, tenantId]);
 
   function persistQty(next) {
     if (!selectedSupplier) return;
     setQuantities(next); qRef.current = next;
-    setDoc(doc(db, 'kitchen', `order_${selectedSupplier.id}`), { quantities: next })
+    setDoc(doc(db, 'tenants', tenantId, 'kitchen', `order_${selectedSupplier.id}`), { quantities: next })
       .catch(err => console.error('[SupplierOrder] qty write failed:', err.code));
   }
 
   function persistCustom(next) {
     if (!selectedSupplier) return;
     setCustomItems(next); customRef.current = next;
-    setDoc(doc(db, 'kitchen', `custom_items_${selectedSupplier.id}`), { data: next })
+    setDoc(doc(db, 'tenants', tenantId, 'kitchen', `custom_items_${selectedSupplier.id}`), { data: next })
       .catch(err => console.error('[SupplierOrder] custom write failed:', err.code));
   }
 

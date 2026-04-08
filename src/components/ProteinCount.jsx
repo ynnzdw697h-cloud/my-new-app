@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useTenantId } from '../context/TenantContext';
 
 const DOC_ID = 'protein_count';
-const COLLECTION = 'kitchen';
-const LS_KEY = 'fs_cache_protein_count';
 
 const FIXED_ITEMS = [
   { id: 'tartar_plate',    name: 'טרטר צלחת',    fixed: true },
@@ -16,19 +15,21 @@ function buildDefaults() {
   return FIXED_ITEMS.map(i => ({ ...i, qty: 0 }));
 }
 
-function readCache() {
+function readCache(key) {
   try {
-    const raw = localStorage.getItem(LS_KEY);
+    const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 
-function saveCache(items) {
-  localStorage.setItem(LS_KEY, JSON.stringify(items));
+function saveCache(key, items) {
+  localStorage.setItem(key, JSON.stringify(items));
 }
 
 export default function ProteinCount() {
-  const cached = readCache();
+  const tenantId = useTenantId();
+  const lsKey    = `fs_cache_${tenantId}_${DOC_ID}`;
+  const cached   = readCache(lsKey);
   const [items, setItems] = useState(cached || buildDefaults());
   const [addInput, setAddInput] = useState('');
   const [showAdd, setShowAdd] = useState(false);
@@ -38,7 +39,7 @@ export default function ProteinCount() {
   useEffect(() => { itemsRef.current = items; }, [items]);
 
   useEffect(() => {
-    const ref = doc(db, COLLECTION, DOC_ID);
+    const ref  = doc(db, 'tenants', tenantId, 'kitchen', DOC_ID);
     const unsub = onSnapshot(ref, snap => {
       if (snap.exists()) {
         const data = snap.data().data || [];
@@ -51,19 +52,19 @@ export default function ProteinCount() {
         const customs = data.filter(d => !fixedIds.has(d.id));
         const merged = [...fixedFromDb, ...customs];
         setItems(merged);
-        saveCache(merged);
+        saveCache(lsKey, merged);
       }
     }, err => {
       console.error('[ProteinCount] Firestore error:', err.code, err.message);
     });
     return () => unsub();
-  }, []);
+  }, [tenantId, lsKey]);
 
   function persist(next) {
     setItems(next);
     itemsRef.current = next;
-    saveCache(next);
-    setDoc(doc(db, COLLECTION, DOC_ID), { data: next })
+    saveCache(lsKey, next);
+    setDoc(doc(db, 'tenants', tenantId, 'kitchen', DOC_ID), { data: next })
       .catch(err => console.error('[ProteinCount] write failed:', err.code));
   }
 

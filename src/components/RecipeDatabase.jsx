@@ -3,6 +3,7 @@ import { RECIPES, CATEGORIES } from '../data/recipes';
 import { STATIONS } from '../data/stations';
 import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { useTenantId } from '../context/TenantContext';
 
 // ─── Category metadata (gradient + emoji placeholder) ───
 const CAT_META = {
@@ -27,17 +28,18 @@ function fmt(n) {
 
 // ─── Hook: load recipe images from Firestore ───
 function useRecipeImages() {
-  const [images, setImages] = useState({});
+  const tenantId              = useTenantId();
+  const [images, setImages]   = useState({});
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'kitchen', 'recipe_images'), snap => {
+    const unsub = onSnapshot(doc(db, 'tenants', tenantId, 'kitchen', 'recipe_images'), snap => {
       if (snap.exists()) setImages(snap.data());
     });
     return unsub;
-  }, []);
+  }, [tenantId]);
 
   const saveImage = useCallback(async (recipeId, imageUrl) => {
-    await setDoc(doc(db, 'kitchen', 'recipe_images'), { [recipeId]: imageUrl }, { merge: true });
-  }, []);
+    await setDoc(doc(db, 'tenants', tenantId, 'kitchen', 'recipe_images'), { [recipeId]: imageUrl }, { merge: true });
+  }, [tenantId]);
 
   return { images, saveImage };
 }

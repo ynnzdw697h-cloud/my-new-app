@@ -6,6 +6,7 @@ import { RECIPES } from '../data/recipes';
 import { WEEKLY_TASKS } from '../data/weeklyTasks';
 import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { useTenantId } from '../context/TenantContext';
 
 /* ── Time-of-day helpers ── */
 function getTimeOfDay() {
@@ -131,16 +132,17 @@ function compressImage(file, maxWidth = 300, quality = 0.82) {
 
 /* ── Hook: load/save chef avatars from Firestore ── */
 function useChefAvatars() {
+  const tenantId              = useTenantId();
   const [avatars, setAvatars] = useState({});
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'kitchen', 'chef_avatars'), snap => {
+    const unsub = onSnapshot(doc(db, 'tenants', tenantId, 'kitchen', 'chef_avatars'), snap => {
       if (snap.exists()) setAvatars(snap.data());
     });
     return unsub;
-  }, []);
-  const saveAvatar = useCallback(async (name, base64) => {
-    await setDoc(doc(db, 'kitchen', 'chef_avatars'), { [name]: base64 }, { merge: true });
-  }, []);
+  }, [tenantId]);
+  const saveAvatar = useCallback(async (name, data) => {
+    await setDoc(doc(db, 'tenants', tenantId, 'kitchen', 'chef_avatars'), { [name]: data }, { merge: true });
+  }, [tenantId]);
   return { avatars, saveAvatar };
 }
 

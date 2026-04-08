@@ -6,6 +6,7 @@ import { CHEFS } from '../data/chefs';
 export default function LoginFlow({ onLogin }) {
   const [step, setStep]                 = useState(1); // 1=pick chef, 2=pin, 3=station
   const [selectedChef, setSelectedChef] = useState(null);
+  const [authPayload, setAuthPayload]   = useState(null); // { token, tenantId, role }
 
   const today = new Date().toLocaleDateString('he-IL', {
     weekday: 'long', month: 'long', day: 'numeric',
@@ -16,16 +17,23 @@ export default function LoginFlow({ onLogin }) {
     setStep(2);
   }
 
-  function onPinSuccess() {
-    if (selectedChef.role === 'checker') {
-      onLogin(selectedChef.displayName, 'checker', 'checker');
+  function onPinSuccess(payload) {
+    setAuthPayload(payload);
+    if (payload.role === 'checker') {
+      onLogin(selectedChef.displayName, 'checker', 'checker', payload.tenantId, payload.token);
     } else {
       setStep(3);
     }
   }
 
   function pickStation(stationId) {
-    onLogin(selectedChef.displayName, stationId, selectedChef.role || 'chef');
+    onLogin(
+      selectedChef.displayName,
+      stationId,
+      selectedChef.role || 'chef',
+      authPayload?.tenantId,
+      authPayload?.token,
+    );
   }
 
   return (
@@ -105,28 +113,49 @@ function ChefStep({ onSelect }) {
 
 /* ─── Step 2: PIN pad ─── */
 function PinStep({ chef, onSuccess, onBack }) {
-  const [pin, setPin]       = useState('');
-  const [error, setError]   = useState(false);
+  const [pin, setPin]         = useState('');
+  const [error, setError]     = useState(false);
+  const [loading, setLoading] = useState(false);
 
   function press(digit) {
-    if (pin.length >= 4) return;
+    if (pin.length >= 4 || loading) return;
     const next = pin + digit;
     setPin(next);
     if (next.length === 4) validate(next);
   }
 
   function del() {
+    if (loading) return;
     setPin(p => p.slice(0, -1));
     setError(false);
   }
 
-  function validate(entered) {
-    if (entered === chef.pin) {
-      setError(false);
-      onSuccess();
-    } else {
-      setError(true);
-      setTimeout(() => { setPin(''); setError(false); }, 700);
+  async function validate(entered) {
+    setLoading(true);
+    try {
+      const res  = await fetch('/api/auth', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ chefId: chef.id, pin: entered }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setError(false);
+        onSuccess(data); // passes { token, tenantId, role, displayName }
+      } else {
+        setError(true);
+        setTimeout(() => { setPin(''); setError(false); }, 700);
+      }
+    } catch {
+      // Network error — fall back to client-side PIN check so the app still works
+      if (entered === chef.pin) {
+        onSuccess({ token: null, tenantId: 'villa-acadia', role: chef.role || 'chef', displayName: chef.displayName });
+      } else {
+        setError(true);
+        setTimeout(() => { setPin(''); setError(false); }, 700);
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -201,7 +230,7 @@ function PinStep({ chef, onSuccess, onBack }) {
             return (
               <button
                 key={i}
-                onClick={() => pin.length === 4 && validate(pin)}
+                onClick={() => pin.length === 4 && !loading && validate(pin)}
                 className="rounded-2xl h-16 flex items-center justify-center text-lg active:scale-90 transition-transform font-black"
                 style={{
                   background: pin.length === 4 ? '#3B82F6' : 'rgba(255,255,255,0.06)',
