@@ -8,6 +8,7 @@ import BottomNav from './components/BottomNav';
 import Dashboard from './components/Dashboard';
 import PrepChecklist from './components/PrepChecklist';
 import RecipeDatabase from './components/RecipeDatabase';
+import PrepTracker from './components/PrepTracker';
 import WeeklyTasks from './components/WeeklyTasks';
 import ShiftNotes from './components/ShiftNotes';
 import ProteinCount from './components/ProteinCount';
@@ -22,6 +23,7 @@ const PAGE_TITLES = {
   dashboard:      'וילה אכדיה',
   prep:           'צ׳ק ליסט יומי',
   recipes:        'ספר המתכונים',
+  prep_tracker:   'תפוגה ובזבוז',
   weekly:         'משימות שבועיות',
   shift:          'חוסרים והערות',
   proteins:       'ספירת חיות',
@@ -34,6 +36,7 @@ const PAGE_TITLES = {
 function AppShell({ user, station, role, tenantId, onLogout }) {
   const [view, setView]                         = useState(role === 'checker' ? 'checker_hub' : 'dashboard');
   const [activeDeliveryId, setActiveDeliveryId] = useState(null);
+  const [markReadyRecipe,  setMarkReadyRecipe]   = useState(null);
 
   const stationKey = station || 'init';
   const [completedTasks, setCompletedTasks]     = useFirestoreSet(`prep_tasks_${stationKey}`);
@@ -95,7 +98,20 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
             onReset={() => setCompletedTasks(new Set())}
           />
         )}
-        {view === 'recipes'        && <RecipeDatabase station={station} />}
+        {view === 'recipes'        && (
+          <RecipeDatabase
+            station={station}
+            onMarkReady={r => { setMarkReadyRecipe(r); setView('prep_tracker'); }}
+          />
+        )}
+        {view === 'prep_tracker'   && (
+          <PrepTracker
+            user={user}
+            station={station}
+            initialRecipe={markReadyRecipe}
+            onClearInitial={() => setMarkReadyRecipe(null)}
+          />
+        )}
         {view === 'weekly'         && <WeeklyTasks station={station} />}
         {view === 'shift'          && <ShiftNotes user={user} />}
         {view === 'proteins'       && <ProteinCount />}

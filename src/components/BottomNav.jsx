@@ -10,8 +10,9 @@ const MAIN_NAV = [
 ];
 
 const MORE_NAV = [
-  { id: 'proteins', label: 'חיות — ספירת סוף יום', emoji: '🐟' },
-  { id: 'supplier', label: 'הזמנות ספקים',          emoji: '🛒' },
+  { id: 'prep_tracker', label: 'תפוגה ובזבוז',          emoji: '⏳' },
+  { id: 'proteins',     label: 'חיות — ספירת סוף יום', emoji: '🐟' },
+  { id: 'supplier',     label: 'הזמנות ספקים',          emoji: '🛒' },
 ];
 
 export default function BottomNav({ currentView, onNavigate, station, onLogout, role }) {

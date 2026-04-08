@@ -72,7 +72,7 @@ function useRecipeImages() {
 /* ════════════════════════════════════════════════════
    Main export
 ════════════════════════════════════════════════════ */
-export default function RecipeDatabase({ station }) {
+export default function RecipeDatabase({ station, onMarkReady }) {
   const [activeTab, setActiveTab]           = useState('dish');
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [selectedDish, setSelectedDish]     = useState(null);
@@ -151,6 +151,7 @@ export default function RecipeDatabase({ station }) {
         stationColor={st.color}
         imageUrl={images[selectedRecipe.id] || null}
         onSaveImage={url => saveImage(selectedRecipe.id, url)}
+        onMarkReady={onMarkReady}
       />
     );
   }
@@ -709,7 +710,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
 /* ════════════════════════════════════════════════════
    Prep Recipe Detail (unchanged)
 ════════════════════════════════════════════════════ */
-function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, stationColor, imageUrl, onSaveImage }) {
+function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, stationColor, imageUrl, onSaveImage, onMarkReady }) {
   const meta = CAT_META[recipe.category] || DEFAULT_META;
   const fileRef = useRef();
   const [uploading, setUploading] = useState(false);
@@ -833,6 +834,15 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
           <InfoChip icon="⏱" text={recipe.prepTime} />
           <InfoChip icon="🥘" text={`${recipe.ingredients.length} מרכיבים`} />
           <InfoChip icon="⚖️" text={`${recipe.batches} ${recipe.batchUnit}`} />
+          {onMarkReady && (
+            <button
+              onClick={() => onMarkReady(recipe)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-sm font-bold"
+              style={{ background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}
+            >
+              ✓ סמן מוכן
+            </button>
+          )}
         </div>
 
         {/* Description */}
