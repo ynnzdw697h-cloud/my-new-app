@@ -55,11 +55,11 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
     syncIndex(status, disputed);
   }
 
-  async function confirmDelivery() {
+  async function confirmDelivery(forceApprove = false) {
     if (!delivery) return;
     setSaving(true);
     const hasIssue = delivery.items.some(it => it.itemStatus === 'issue');
-    const newStatus = hasIssue ? 'disputed' : 'approved';
+    const newStatus = (forceApprove || !hasIssue) ? 'approved' : 'disputed';
     await updateDelivery({ status: newStatus });
     syncIndex(newStatus, delivery.disputedTotal || 0);
     setSaving(false);
@@ -235,7 +235,7 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
         {hasIssues ? (
           <div className="flex gap-3">
             <button
-              onClick={confirmDelivery}
+              onClick={() => confirmDelivery(true)}
               disabled={saving}
               className="flex-1 rounded-2xl py-3.5 font-bold text-sm"
               style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}
