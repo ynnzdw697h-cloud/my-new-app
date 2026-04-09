@@ -9,6 +9,101 @@ const SHIFTS     = ['הכנות בוקר', 'הכנות צהריים'];
 const SHIFT_KEYS = { 'הכנות בוקר': 'בוקר', 'הכנות צהריים': 'צהריים' };
 const SHIFT_ICONS = { 'הכנות בוקר': null, 'הכנות צהריים': '☀️' };
 
+/* ─── Liquid Progress Card ─── */
+function LiquidProgressCard({ pct, color }) {
+  // Ensure a minimum visible fill when not empty, so the wave always anchors properly
+  const fillPct = pct === 0 ? 0 : Math.max(pct, 5);
+
+  return (
+    <div
+      className="w-full rounded-2xl overflow-hidden relative"
+      style={{
+        height: 140,
+        background: 'rgba(255,255,255,0.03)',
+        border: `1px solid ${color}35`,
+        boxShadow: `inset 0 0 40px rgba(0,0,0,0.3), 0 0 28px ${color}18`,
+      }}
+    >
+      {/* Background glow from bottom */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: `radial-gradient(ellipse at 50% 115%, ${color}22, transparent 65%)`,
+      }} />
+
+      {/* Rising liquid */}
+      <motion.div
+        style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}
+        animate={{ height: `${fillPct}%` }}
+        transition={{ duration: 1.6, ease: [0.4, 0, 0.2, 1] }}
+      >
+        {/* Wave surface — two overlapping waves at different speeds */}
+        {pct > 0 && (
+          <div style={{ position: 'absolute', top: -13, left: 0, right: 0, height: 14 }}>
+            {/* Primary wave */}
+            <motion.div
+              style={{ position: 'absolute', top: 0, left: 0, width: '200%', height: '100%' }}
+              animate={{ x: '-50%' }}
+              transition={{ duration: 3.2, ease: 'linear', repeat: Infinity }}
+            >
+              <svg viewBox="0 0 800 14" width="100%" height="14" preserveAspectRatio="none">
+                <path
+                  d="M0,7 C33,0 67,14 100,7 C133,0 167,14 200,7 C233,0 267,14 300,7 C333,0 367,14 400,7 C433,0 467,14 500,7 C533,0 567,14 600,7 C633,0 667,14 700,7 C733,0 767,14 800,7 L800,14 L0,14 Z"
+                  fill={color + '75'}
+                />
+              </svg>
+            </motion.div>
+            {/* Secondary wave — offset phase, faster */}
+            <motion.div
+              style={{ position: 'absolute', top: 2, left: '-25%', width: '200%', height: '100%', opacity: 0.55 }}
+              animate={{ x: '-50%' }}
+              transition={{ duration: 2.1, ease: 'linear', repeat: Infinity }}
+            >
+              <svg viewBox="0 0 800 14" width="100%" height="14" preserveAspectRatio="none">
+                <path
+                  d="M0,7 C33,0 67,14 100,7 C133,0 167,14 200,7 C233,0 267,14 300,7 C333,0 367,14 400,7 C433,0 467,14 500,7 C533,0 567,14 600,7 C633,0 667,14 700,7 C733,0 767,14 800,7 L800,14 L0,14 Z"
+                  fill={color + '50'}
+                />
+              </svg>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Liquid body */}
+        <div style={{
+          position: 'absolute',
+          top: pct > 0 ? 1 : 0,
+          bottom: 0, left: 0, right: 0,
+          background: `linear-gradient(to top, ${color}65 0%, ${color}45 60%, ${color}25 100%)`,
+        }} />
+      </motion.div>
+
+      {/* Text overlay */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        zIndex: 10,
+      }}>
+        <div className="text-xs font-semibold mb-1" style={{
+          color: pct > 55 ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.5)',
+          textShadow: '0 1px 4px rgba(0,0,0,0.7)',
+          transition: 'color 0.5s ease',
+        }}>
+          התקדמות
+        </div>
+        <motion.div
+          animate={{ color: pct > 55 ? '#ffffff' : color }}
+          transition={{ duration: 0.5 }}
+          className="text-5xl font-black leading-none tabular-nums"
+          style={{ textShadow: '0 2px 10px rgba(0,0,0,0.55)' }}
+        >
+          {pct}%
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Particle burst on task completion ─── */
 function Particle({ angle, speed, color, size }) {
   return (
@@ -342,13 +437,7 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
             🗑 איפוס יום
           </button>
         </div>
-        <div
-          className="w-full py-5 rounded-2xl text-center"
-          style={{ background: st.color + '18', border: `1px solid ${st.color}35`, boxShadow: `0 0 24px ${st.color}28` }}
-        >
-          <div className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>התקדמות</div>
-          <div className="text-5xl font-black leading-none" style={{ color: st.color }}>{pct}%</div>
-        </div>
+        <LiquidProgressCard pct={pct} color={st.color} />
       </div>
 
       {/* ── Progress bar card ── */}
