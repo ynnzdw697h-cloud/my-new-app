@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useTenantId } from '../context/TenantContext';
@@ -37,7 +38,6 @@ export default function ProteinCount() {
   const [swipedId, setSwipedId] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const itemsRef = useRef(items);
-  const swipeTouchRef = useRef({});
 
   useEffect(() => { itemsRef.current = items; }, [items]);
 
@@ -93,22 +93,6 @@ export default function ProteinCount() {
     setSwipedId(null);
   }
 
-  function handleTouchStart(id, e) {
-    swipeTouchRef.current = { startX: e.touches[0].clientX, id };
-  }
-
-  function handleTouchEnd(id, e) {
-    const { startX } = swipeTouchRef.current;
-    if (startX == null) return;
-    const delta = e.changedTouches[0].clientX - startX;
-    if (delta < -60) {
-      setSwipedId(id);
-    } else if (delta > 30 && swipedId === id) {
-      setSwipedId(null);
-    }
-    swipeTouchRef.current = {};
-  }
-
   function resetAll() {
     const next = itemsRef.current.map(i => ({ ...i, qty: 0 }));
     persist(next);
@@ -128,62 +112,66 @@ export default function ProteinCount() {
 
       {/* Items */}
       <div className="space-y-3">
-        {items.map(item => {
-          const isOpen = swipedId === item.id;
-          return (
-            <div key={item.id} className="relative rounded-2xl overflow-hidden">
-              {/* Delete reveal layer (behind the row) */}
-              {!item.fixed && (
-                <div
-                  className="absolute inset-y-0 left-0 flex items-center justify-center bg-red-700"
-                  style={{ width: 72 }}
-                >
-                  <button
-                    onClick={() => setConfirmDeleteId(item.id)}
-                    className="w-full h-full flex items-center justify-center text-white font-bold text-sm"
-                  >
-                    מחק
-                  </button>
-                </div>
-              )}
-
-              {/* Main row — slides left on swipe */}
-              <div
-                className="bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 flex items-center gap-4 transition-transform duration-200"
-                style={{ transform: isOpen ? 'translateX(-72px)' : 'translateX(0)' }}
-                onTouchStart={!item.fixed ? e => handleTouchStart(item.id, e) : undefined}
-                onTouchEnd={!item.fixed ? e => handleTouchEnd(item.id, e) : undefined}
-                onClick={() => { if (isOpen) setSwipedId(null); }}
+        {items.map(item => (
+          <div key={item.id} className="relative rounded-2xl overflow-hidden">
+            {/* Delete button — revealed behind the row on the left (RTL) */}
+            <div
+              className="absolute inset-y-0 left-0 flex items-center justify-center rounded-2xl bg-red-600"
+              style={{ width: 80, zIndex: 0 }}
+            >
+              <button
+                onClick={() => setConfirmDeleteId(item.id)}
+                className="w-full h-full flex items-center justify-center text-white font-bold text-lg"
               >
-                <div className="flex-1 min-w-0">
-                  <div className="text-white font-bold text-base">{item.name}</div>
-                </div>
-
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <button
-                    onClick={e => { e.stopPropagation(); changeQty(item.id, -1); }}
-                    disabled={item.qty === 0}
-                    className="w-10 h-10 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-black text-xl
-                               flex items-center justify-center transition-all duration-150
-                               disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    −
-                  </button>
-                  <span className="text-white font-black text-2xl w-10 text-center tabular-nums">
-                    {item.qty}
-                  </span>
-                  <button
-                    onClick={e => { e.stopPropagation(); changeQty(item.id, +1); }}
-                    className="w-10 h-10 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-black text-xl
-                               flex items-center justify-center transition-all duration-150"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
+                ✕
+              </button>
             </div>
-          );
-        })}
+
+            {/* Draggable foreground row — drag right to reveal delete */}
+            <motion.div
+              drag="x"
+              dragConstraints={{ left: 0, right: 80 }}
+              dragElastic={0.05}
+              animate={{ x: swipedId === item.id ? 80 : 0 }}
+              onDragEnd={(_, info) => {
+                if (info.offset.x > 40) {
+                  setSwipedId(item.id);
+                } else {
+                  setSwipedId(null);
+                }
+              }}
+              onClick={() => { if (swipedId === item.id) setSwipedId(null); }}
+              style={{ touchAction: 'pan-y', position: 'relative', zIndex: 1 }}
+              className="bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 flex items-center gap-4"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="text-white font-bold text-base">{item.name}</div>
+              </div>
+
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <button
+                  onClick={e => { e.stopPropagation(); changeQty(item.id, -1); }}
+                  disabled={item.qty === 0}
+                  className="w-10 h-10 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-black text-xl
+                             flex items-center justify-center transition-all duration-150
+                             disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  −
+                </button>
+                <span className="text-white font-black text-2xl w-10 text-center tabular-nums">
+                  {item.qty}
+                </span>
+                <button
+                  onClick={e => { e.stopPropagation(); changeQty(item.id, +1); }}
+                  className="w-10 h-10 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-black text-xl
+                             flex items-center justify-center transition-all duration-150"
+                >
+                  +
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        ))}
       </div>
 
       {/* Delete confirmation modal */}
