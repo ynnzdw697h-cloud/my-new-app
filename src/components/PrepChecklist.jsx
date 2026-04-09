@@ -6,7 +6,7 @@ import { useFirestoreSet } from '../hooks/useFirestoreSet';
 
 const SHIFTS = ['הכנות בוקר', 'הכנות צהריים'];
 const SHIFT_KEYS  = { 'הכנות בוקר': 'בוקר', 'הכנות צהריים': 'צהריים' };
-const SHIFT_ICONS = { 'הכנות בוקר': '🌅', 'הכנות צהריים': '☀️' };
+const SHIFT_ICONS = { 'הכנות בוקר': null, 'הכנות צהריים': '☀️' };
 
 /* ─── Particle for celebration burst ─── */
 function Particle({ angle, speed, color, size }) {
@@ -78,32 +78,27 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
     <div className="p-4 md:p-6 space-y-4 md:space-y-5 max-w-xl mx-auto" dir="rtl">
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-white flex items-center gap-2">
-            <span>📋</span> צ׳ק ליסט יומי
-          </h2>
-          <p className="mt-1 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>{st.emoji} {st.name}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleReset}
-            className="glow-btn px-4 py-2 rounded-2xl text-sm font-semibold"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'rgba(255,255,255,0.5)' }}
-          >
-            ↺ איפוס יום
-          </button>
-          <div
-            className="px-5 py-3 rounded-2xl text-left"
-            style={{
-              background: st.color + '18',
-              border: `1px solid ${st.color}35`,
-              boxShadow: `0 0 18px ${st.color}22`,
-            }}
-          >
-            <div className="text-xs mb-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>התקדמות</div>
-            <div className="text-4xl font-black leading-none" style={{ color: st.color }}>{pct}%</div>
-          </div>
+      <div className="relative flex justify-center items-center py-2">
+        {/* Reset button — subtle, top-left (visual left, under chef name) */}
+        <button
+          onClick={handleReset}
+          className="absolute left-0 flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-semibold"
+          style={{ border: '1px solid rgba(255,255,255,0.13)', color: 'rgba(255,255,255,0.38)', background: 'transparent' }}
+        >
+          🗑 איפוס יום
+        </button>
+
+        {/* Progress % — centered, main focal point */}
+        <div
+          className="px-8 py-4 rounded-2xl text-center"
+          style={{
+            background: st.color + '18',
+            border: `1px solid ${st.color}35`,
+            boxShadow: `0 0 24px ${st.color}28`,
+          }}
+        >
+          <div className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>התקדמות</div>
+          <div className="text-5xl font-black leading-none" style={{ color: st.color }}>{pct}%</div>
         </div>
       </div>
 
@@ -142,7 +137,7 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
         return (
           <section key={shiftLabel}>
             <div className="flex items-center gap-3 mb-3">
-              <span className="text-2xl">{SHIFT_ICONS[shiftLabel]}</span>
+              {SHIFT_ICONS[shiftLabel] && <span className="text-2xl">{SHIFT_ICONS[shiftLabel]}</span>}
               <div>
                 <h3 className="text-white font-black text-xl">{shiftLabel}</h3>
                 <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
