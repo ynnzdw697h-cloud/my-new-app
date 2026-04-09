@@ -347,7 +347,7 @@ export default function SupplierOrder() {
   // ── ORDER PAGE ──
   // ═══════════════════════════════════════════════════════
   return (
-    <div className="p-4 md:p-6 space-y-5 pb-32" dir="rtl">
+    <div className="p-4 md:p-6 space-y-5 pb-48" dir="rtl">
 
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -610,27 +610,45 @@ export default function SupplierOrder() {
         )}
       </AnimatePresence>
 
-      {/* ── Bottom action bar ── */}
-      <div className="fixed bottom-0 inset-x-0 z-20 p-4 bg-slate-900/95 backdrop-blur border-t border-slate-700" dir="rtl">
-        <div className="flex gap-3 max-w-lg mx-auto">
+      {/* ── Floating action bar (above BottomNav) ── */}
+      <div
+        className="fixed inset-x-4 z-40"
+        style={{ bottom: '88px' }}
+        dir="rtl"
+      >
+        <div
+          className="flex gap-3 max-w-lg mx-auto rounded-2xl p-2"
+          style={{
+            background: 'rgba(18,18,18,0.92)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          }}
+        >
           <button
             onClick={copyOrder}
-            className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl
-                        font-bold text-base transition-all duration-150 touch-manipulation
-                        ${copyDone ? 'bg-emerald-700 text-white' : 'bg-slate-700 text-white hover:bg-slate-600'}`}
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all duration-150 touch-manipulation"
+            style={{
+              background: copyDone ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.07)',
+              color: copyDone ? '#34d399' : 'rgba(255,255,255,0.85)',
+              border: copyDone ? '1px solid rgba(16,185,129,0.35)' : '1px solid rgba(255,255,255,0.08)',
+            }}
           >
-            <span className="text-xl">{copyDone ? '✅' : '📋'}</span>
+            <span className="text-base">{copyDone ? '✅' : '📋'}</span>
             {copyDone ? 'הועתק!' : 'העתק הזמנה'}
           </button>
           <button
             onClick={downloadPDF}
             disabled={pdfLoading || totalItems === 0}
-            className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl
-                       font-bold text-base bg-blue-700 text-white hover:bg-blue-600
-                       transition-all duration-150 touch-manipulation
-                       disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all duration-150 touch-manipulation disabled:opacity-35"
+            style={{
+              background: 'rgba(59,130,246,0.2)',
+              color: '#93c5fd',
+              border: '1px solid rgba(59,130,246,0.35)',
+            }}
           >
-            <span className="text-xl">{pdfLoading ? '⏳' : '📄'}</span>
+            <span className="text-base">{pdfLoading ? '⏳' : '📄'}</span>
             {pdfLoading ? 'מייצר...' : 'הורד PDF'}
           </button>
         </div>
