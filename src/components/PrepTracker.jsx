@@ -123,6 +123,12 @@ export default function PrepTracker({ user, station, initialRecipe, onClearIniti
     ));
   }
 
+  function handleEditExpiry(batchId, newExpiresAt) {
+    setBatches(prev => prev.map(b =>
+      b.id === batchId ? { ...b, expiresAt: newExpiresAt } : b
+    ));
+  }
+
   function handleLogWaste({ batch, qty, unit, reason, note }) {
     const entry = {
       id:         `waste_${Date.now()}`,
@@ -211,6 +217,7 @@ export default function PrepTracker({ user, station, initialRecipe, onClearIniti
               onConsume={handleConsume}
               onDryKit={handleDryKit}
               onLogWaste={setWasteTarget}
+              onEditExpiry={handleEditExpiry}
             />
           ))}
         </div>
@@ -291,13 +298,32 @@ export default function PrepTracker({ user, station, initialRecipe, onClearIniti
 /* ════════════════════════════════════════════════════
    Batch Card
 ════════════════════════════════════════════════════ */
-function BatchCard({ batch, onConsume, onDryKit, onLogWaste }) {
+function BatchCard({ batch, onConsume, onDryKit, onLogWaste, onEditExpiry }) {
   const status  = calcStatus(batch);
   const cfg     = STATUS_CONFIG[status];
   const pct     = calcPct(batch);
   const timeStr = formatTimeLeft(batch.expiresAt);
   const showDryKit = batch.hasDryKit && !batch.dryKitDone &&
     (status === 'use_soon' || status === 'critical');
+
+  const [editingExpiry, setEditingExpiry] = useState(false);
+  const [editValue,     setEditValue]     = useState('');
+
+  function openEdit() {
+    const d   = new Date(batch.expiresAt);
+    const pad = n => String(n).padStart(2, '0');
+    setEditValue(
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    );
+    setEditingExpiry(true);
+  }
+
+  function saveEdit() {
+    const newDate = new Date(editValue);
+    if (isNaN(newDate.getTime())) return;
+    onEditExpiry(batch.id, newDate.toISOString());
+    setEditingExpiry(false);
+  }
 
   return (
     <div
@@ -320,7 +346,7 @@ function BatchCard({ batch, onConsume, onDryKit, onLogWaste }) {
         </span>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar + time + edit */}
       <div className="flex items-center gap-2 mb-3">
         <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
           <div
@@ -330,11 +356,56 @@ function BatchCard({ batch, onConsume, onDryKit, onLogWaste }) {
         </div>
         <span
           className="text-xs font-bold flex-shrink-0"
-          style={{ color: cfg.color, minWidth: '100px', textAlign: 'left' }}
+          style={{ color: cfg.color, minWidth: '90px', textAlign: 'left' }}
         >
           {timeStr}
         </span>
+        <button
+          onClick={openEdit}
+          className="flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center transition-all"
+          style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.4)' }}
+          title="ערוך תוקף"
+        >
+          ✏️
+        </button>
       </div>
+
+      {/* Inline expiry editor */}
+      {editingExpiry && (
+        <div
+          className="mb-3 rounded-2xl p-3 space-y-2"
+          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}
+        >
+          <p className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>עריכת תאריך ושעת תפוגה</p>
+          <input
+            type="datetime-local"
+            value={editValue}
+            onChange={e => setEditValue(e.target.value)}
+            className="w-full rounded-xl px-3 py-2 text-sm text-white focus:outline-none"
+            style={{
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              colorScheme: 'dark',
+            }}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={saveEdit}
+              className="flex-1 py-2 rounded-xl text-xs font-bold"
+              style={{ background: '#10B981', color: '#fff' }}
+            >
+              ✓ שמור
+            </button>
+            <button
+              onClick={() => setEditingExpiry(false)}
+              className="flex-1 py-2 rounded-xl text-xs font-semibold"
+              style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.5)' }}
+            >
+              ביטול
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex gap-2">
