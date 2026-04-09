@@ -34,7 +34,10 @@ export default function ProteinCount() {
   const [addInput, setAddInput] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [swipedId, setSwipedId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const itemsRef = useRef(items);
+  const swipeTouchRef = useRef({});
 
   useEffect(() => { itemsRef.current = items; }, [items]);
 
@@ -86,6 +89,24 @@ export default function ProteinCount() {
 
   function deleteItem(id) {
     persist(itemsRef.current.filter(i => i.id !== id));
+    setConfirmDeleteId(null);
+    setSwipedId(null);
+  }
+
+  function handleTouchStart(id, e) {
+    swipeTouchRef.current = { startX: e.touches[0].clientX, id };
+  }
+
+  function handleTouchEnd(id, e) {
+    const { startX } = swipeTouchRef.current;
+    if (startX == null) return;
+    const delta = e.changedTouches[0].clientX - startX;
+    if (delta < -60) {
+      setSwipedId(id);
+    } else if (delta > 30 && swipedId === id) {
+      setSwipedId(null);
+    }
+    swipeTouchRef.current = {};
   }
 
   function resetAll() {
@@ -94,77 +115,109 @@ export default function ProteinCount() {
     setConfirmReset(false);
   }
 
-  const total = items.reduce((s, i) => s + i.qty, 0);
-
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-lg mx-auto" dir="rtl">
 
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-white flex items-center gap-2">
-            <span>🐟</span> חיות — ספירת סוף יום
-          </h2>
-          <p className="text-slate-400 text-sm mt-1">משותף לכל הטבחים • מתעדכן בזמן אמת</p>
-        </div>
-        <div className="bg-slate-800 border border-slate-700 rounded-2xl px-5 py-3 text-center">
-          <div className="text-slate-400 text-xs mb-0.5">סה״כ</div>
-          <div className="text-3xl font-black text-white">{total}</div>
-        </div>
+      <div>
+        <h2 className="text-2xl font-black text-white flex items-center gap-2">
+          <span>🐟</span> חיות — ספירת סוף יום
+        </h2>
+        <p className="text-slate-400 text-sm mt-1">משותף לכל הטבחים • מתעדכן בזמן אמת</p>
       </div>
 
       {/* Items */}
       <div className="space-y-3">
-        {items.map(item => (
-          <div
-            key={item.id}
-            className="bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 flex items-center gap-4"
-          >
-            {/* Name */}
-            <div className="flex-1 min-w-0">
-              <div className="text-white font-bold text-base">{item.name}</div>
+        {items.map(item => {
+          const isOpen = swipedId === item.id;
+          return (
+            <div key={item.id} className="relative rounded-2xl overflow-hidden">
+              {/* Delete reveal layer (behind the row) */}
               {!item.fixed && (
-                <div className="text-slate-500 text-xs mt-0.5">פריט מותאם אישית</div>
+                <div
+                  className="absolute inset-y-0 left-0 flex items-center justify-center bg-red-700"
+                  style={{ width: 72 }}
+                >
+                  <button
+                    onClick={() => setConfirmDeleteId(item.id)}
+                    className="w-full h-full flex items-center justify-center text-white font-bold text-sm"
+                  >
+                    מחק
+                  </button>
+                </div>
               )}
-            </div>
 
-            {/* Counter */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <button
-                onClick={() => changeQty(item.id, -1)}
-                disabled={item.qty === 0}
-                className="w-10 h-10 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-black text-xl
-                           flex items-center justify-center transition-all duration-150
-                           disabled:opacity-30 disabled:cursor-not-allowed"
+              {/* Main row — slides left on swipe */}
+              <div
+                className="bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 flex items-center gap-4 transition-transform duration-200"
+                style={{ transform: isOpen ? 'translateX(-72px)' : 'translateX(0)' }}
+                onTouchStart={!item.fixed ? e => handleTouchStart(item.id, e) : undefined}
+                onTouchEnd={!item.fixed ? e => handleTouchEnd(item.id, e) : undefined}
+                onClick={() => { if (isOpen) setSwipedId(null); }}
               >
-                −
-              </button>
-              <span className="text-white font-black text-2xl w-10 text-center tabular-nums">
-                {item.qty}
-              </span>
-              <button
-                onClick={() => changeQty(item.id, +1)}
-                className="w-10 h-10 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-black text-xl
-                           flex items-center justify-center transition-all duration-150"
-              >
-                +
-              </button>
-            </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-white font-bold text-base">{item.name}</div>
+                </div>
 
-            {/* Delete (custom only) */}
-            {!item.fixed && (
-              <button
-                onClick={() => deleteItem(item.id)}
-                className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-red-900 text-slate-400
-                           hover:text-red-300 flex items-center justify-center text-sm
-                           transition-all duration-150 flex-shrink-0"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        ))}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <button
+                    onClick={e => { e.stopPropagation(); changeQty(item.id, -1); }}
+                    disabled={item.qty === 0}
+                    className="w-10 h-10 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-black text-xl
+                               flex items-center justify-center transition-all duration-150
+                               disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    −
+                  </button>
+                  <span className="text-white font-black text-2xl w-10 text-center tabular-nums">
+                    {item.qty}
+                  </span>
+                  <button
+                    onClick={e => { e.stopPropagation(); changeQty(item.id, +1); }}
+                    className="w-10 h-10 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-black text-xl
+                               flex items-center justify-center transition-all duration-150"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
+
+      {/* Delete confirmation modal */}
+      {confirmDeleteId && (
+        <>
+          <div
+            className="fixed inset-0 z-50"
+            style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }}
+            onClick={() => setConfirmDeleteId(null)}
+          />
+          <div
+            className="fixed z-50 bottom-1/2 inset-x-5 translate-y-1/2 rounded-3xl p-6 space-y-4"
+            style={{ background: '#1e1e2e', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <p className="text-white font-bold text-base text-center">
+              האם אתה בטוח שברצונך למחוק פריט זה?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => deleteItem(confirmDeleteId)}
+                className="flex-1 py-3 rounded-2xl bg-red-700 hover:bg-red-600 text-white font-bold text-sm transition-colors"
+              >
+                כן, מחק
+              </button>
+              <button
+                onClick={() => { setConfirmDeleteId(null); setSwipedId(null); }}
+                className="flex-1 py-3 rounded-2xl bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm transition-colors"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Add item */}
       {showAdd ? (
