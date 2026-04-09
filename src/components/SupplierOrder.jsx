@@ -1,10 +1,43 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useTenantId } from '../context/TenantContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { SUPPLIERS } from '../data/suppliers';
+
+/* ─── Swipe-right to reveal delete (RTL) ─── */
+function SwipeableItemRow({ rowKey, swipedKey, setSwipedKey, onDeleteRequest, children }) {
+  if (!onDeleteRequest) return <>{children}</>;
+  return (
+    <div className="relative overflow-hidden">
+      <div
+        className="absolute inset-y-0 left-0 flex items-center justify-center bg-red-600"
+        style={{ width: 80, zIndex: 0 }}
+      >
+        <button
+          onClick={onDeleteRequest}
+          className="w-full h-full text-white font-bold text-xl"
+        >✕</button>
+      </div>
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: 0, right: 80 }}
+        dragElastic={0.05}
+        animate={{ x: swipedKey === rowKey ? 80 : 0 }}
+        onDragEnd={(_, info) => {
+          if (info.offset.x > 40) setSwipedKey(rowKey);
+          else setSwipedKey(null);
+        }}
+        onClick={() => { if (swipedKey === rowKey) setSwipedKey(null); }}
+        style={{ touchAction: 'pan-y', position: 'relative', zIndex: 1, background: '#1e293b' }}
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+}
 
 const UNITS = ['יח׳', 'ק"ג'];
 
@@ -49,6 +82,8 @@ export default function SupplierOrder() {
   const [oneTimeItems,  setOneTimeItems]  = useState([]);   // one-time items (local only)
   const [confirmReset,  setConfirmReset]  = useState(false);
   const [copyDone,      setCopyDone]      = useState(false);
+  const [swipedKey,     setSwipedKey]     = useState(null);
+  const [confirmDel,    setConfirmDel]    = useState(null); // { key, label, onConfirm }
   const [pdfLoading,    setPdfLoading]    = useState(false);
   const [showAddForm,   setShowAddForm]   = useState(false);
   const [addName,       setAddName]       = useState('');
@@ -354,22 +389,35 @@ export default function SupplierOrder() {
           </div>
           <div className="divide-y divide-slate-700/60">
             {cat.items.map(item => {
-              const qty    = getQty(quantities, item);
-              const unit   = getUnit(quantities, item);
-              const active = qty > 0;
-              const isCustom = customRef.current.some(c => c.name === item);
+              const qty      = getQty(quantities, item);
+              const unit     = getUnit(quantities, item);
+              const active   = qty > 0;
+              const customEntry = customRef.current.find(c => c.name === item);
+              const deleteFn = customEntry
+                ? () => setConfirmDel({
+                    key: item,
+                    label: item,
+                    onConfirm: () => { removeCustomItem(customEntry.id); setConfirmDel(null); },
+                  })
+                : null;
               return (
-                <ItemRow
+                <SwipeableItemRow
                   key={item}
-                  item={item}
-                  qty={qty}
-                  unit={unit}
-                  active={active}
-                  onMinus={() => changeQty(item, -1)}
-                  onPlus={() => changeQty(item, +1)}
-                  onToggleUnit={() => toggleUnit(item)}
-                  onDelete={isCustom ? () => removeCustomItem(customRef.current.find(c => c.name === item)?.id) : null}
-                />
+                  rowKey={item}
+                  swipedKey={swipedKey}
+                  setSwipedKey={setSwipedKey}
+                  onDeleteRequest={deleteFn}
+                >
+                  <ItemRow
+                    item={item}
+                    qty={qty}
+                    unit={unit}
+                    active={active}
+                    onMinus={() => changeQty(item, -1)}
+                    onPlus={() => changeQty(item, +1)}
+                    onToggleUnit={() => toggleUnit(item)}
+                  />
+                </SwipeableItemRow>
               );
             })}
           </div>
@@ -390,23 +438,33 @@ export default function SupplierOrder() {
               const unit   = getUnit(quantities, item.name);
               const active = qty > 0;
               return (
-                <ItemRow
+                <SwipeableItemRow
                   key={item.id}
-                  item={item.name}
-                  qty={qty}
-                  unit={unit}
-                  active={active}
-                  badge="חד פעמי"
-                  onMinus={() => changeQty(item.name, -1)}
-                  onPlus={() => changeQty(item.name, +1)}
-                  onToggleUnit={() => toggleUnit(item.name)}
-                  onDelete={() => {
-                    setOneTimeItems(prev => prev.filter(i => i.id !== item.id));
-                    const next = { ...qRef.current };
-                    delete next[item.name];
-                    persistQty(next);
-                  }}
-                />
+                  rowKey={item.id}
+                  swipedKey={swipedKey}
+                  setSwipedKey={setSwipedKey}
+                  onDeleteRequest={() => setConfirmDel({
+                    key: item.id,
+                    label: item.name,
+                    onConfirm: () => {
+                      setOneTimeItems(prev => prev.filter(i => i.id !== item.id));
+                      const next = { ...qRef.current };
+                      delete next[item.name];
+                      persistQty(next);
+                      setConfirmDel(null);
+                    },
+                  })}
+                >
+                  <ItemRow
+                    item={item.name}
+                    qty={qty}
+                    unit={unit}
+                    active={active}
+                    onMinus={() => changeQty(item.name, -1)}
+                    onPlus={() => changeQty(item.name, +1)}
+                    onToggleUnit={() => toggleUnit(item.name)}
+                  />
+                </SwipeableItemRow>
               );
             })}
           </div>
@@ -493,6 +551,48 @@ export default function SupplierOrder() {
         </button>
       )}
 
+      {/* ── Delete confirmation ── */}
+      <AnimatePresence>
+        {confirmDel && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50"
+              style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
+              onClick={() => { setConfirmDel(null); setSwipedKey(null); }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+              className="fixed z-50 inset-x-5 rounded-3xl p-6 space-y-4"
+              style={{ top: '50%', transform: 'translateY(-50%)', background: '#1e1e2e', border: '1px solid rgba(255,255,255,0.1)' }}
+              dir="rtl"
+            >
+              <p className="text-white font-bold text-base text-center">
+                האם אתה בטוח שברצונך למחוק מוצר זה?
+              </p>
+              <p className="text-center text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                {confirmDel.label}
+              </p>
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={confirmDel.onConfirm}
+                  className="flex-1 py-3 rounded-2xl font-bold text-sm"
+                  style={{ background: '#dc2626', color: '#fff' }}
+                >כן, מחק</button>
+                <button
+                  onClick={() => { setConfirmDel(null); setSwipedKey(null); }}
+                  className="flex-1 py-3 rounded-2xl text-sm"
+                  style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}
+                >ביטול</button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* ── Bottom action bar ── */}
       <div className="fixed bottom-0 inset-x-0 z-20 p-4 bg-slate-900/95 backdrop-blur border-t border-slate-700" dir="rtl">
         <div className="flex gap-3 max-w-lg mx-auto">
@@ -570,7 +670,7 @@ export default function SupplierOrder() {
 }
 
 // ── Reusable item row ──
-function ItemRow({ item, qty, unit, active, badge, onMinus, onPlus, onToggleUnit, onDelete }) {
+function ItemRow({ item, qty, unit, active, badge, onMinus, onPlus, onToggleUnit }) {
   return (
     <div className={`flex items-center gap-2 px-4 py-3 transition-colors duration-150 ${active ? 'bg-slate-700/30' : ''}`}>
       <span className={`flex-1 text-base font-medium ${active ? 'text-white' : 'text-slate-400'}`}>
@@ -610,15 +710,6 @@ function ItemRow({ item, qty, unit, active, badge, onMinus, onPlus, onToggleUnit
         </button>
       </div>
 
-      {/* Delete button */}
-      {onDelete && (
-        <button onClick={onDelete}
-          className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-700 hover:bg-red-900
-                     text-slate-500 hover:text-red-300 flex items-center justify-center
-                     text-sm transition-all duration-150">
-          ✕
-        </button>
-      )}
     </div>
   );
 }
