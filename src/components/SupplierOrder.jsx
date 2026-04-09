@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useFirestoreSet } from '../hooks/useFirestoreSet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -84,6 +85,11 @@ export default function SupplierOrder() {
   const [copyDone,      setCopyDone]      = useState(false);
   const [swipedKey,     setSwipedKey]     = useState(null);
   const [confirmDel,    setConfirmDel]    = useState(null); // { key, label, onConfirm }
+  const [hiddenItems,   setHiddenItems]   = useFirestoreSet(
+    selectedSupplier ? `hidden_items_${selectedSupplier.id}` : null
+  );
+  const hiddenRef = useRef(hiddenItems);
+  useEffect(() => { hiddenRef.current = hiddenItems; }, [hiddenItems]);
   const [pdfLoading,    setPdfLoading]    = useState(false);
   const [showAddForm,   setShowAddForm]   = useState(false);
   const [addName,       setAddName]       = useState('');
@@ -142,13 +148,17 @@ export default function SupplierOrder() {
 
   // ── Build merged categories (base + custom permanent) ──
   function buildCategories() {
-    const base = (BASE_CATEGORIES[selectedSupplier?.id] || []).map(c => ({ ...c, items: [...c.items] }));
+    const base = (BASE_CATEGORIES[selectedSupplier?.id] || []).map(c => ({
+      ...c,
+      items: c.items.filter(name => !hiddenRef.current.has(name)),
+    }));
     for (const item of customRef.current) {
+      if (hiddenRef.current.has(item.name)) continue;
       let cat = base.find(c => c.name === item.category);
       if (!cat) { cat = { name: item.category, emoji: '➕', items: [] }; base.push(cat); }
       if (!cat.items.includes(item.name)) cat.items.push(item.name);
     }
-    return base;
+    return base.filter(c => c.items.length > 0);
   }
 
   function getCategoryOptions() {
@@ -393,13 +403,20 @@ export default function SupplierOrder() {
               const unit     = getUnit(quantities, item);
               const active   = qty > 0;
               const customEntry = customRef.current.find(c => c.name === item);
-              const deleteFn = customEntry
-                ? () => setConfirmDel({
-                    key: item,
-                    label: item,
-                    onConfirm: () => { removeCustomItem(customEntry.id); setConfirmDel(null); },
-                  })
-                : null;
+              const deleteFn = () => setConfirmDel({
+                key: item,
+                label: item,
+                onConfirm: () => {
+                  if (customEntry) {
+                    removeCustomItem(customEntry.id);
+                  } else {
+                    setHiddenItems(prev => { const next = new Set(prev); next.add(item); return next; });
+                    // also clear its qty from the order
+                    const next = { ...qRef.current }; delete next[item]; persistQty(next);
+                  }
+                  setConfirmDel(null);
+                },
+              });
               return (
                 <SwipeableItemRow
                   key={item}
