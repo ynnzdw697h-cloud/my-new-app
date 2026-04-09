@@ -78,19 +78,21 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
     <div className="p-4 md:p-6 space-y-4 md:space-y-5 max-w-xl mx-auto" dir="rtl">
 
       {/* ── Header ── */}
-      <div className="relative flex justify-center items-center py-2">
-        {/* Reset button — subtle, top-left (visual left, under chef name) */}
-        <button
-          onClick={handleReset}
-          className="absolute left-0 flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-semibold"
-          style={{ border: '1px solid rgba(255,255,255,0.13)', color: 'rgba(255,255,255,0.38)', background: 'transparent' }}
-        >
-          🗑 איפוס יום
-        </button>
+      <div className="space-y-2">
+        {/* Reset button — top-left, above progress card */}
+        <div className="flex justify-end">
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-semibold"
+            style={{ border: '1px solid rgba(255,255,255,0.13)', color: 'rgba(255,255,255,0.38)', background: 'transparent' }}
+          >
+            🗑 איפוס יום
+          </button>
+        </div>
 
-        {/* Progress % — centered, main focal point */}
+        {/* Progress % — full width, main focal point */}
         <div
-          className="px-8 py-4 rounded-2xl text-center"
+          className="w-full py-5 rounded-2xl text-center"
           style={{
             background: st.color + '18',
             border: `1px solid ${st.color}35`,
