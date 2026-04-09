@@ -68,34 +68,25 @@ function Sun() {
   );
 }
 
-/* ── Moon SVG (static, soft glow) ── */
+/* ── Moon (emoji + glow) ── */
 function Moon() {
   return (
     <div style={{ width: 100, height: 100, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {/* Glow */}
+      {/* Soft glow halo */}
       <div
         style={{
           position: 'absolute',
           width: 90, height: 90,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(147,197,253,0.25) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(147,197,253,0.22) 0%, transparent 70%)',
         }}
       />
-      {/* Crescent via clip */}
       <motion.div
         animate={{ opacity: [0.85, 1, 0.85] }}
         transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
-        style={{ position: 'relative', width: 50, height: 50 }}
+        style={{ fontSize: 52, lineHeight: 1, filter: 'drop-shadow(0 0 14px rgba(147,197,253,0.75))' }}
       >
-        <div
-          style={{
-            width: 50, height: 50,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle at 40% 40%, #E0F2FE, #BAE6FD)',
-            boxShadow: '0 0 20px rgba(147,197,253,0.6), 0 0 50px rgba(59,130,246,0.25)',
-            clipPath: 'path("M 25 0 A 25 25 0 1 0 25 50 A 16 16 0 1 1 25 0 Z")',
-          }}
-        />
+        🌙
       </motion.div>
     </div>
   );
