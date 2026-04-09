@@ -93,16 +93,7 @@ function Moon() {
             borderRadius: '50%',
             background: 'radial-gradient(circle at 40% 40%, #E0F2FE, #BAE6FD)',
             boxShadow: '0 0 20px rgba(147,197,253,0.6), 0 0 50px rgba(59,130,246,0.25)',
-          }}
-        />
-        {/* Overlay circle to create crescent */}
-        <div
-          style={{
-            position: 'absolute',
-            top: -4, right: -8,
-            width: 44, height: 44,
-            borderRadius: '50%',
-            background: '#121212',
+            clipPath: 'path("M 25 0 A 25 25 0 1 0 25 50 A 16 16 0 1 1 25 0 Z")',
           }}
         />
       </motion.div>
