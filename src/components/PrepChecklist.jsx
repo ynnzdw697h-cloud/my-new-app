@@ -326,7 +326,14 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
 
       {/* ── Header ── */}
       <div className="space-y-2">
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-semibold"
+            style={{ border: '1px solid rgba(255,255,255,0.13)', color: 'rgba(255,255,255,0.38)', background: 'transparent' }}
+          >
+            + הוסף הכנה
+          </button>
           <button
             onClick={handleReset}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-semibold"
@@ -510,24 +517,6 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
         )}
       </AnimatePresence>
 
-      {/* ── FAB: Add Prep ── */}
-      <button
-        onClick={() => setShowAdd(true)}
-        className="fixed z-40 flex items-center justify-center rounded-full shadow-lg transition-transform active:scale-90"
-        style={{
-          bottom: '6.5rem',
-          right: '1.25rem',
-          width: 56, height: 56,
-          background: st.color,
-          boxShadow: `0 0 0 1px ${st.color}, 0 0 20px ${st.color}80, 0 0 48px ${st.color}30`,
-        }}
-        aria-label="הוסף הכנה"
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.8" strokeLinecap="round">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-      </button>
 
     </div>
   );
@@ -567,8 +556,7 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
       style={{
         background: 'var(--bg-card)',
         border: isDone ? `1px solid ${stationColor}30` : '1px solid var(--border)',
-        opacity: isDone ? 0.75 : 1,
-        transition: 'opacity 0.4s ease, border-color 0.4s ease',
+        transition: 'border-color 0.4s ease',
       }}
     >
       {/* Category label */}
