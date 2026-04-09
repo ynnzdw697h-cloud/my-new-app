@@ -3,13 +3,13 @@ import { motion } from 'framer-motion';
 import { SUPPLIERS } from '../../data/suppliers';
 import ReviewStep from './ReviewStep';
 
-function compressImage(file, maxWidth = 1200, quality = 0.88) {
+function compressImage(file, maxDim = 1500, quality = 0.7) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const scale = Math.min(1, maxWidth / img.width);
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
       const w = Math.round(img.width * scale);
       const h = Math.round(img.height * scale);
       const canvas = document.createElement('canvas');
@@ -36,10 +36,10 @@ export default function ScanStep({ user, onSaved, onCancel }) {
     if (!file) return;
     setScanError(null);
     try {
-      const b64 = await compressImage(file, 1200, 0.88);
+      const b64 = await compressImage(file);
       setImage(b64);
-    } catch {
-      setScanError('שגיאה בטעינת התמונה');
+    } catch (err) {
+      setScanError(`שגיאה בטעינת התמונה: ${err.message}`);
     }
     e.target.value = '';
   }
@@ -49,11 +49,22 @@ export default function ScanStep({ user, onSaved, onCancel }) {
     setScanning(true);
     setScanError(null);
     try {
-      const res = await fetch('/api/ocr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: image }),
-      });
+      let res;
+      try {
+        res = await fetch('/api/ocr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: image }),
+        });
+      } catch (networkErr) {
+        throw new Error(`Network Error — ${networkErr.message}`);
+      }
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Error ${res.status}: ${res.statusText}${text ? ` — ${text.slice(0, 120)}` : ''}`);
+      }
+
       const data = await res.json();
       if (data.error) throw new Error(data.message || data.error);
       setOcrResult(data);
@@ -150,7 +161,13 @@ export default function ScanStep({ user, onSaved, onCancel }) {
         </div>
 
         {scanError && (
-          <p className="text-sm font-semibold text-center" style={{ color: '#EF4444' }}>{scanError}</p>
+          <div
+            className="rounded-2xl px-4 py-3 flex items-start gap-3"
+            style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}
+          >
+            <span className="text-lg flex-shrink-0">⚠️</span>
+            <p className="text-sm font-semibold break-all" style={{ color: '#FCA5A5' }}>{scanError}</p>
+          </div>
         )}
 
         {/* Continue */}
