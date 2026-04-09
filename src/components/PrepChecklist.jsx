@@ -3,40 +3,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { STATIONS } from '../data/stations';
 import { PREP_TASKS } from '../data/prepTasks';
 import { useFirestoreSet } from '../hooks/useFirestoreSet';
+import { useFirestoreArray } from '../hooks/useFirestoreArray';
 
-const SHIFTS = ['הכנות בוקר', 'הכנות צהריים'];
-const SHIFT_KEYS  = { 'הכנות בוקר': 'בוקר', 'הכנות צהריים': 'צהריים' };
+const SHIFTS     = ['הכנות בוקר', 'הכנות צהריים'];
+const SHIFT_KEYS = { 'הכנות בוקר': 'בוקר', 'הכנות צהריים': 'צהריים' };
 const SHIFT_ICONS = { 'הכנות בוקר': null, 'הכנות צהריים': '☀️' };
 
-/* ─── Particle for celebration burst ─── */
+/* ─── Particle burst on task completion ─── */
 function Particle({ angle, speed, color, size }) {
   return (
     <motion.div
       initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-      animate={{
-        x: Math.cos(angle) * speed,
-        y: Math.sin(angle) * speed,
-        opacity: 0,
-        scale: 0,
-      }}
+      animate={{ x: Math.cos(angle) * speed, y: Math.sin(angle) * speed, opacity: 0, scale: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
       style={{
-        position: 'absolute',
-        top: '50%', right: 0,
-        width: size, height: size,
-        borderRadius: '50%',
-        background: color,
-        boxShadow: `0 0 5px ${color}`,
-        pointerEvents: 'none',
-        zIndex: 30,
-        transform: 'translateY(-50%)',
+        position: 'absolute', top: '50%', right: 0,
+        width: size, height: size, borderRadius: '50%',
+        background: color, boxShadow: `0 0 5px ${color}`,
+        pointerEvents: 'none', zIndex: 30, transform: 'translateY(-50%)',
       }}
     />
   );
 }
-
-const PARTICLE_COLORS = (stationColor) => [stationColor, stationColor + 'bb', '#ffffff', '#ffffff99'];
-
+const PARTICLE_COLORS = c => [c, c + 'bb', '#ffffff', '#ffffff99'];
 function spawnParticles(color) {
   return Array.from({ length: 14 }, (_, i) => ({
     id: i + Date.now(),
@@ -47,17 +36,260 @@ function spawnParticles(color) {
   }));
 }
 
+/* ─── SwipeableRow: drag right (RTL) to reveal left delete button ─── */
+function SwipeableRow({ rowId, swipedId, setSwipedId, onDeleteRequest, children }) {
+  return (
+    <div className="relative rounded-3xl overflow-hidden">
+      {/* Delete button — revealed on the left */}
+      <div
+        className="absolute inset-y-0 left-0 flex items-center justify-center bg-red-600 rounded-3xl"
+        style={{ width: 80, zIndex: 0 }}
+      >
+        <button
+          onClick={onDeleteRequest}
+          className="w-full h-full flex items-center justify-center text-white font-bold text-2xl"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Draggable foreground */}
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: 0, right: 80 }}
+        dragElastic={0.05}
+        animate={{ x: swipedId === rowId ? 80 : 0 }}
+        onDragEnd={(_, info) => {
+          if (info.offset.x > 40) setSwipedId(rowId);
+          else setSwipedId(null);
+        }}
+        onClick={() => { if (swipedId === rowId) setSwipedId(null); }}
+        style={{ touchAction: 'pan-y', position: 'relative', zIndex: 1 }}
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+}
+
+/* ─── AddPrepModal ─── */
+function AddPrepModal({ stationColor, onAdd, onClose }) {
+  const [shift, setShift]         = useState('בוקר');
+  const [taskName, setTaskName]   = useState('');
+  const [targetQty, setTargetQty] = useState('');
+  const [targetUnit, setTargetUnit] = useState('');
+  const [notes, setNotes]         = useState('');
+  const [subItems, setSubItems]   = useState([]);
+  const [subInput, setSubInput]   = useState('');
+
+  function addSubItem() {
+    const label = subInput.trim();
+    if (!label) return;
+    setSubItems(prev => [...prev, { id: `sub_c_${Date.now()}_${prev.length}`, label }]);
+    setSubInput('');
+  }
+
+  function handleSubmit() {
+    const name = taskName.trim();
+    if (!name) return;
+    const now = Date.now();
+    onAdd({
+      id: `custom_${now}`,
+      isCustom: true,
+      task: name,
+      category: 'מותאם אישית',
+      categoryIcon: '📝',
+      shift,
+      estimatedTime: targetQty ? `${targetQty}${targetUnit ? ' ' + targetUnit : ''}` : null,
+      details: notes.trim() || null,
+      subItems: subItems.length > 0 ? subItems : undefined,
+    });
+  }
+
+  const inputStyle = {
+    background: 'rgba(255,255,255,0.07)',
+    border: '1px solid rgba(255,255,255,0.12)',
+  };
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-50"
+        style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)' }}
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+        className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl p-6 space-y-5"
+        style={{ background: '#1a1a23', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '92vh', overflowY: 'auto' }}
+        dir="rtl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="w-10 h-1 rounded-full mx-auto mb-1" style={{ background: 'rgba(255,255,255,0.18)' }} />
+        <h2 className="text-white font-black text-xl text-center">הוספת הכנה</h2>
+
+        {/* Shift toggle */}
+        <div>
+          <p className="text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>משמרת</p>
+          <div className="flex gap-2">
+            {['בוקר', 'צהריים'].map(s => (
+              <button
+                key={s}
+                onClick={() => setShift(s)}
+                className="flex-1 py-2.5 rounded-2xl text-sm font-bold transition-all"
+                style={{
+                  background: shift === s ? stationColor + '22' : 'rgba(255,255,255,0.05)',
+                  border: shift === s ? `1px solid ${stationColor}55` : '1px solid rgba(255,255,255,0.08)',
+                  color: shift === s ? stationColor : 'rgba(255,255,255,0.45)',
+                }}
+              >
+                {s === 'בוקר' ? 'הכנות בוקר' : 'הכנות צהריים'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Task name */}
+        <div>
+          <p className="text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>שם ההכנה *</p>
+          <input
+            autoFocus
+            type="text"
+            value={taskName}
+            onChange={e => setTaskName(e.target.value)}
+            placeholder="לדוגמה: סלט קצוץ"
+            className="w-full px-4 py-3 rounded-2xl text-white text-sm focus:outline-none"
+            style={{ ...inputStyle, '::placeholder': { color: 'rgba(255,255,255,0.25)' } }}
+          />
+        </div>
+
+        {/* Qty + unit */}
+        <div>
+          <p className="text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>כמות ויחידות</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={targetQty}
+              onChange={e => setTargetQty(e.target.value)}
+              placeholder="5"
+              className="w-20 px-4 py-3 rounded-2xl text-white text-sm focus:outline-none text-center"
+              style={inputStyle}
+            />
+            <input
+              type="text"
+              value={targetUnit}
+              onChange={e => setTargetUnit(e.target.value)}
+              placeholder="קילו, יחידות, מגש..."
+              className="flex-1 px-4 py-3 rounded-2xl text-white text-sm focus:outline-none"
+              style={inputStyle}
+            />
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div>
+          <p className="text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>הערות</p>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            placeholder="הוראות מיוחדות, טמפרטורה, ספק..."
+            rows={2}
+            className="w-full px-4 py-3 rounded-2xl text-white text-sm focus:outline-none resize-none"
+            style={inputStyle}
+          />
+        </div>
+
+        {/* Sub-items builder */}
+        <div>
+          <p className="text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>תת-הכנות — צ׳קליסט (אופציונלי)</p>
+          {subItems.length > 0 && (
+            <div className="mb-2 space-y-1.5">
+              {subItems.map((sub, idx) => (
+                <div
+                  key={sub.id}
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-2xl"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  <div
+                    className="w-5 h-5 rounded-lg border-2 flex-shrink-0"
+                    style={{ borderColor: 'rgba(255,255,255,0.2)' }}
+                  />
+                  <span className="flex-1 text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>{sub.label}</span>
+                  <button
+                    onClick={() => setSubItems(prev => prev.filter((_, i) => i !== idx))}
+                    className="text-lg transition-colors flex-shrink-0"
+                    style={{ color: 'rgba(255,255,255,0.3)' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={subInput}
+              onChange={e => setSubInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addSubItem()}
+              placeholder="הוסף פריט לרשימה..."
+              className="flex-1 px-4 py-3 rounded-2xl text-white text-sm focus:outline-none"
+              style={inputStyle}
+            />
+            <button
+              onClick={addSubItem}
+              disabled={!subInput.trim()}
+              className="px-4 py-3 rounded-2xl text-sm font-bold transition-all disabled:opacity-35"
+              style={{ background: stationColor + '22', color: stationColor, border: `1px solid ${stationColor}35` }}
+            >
+              + הוסף
+            </button>
+          </div>
+        </div>
+
+        {/* Submit */}
+        <button
+          onClick={handleSubmit}
+          disabled={!taskName.trim()}
+          className="w-full py-4 rounded-2xl font-black text-white text-base transition-all disabled:opacity-35"
+          style={{
+            background: taskName.trim() ? stationColor : 'rgba(255,255,255,0.08)',
+            boxShadow: taskName.trim() ? `0 0 24px ${stationColor}45` : 'none',
+          }}
+        >
+          ✓ הוסף הכנה
+        </button>
+      </motion.div>
+    </>
+  );
+}
+
+/* ════════════════════════════════════════════
+   Main PrepChecklist
+════════════════════════════════════════════ */
 export default function PrepChecklist({ station, completedTasks, onToggle, onReset }) {
   const [completedSubs, setCompletedSubs] = useFirestoreSet(`prep_subs_${station}`);
+  const [customTasks, setCustomTasks]     = useFirestoreArray(`custom_prep_${station}`);
+  const [hiddenIds, setHiddenIds]         = useFirestoreSet(`hidden_prep_${station}`);
+
+  const [showAdd, setShowAdd]             = useState(false);
+  const [swipedId, setSwipedId]           = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // task object
 
   const st = STATIONS[station];
-  const tasks = PREP_TASKS[station] || [];
 
-  const allIds = tasks.flatMap(t => t.subItems ? t.subItems.map(s => s.id) : [t.id]);
+  // Merge static (minus hidden) + custom tasks
+  const staticTasks = (PREP_TASKS[station] || []).filter(t => !hiddenIds.has(t.id));
+  const allTasks    = [...staticTasks, ...customTasks];
+
+  const allIds   = allTasks.flatMap(t => t.subItems ? t.subItems.map(s => s.id) : [t.id]);
   const doneCount = allIds.filter(id => completedTasks.has(id) || completedSubs.has(id)).length;
-  const pct = allIds.length > 0 ? Math.round((doneCount / allIds.length) * 100) : 0;
+  const pct      = allIds.length > 0 ? Math.round((doneCount / allIds.length) * 100) : 0;
 
-  const parentDone = tasks.filter(t =>
+  const parentDone = allTasks.filter(t =>
     t.subItems ? t.subItems.every(s => completedSubs.has(s.id)) : completedTasks.has(t.id)
   ).length;
 
@@ -74,12 +306,26 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
     onReset();
   }
 
+  function requestDelete(task) {
+    setSwipedId(null);
+    setConfirmDelete(task);
+  }
+
+  function executeDelete() {
+    if (!confirmDelete) return;
+    if (confirmDelete.isCustom) {
+      setCustomTasks(prev => prev.filter(t => t.id !== confirmDelete.id));
+    } else {
+      setHiddenIds(prev => { const next = new Set(prev); next.add(confirmDelete.id); return next; });
+    }
+    setConfirmDelete(null);
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-5 max-w-xl mx-auto" dir="rtl">
 
       {/* ── Header ── */}
       <div className="space-y-2">
-        {/* Reset button — top-left, above progress card */}
         <div className="flex justify-end">
           <button
             onClick={handleReset}
@@ -89,27 +335,21 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
             🗑 איפוס יום
           </button>
         </div>
-
-        {/* Progress % — full width, main focal point */}
         <div
           className="w-full py-5 rounded-2xl text-center"
-          style={{
-            background: st.color + '18',
-            border: `1px solid ${st.color}35`,
-            boxShadow: `0 0 24px ${st.color}28`,
-          }}
+          style={{ background: st.color + '18', border: `1px solid ${st.color}35`, boxShadow: `0 0 24px ${st.color}28` }}
         >
           <div className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>התקדמות</div>
           <div className="text-5xl font-black leading-none" style={{ color: st.color }}>{pct}%</div>
         </div>
       </div>
 
-      {/* ── Progress Bar ── */}
+      {/* ── Progress bar card ── */}
       <div className="rounded-3xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         <div className="flex justify-between items-end mb-3">
           <div>
             <span className="text-white font-bold text-lg">{parentDone}</span>
-            <span className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}> / {tasks.length} משימות הושלמו</span>
+            <span className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}> / {allTasks.length} משימות הושלמו</span>
           </div>
           <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>{doneCount} / {allIds.length} סה״כ</span>
         </div>
@@ -118,23 +358,20 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
             className="absolute inset-y-0 right-0 rounded-full"
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
-            style={{
-              background: `linear-gradient(90deg, ${st.color}cc, ${st.color})`,
-              boxShadow: `0 0 10px ${st.color}80`,
-            }}
+            style={{ background: `linear-gradient(90deg, ${st.color}cc, ${st.color})`, boxShadow: `0 0 10px ${st.color}80` }}
           />
         </div>
       </div>
 
       {/* ── Shift sections ── */}
       {SHIFTS.map(shiftLabel => {
-        const shiftKey = SHIFT_KEYS[shiftLabel];
-        const shiftTasks = tasks.filter(t => t.shift === shiftKey);
+        const shiftKey   = SHIFT_KEYS[shiftLabel];
+        const shiftTasks = allTasks.filter(t => t.shift === shiftKey);
         if (shiftTasks.length === 0) return null;
 
         const shiftAllIds = shiftTasks.flatMap(t => t.subItems ? t.subItems.map(s => s.id) : [t.id]);
-        const shiftDone = shiftAllIds.filter(id => completedTasks.has(id) || completedSubs.has(id)).length;
-        const shiftPct = shiftAllIds.length > 0 ? Math.round((shiftDone / shiftAllIds.length) * 100) : 0;
+        const shiftDone   = shiftAllIds.filter(id => completedTasks.has(id) || completedSubs.has(id)).length;
+        const shiftPct    = shiftAllIds.length > 0 ? Math.round((shiftDone / shiftAllIds.length) * 100) : 0;
 
         return (
           <section key={shiftLabel}>
@@ -173,18 +410,25 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
 
             <div className="space-y-3">
               {shiftTasks.map(task => (
-                <TaskCard
+                <SwipeableRow
                   key={task.id}
-                  task={task}
-                  isDone={task.subItems
-                    ? task.subItems.every(s => completedSubs.has(s.id))
-                    : completedTasks.has(task.id)
-                  }
-                  completedSubs={completedSubs}
-                  stationColor={st.color}
-                  onToggle={() => !task.subItems && onToggle(task.id)}
-                  onToggleSub={toggleSub}
-                />
+                  rowId={task.id}
+                  swipedId={swipedId}
+                  setSwipedId={setSwipedId}
+                  onDeleteRequest={() => requestDelete(task)}
+                >
+                  <TaskCard
+                    task={task}
+                    isDone={task.subItems
+                      ? task.subItems.every(s => completedSubs.has(s.id))
+                      : completedTasks.has(task.id)
+                    }
+                    completedSubs={completedSubs}
+                    stationColor={st.color}
+                    onToggle={() => !task.subItems && onToggle(task.id)}
+                    onToggleSub={toggleSub}
+                  />
+                </SwipeableRow>
               ))}
             </div>
           </section>
@@ -203,17 +447,94 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
             style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}
           >
             <div className="text-4xl mb-3">🎉</div>
-            <div className="text-white font-black text-xl" style={{ color: '#34d399' }}>כל המשימות הושלמו!</div>
+            <div className="font-black text-xl" style={{ color: '#34d399' }}>כל המשימות הושלמו!</div>
             <div className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>עבודה מעולה — הפריפ היומי הושלם.</div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Delete confirmation dialog ── */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50"
+              style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
+              onClick={() => setConfirmDelete(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+              className="fixed z-50 inset-x-5 rounded-3xl p-6 space-y-4"
+              style={{ top: '50%', transform: 'translateY(-50%)', background: '#1e1e2e', border: '1px solid rgba(255,255,255,0.1)' }}
+              dir="rtl"
+            >
+              <p className="text-white font-bold text-base text-center">
+                האם אתה בטוח שברצונך למחוק הכנה זו?
+              </p>
+              <p className="text-center text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                {confirmDelete.task}
+              </p>
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={executeDelete}
+                  className="flex-1 py-3 rounded-2xl font-bold text-sm transition-colors"
+                  style={{ background: '#dc2626', color: '#fff' }}
+                >
+                  כן, מחק
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  className="flex-1 py-3 rounded-2xl text-sm transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}
+                >
+                  ביטול
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Add Prep Modal ── */}
+      <AnimatePresence>
+        {showAdd && (
+          <AddPrepModal
+            stationColor={st.color}
+            onAdd={task => { setCustomTasks(prev => [...prev, task]); setShowAdd(false); }}
+            onClose={() => setShowAdd(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── FAB: Add Prep ── */}
+      <button
+        onClick={() => setShowAdd(true)}
+        className="fixed z-40 flex items-center justify-center rounded-full shadow-lg transition-transform active:scale-90"
+        style={{
+          bottom: '6.5rem',
+          right: '1.25rem',
+          width: 56, height: 56,
+          background: st.color,
+          boxShadow: `0 0 0 1px ${st.color}, 0 0 20px ${st.color}80, 0 0 48px ${st.color}30`,
+        }}
+        aria-label="הוסף הכנה"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.8" strokeLinecap="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      </button>
+
     </div>
   );
 }
 
 /* ════════════════════════════════════════════
-   TaskCard — with Digital Celebration
+   TaskCard — with celebration burst
 ════════════════════════════════════════════ */
 function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggleSub }) {
   const hasSubItems = !!task.subItems;
@@ -222,7 +543,6 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
   function handleToggle() {
     if (hasSubItems) return;
     onToggle();
-    // spawn particles only when marking as done
     if (!isDone) {
       const ps = spawnParticles(stationColor);
       setParticles(ps);
@@ -241,10 +561,7 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
 
   return (
     <motion.div
-      animate={isDone
-        ? { scale: [1, 1.025, 0.99, 1] }
-        : { scale: 1 }
-      }
+      animate={isDone ? { scale: [1, 1.025, 0.99, 1] } : { scale: 1 }}
       transition={{ duration: 0.45, ease: 'easeInOut' }}
       className="rounded-3xl overflow-hidden"
       style={{
@@ -267,10 +584,9 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
         className={`flex items-start gap-4 px-5 pb-4 pt-1 select-none ${!hasSubItems ? 'cursor-pointer' : ''}`}
         onClick={handleToggle}
       >
-        {/* Checkbox with particles */}
+        {/* Checkbox */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           {particles.map(p => <Particle key={p.id} {...p} />)}
-
           <motion.div
             animate={isDone
               ? { scale: [1, 1.35, 1], backgroundColor: stationColor, borderColor: stationColor }
@@ -312,7 +628,9 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
           {task.details && (
             <div className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{task.details}</div>
           )}
-          <div className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.2)' }}>⏱ {task.estimatedTime}</div>
+          {task.estimatedTime && (
+            <div className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.2)' }}>⏱ {task.estimatedTime}</div>
+          )}
         </div>
 
         {/* "הושלם" badge */}
@@ -324,11 +642,7 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
               exit={{ opacity: 0, scale: 0.6 }}
               transition={{ type: 'spring', stiffness: 450, damping: 22, delay: 0.15 }}
               className="text-xs font-bold px-2.5 py-1 rounded-xl flex-shrink-0"
-              style={{
-                background: stationColor + '18',
-                color: stationColor,
-                border: `1px solid ${stationColor}35`,
-              }}
+              style={{ background: stationColor + '18', color: stationColor, border: `1px solid ${stationColor}35` }}
             >
               הושלם
             </motion.div>
@@ -359,7 +673,7 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
   );
 }
 
-/* ─── Sub-item with its own mini celebration ─── */
+/* ─── Sub-item ─── */
 function SubItem({ sub, subDone, stationColor, onToggle }) {
   const [particles, setParticles] = useState([]);
 
@@ -375,10 +689,7 @@ function SubItem({ sub, subDone, stationColor, onToggle }) {
   return (
     <motion.div
       onClick={handleClick}
-      animate={subDone
-        ? { scale: [1, 1.04, 0.98, 1] }
-        : { scale: 1 }
-      }
+      animate={subDone ? { scale: [1, 1.04, 0.98, 1] } : { scale: 1 }}
       transition={{ duration: 0.4 }}
       className="flex items-center gap-2.5 cursor-pointer select-none rounded-2xl px-3 py-2.5"
       style={{
@@ -387,10 +698,8 @@ function SubItem({ sub, subDone, stationColor, onToggle }) {
         transition: 'background 0.3s ease, border-color 0.3s ease',
       }}
     >
-      {/* Sub checkbox */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
         {particles.map(p => <Particle key={p.id} {...p} />)}
-
         <motion.div
           animate={subDone
             ? { scale: [1, 1.3, 1], backgroundColor: stationColor, borderColor: stationColor }
@@ -443,8 +752,10 @@ function SubItem({ sub, subDone, stationColor, onToggle }) {
       </AnimatePresence>
 
       {sub.unit && !subDone && (
-        <span className="text-xs px-2 py-0.5 rounded-lg font-medium flex-shrink-0"
-          style={{ background: stationColor + '18', color: stationColor }}>
+        <span
+          className="text-xs px-2 py-0.5 rounded-lg font-medium flex-shrink-0"
+          style={{ background: stationColor + '18', color: stationColor }}
+        >
           {sub.unit}
         </span>
       )}
