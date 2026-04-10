@@ -4,6 +4,7 @@ import { auth } from './firebase';
 import { TenantProvider } from './context/TenantContext';
 import { DEFAULT_TENANT_ID } from './data/tenants';
 import LoginFlow from './components/LoginFlow';
+import SplashScreen from './components/SplashScreen';
 import BottomNav from './components/BottomNav';
 import Dashboard from './components/Dashboard';
 import PrepChecklist from './components/PrepChecklist';
@@ -133,8 +134,9 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
 
 // ── Root component ──
 function App() {
-  const [session, setSession] = useState(null); // { user, station, role, tenantId }
+  const [session, setSession]     = useState(null); // { user, station, role, tenantId }
   const [authReady, setAuthReady] = useState(false);
+  const [splashDone, setSplashDone] = useState(false);
 
   // Restore session from localStorage on mount
   useEffect(() => {
@@ -186,6 +188,9 @@ function App() {
   if (!authReady) return null;
 
   if (!session) {
+    if (!splashDone) {
+      return <SplashScreen onComplete={() => setSplashDone(true)} />;
+    }
     return <LoginFlow onLogin={handleLogin} />;
   }
 
