@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { ClipboardList, BookOpen, ChevronLeft } from 'lucide-react';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { STATIONS } from '../data/stations';
 import { PREP_TASKS } from '../data/prepTasks';
@@ -458,17 +459,15 @@ export default function Dashboard({ station, user, completedTasks, onNavigate, r
       {/* Cockpit nav cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <CockpitCard
-          emoji="✅"
+          Icon={ClipboardList}
           label="משימות יומיות"
-          sub="צ׳ק ליסט הכנות תחנה"
-          color={st.color}
+          sub="נהל את משימות ההכנה של התחנה"
           onClick={() => onNavigate('prep')}
         />
         <CockpitCard
-          emoji="📖"
+          Icon={BookOpen}
           label="ספר מתכונים"
-          sub="כל המתכונים של התחנה"
-          color={st.color}
+          sub="עיין בכל המתכונים של התחנה"
           onClick={() => onNavigate('recipes')}
         />
       </div>
@@ -525,63 +524,48 @@ function UrgentAlertBanner({ pending }) {
 }
 
 /* ─── Cockpit Nav Card ─── */
-function CockpitCard({ emoji, label, sub, color, onClick }) {
+function CockpitCard({ Icon, label, sub, onClick }) {
+  const [hovered, setHovered] = useState(false);
   return (
     <motion.button
       onClick={onClick}
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.97 }}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+      whileTap={{ scale: 0.98 }}
+      animate={{ borderColor: hovered ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.05)' }}
+      transition={{ duration: 0.18 }}
       style={{
         position: 'relative',
-        minHeight: 120,
+        minHeight: 116,
         width: '100%',
-        borderRadius: 24,
-        padding: '24px 28px',
+        borderRadius: 20,
+        padding: '22px 24px',
         textAlign: 'right',
-        overflow: 'hidden',
-        background: 'linear-gradient(135deg, #1e1e1e 0%, #121212 100%)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+        background: '#161616',
+        border: '1px solid rgba(255,255,255,0.05)',
         cursor: 'pointer',
         display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-end',
-        transition: 'box-shadow 0.25s ease',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 16,
       }}
     >
-      {/* Large background icon */}
-      <div
-        style={{
-          position: 'absolute',
-          left: 20,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          fontSize: '5.5rem',
-          lineHeight: 1,
-          opacity: 0.06,
-          pointerEvents: 'none',
-          userSelect: 'none',
-        }}
-      >
-        {emoji}
-      </div>
+      {/* Left — chevron */}
+      <ChevronLeft size={18} style={{ color: 'rgba(255,255,255,0.18)', flexShrink: 0 }} />
 
-      {/* Subtle color glow top-right */}
-      <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: color, opacity: 0.06, filter: 'blur(30px)', pointerEvents: 'none' }} />
-
-      {/* Text */}
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <p style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em', lineHeight: 1.1, marginBottom: 6 }}>
+      {/* Center — text (fills space, RTL so it's on the right visually) */}
+      <div style={{ flex: 1, textAlign: 'right' }}>
+        <p style={{ fontSize: '1.2rem', fontWeight: 700, color: '#f4f4f5', letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 5 }}>
           {label}
         </p>
-        <p style={{ fontSize: '0.78rem', fontWeight: 500, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.02em' }}>
+        <p style={{ fontSize: '0.75rem', fontWeight: 400, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.01em' }}>
           {sub}
         </p>
       </div>
 
-      {/* Right arrow */}
-      <div style={{ position: 'absolute', left: 24, bottom: 24, width: 34, height: 34, borderRadius: '50%', background: color + '18', border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: '0.85rem', color }}>←</span>
+      {/* Right — icon (top-right in RTL = visually top-left of the card) */}
+      <div style={{ flexShrink: 0, padding: 10, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon size={20} style={{ color: '#60a5fa' }} strokeWidth={1.5} />
       </div>
     </motion.button>
   );
