@@ -445,69 +445,145 @@ export default function Dashboard({ station, user, completedTasks, onNavigate, r
 
   /* ── Line Cook view ── */
   return (
-    <div className="px-4 py-5 space-y-4 max-w-xl mx-auto" dir="rtl">
+    <div className="px-4 py-5 max-w-xl mx-auto" dir="rtl" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <HeroCard
         user={user} st={st} tod={tod} palette={palette}
         avatars={avatars} saveAvatar={saveAvatar}
         done={done} total={total} pct={pct} showProgress
       />
 
-      {/* Stat row */}
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard label="משימות" value={`${done}/${total}`} sub="פריפ"   color={st.color} onClick={() => onNavigate('prep')} />
-        <StatCard label="מתכונים" value={myRecipes.length}  sub="במאגר"  color={st.color} onClick={() => onNavigate('recipes')} />
-        <StatCard label="שבועי"   value={myWeekly.length}   sub="משימות" color={st.color} onClick={() => onNavigate('weekly')} />
-      </div>
+      {/* Urgent alert — visible only when there are pending tasks */}
+      <UrgentAlertBanner pending={pending} />
 
-      {/* Pending tasks preview */}
-      <SectionCard title="משימות ממתינות" icon="⏳" onClick={() => onNavigate('prep')}>
-        {pending.length === 0 ? (
-          <div className="flex items-center gap-3 py-3 px-1">
-            <span className="text-2xl">✅</span>
-            <span className="font-semibold" style={{ color: 'rgba(255,255,255,0.7)' }}>כל המשימות הושלמו!</span>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {pending.slice(0, 5).map((task, idx) => (
-              <div
-                key={task.id}
-                className="flex items-center justify-between rounded-2xl px-4 py-3 gap-2"
-                style={{
-                  background: idx === 0 && pending.length > 0 ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
-                  border: idx === 0 && pending.length > 0 ? '1px solid rgba(239,68,68,0.2)' : '1px solid transparent',
-                }}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  {idx === 0 && pending.length > 0 && <span className="text-xs flex-shrink-0">🔴</span>}
-                  <span className="text-sm font-medium text-white truncate">{task.task}</span>
-                </div>
-                {task.estimatedTime && (
-                  <span className="text-xs flex-shrink-0 rounded-xl px-2.5 py-1 font-semibold" style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.45)' }}>
-                    {task.estimatedTime}
-                  </span>
-                )}
-              </div>
-            ))}
-            {pending.length > 5 && (
-              <p className="text-center text-xs pt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                + עוד {pending.length - 5} משימות
-              </p>
-            )}
-          </div>
-        )}
-      </SectionCard>
-
-      {/* Primary quick actions */}
-      <div>
-        <p className="text-xs font-bold mb-3 px-1" style={{ color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em' }}>
-          גישה מהירה
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <QuickAction emoji="✅" label="פריפ יומי"  sub="צ׳ק ליסט תחנה" color={st.color} onClick={() => onNavigate('prep')} />
-          <QuickAction emoji="📖" label="מתכונים"    sub="ספר המתכונים"  color={st.color} onClick={() => onNavigate('recipes')} />
-        </div>
+      {/* Cockpit nav cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <CockpitCard
+          emoji="✅"
+          label="משימות יומיות"
+          sub="צ׳ק ליסט הכנות תחנה"
+          color={st.color}
+          onClick={() => onNavigate('prep')}
+        />
+        <CockpitCard
+          emoji="📖"
+          label="ספר מתכונים"
+          sub="כל המתכונים של התחנה"
+          color={st.color}
+          onClick={() => onNavigate('recipes')}
+        />
       </div>
     </div>
+  );
+}
+
+/* ─── Urgent Alert Banner ─── */
+function UrgentAlertBanner({ pending }) {
+  if (!pending || pending.length === 0) return null;
+  const topTask = pending[0];
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      style={{
+        background: '#0f0f0f',
+        border: '1px solid rgba(239,68,68,0.28)',
+        borderRadius: 14,
+        padding: '12px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        boxShadow: '0 0 0 1px rgba(239,68,68,0.08), 0 4px 24px rgba(239,68,68,0.08)',
+      }}
+    >
+      {/* Pulsing dot */}
+      <div style={{ position: 'relative', flexShrink: 0, width: 10, height: 10 }}>
+        <motion.div
+          animate={{ opacity: [1, 0.25, 1] }}
+          transition={{ duration: 1.6, ease: 'easeInOut', repeat: Infinity }}
+          style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', position: 'absolute' }}
+        />
+        <motion.div
+          animate={{ scale: [1, 1.9, 1], opacity: [0.5, 0, 0.5] }}
+          transition={{ duration: 1.6, ease: 'easeOut', repeat: Infinity }}
+          style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', position: 'absolute' }}
+        />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(239,68,68,0.7)', marginBottom: 2 }}>
+          דרוש לסרוויס
+        </p>
+        <p style={{ fontSize: '0.88rem', fontWeight: 600, color: 'rgba(255,255,255,0.9)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {topTask.task}
+          {topTask.estimatedTime && (
+            <span style={{ color: 'rgba(255,255,255,0.38)', fontWeight: 400 }}> — {topTask.estimatedTime}</span>
+          )}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Cockpit Nav Card ─── */
+function CockpitCard({ emoji, label, sub, color, onClick }) {
+  return (
+    <motion.button
+      onClick={onClick}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.97 }}
+      style={{
+        position: 'relative',
+        minHeight: 120,
+        width: '100%',
+        borderRadius: 24,
+        padding: '24px 28px',
+        textAlign: 'right',
+        overflow: 'hidden',
+        background: 'linear-gradient(135deg, #1e1e1e 0%, #121212 100%)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        transition: 'box-shadow 0.25s ease',
+      }}
+    >
+      {/* Large background icon */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 20,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          fontSize: '5.5rem',
+          lineHeight: 1,
+          opacity: 0.06,
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      >
+        {emoji}
+      </div>
+
+      {/* Subtle color glow top-right */}
+      <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: color, opacity: 0.06, filter: 'blur(30px)', pointerEvents: 'none' }} />
+
+      {/* Text */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <p style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em', lineHeight: 1.1, marginBottom: 6 }}>
+          {label}
+        </p>
+        <p style={{ fontSize: '0.78rem', fontWeight: 500, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.02em' }}>
+          {sub}
+        </p>
+      </div>
+
+      {/* Right arrow */}
+      <div style={{ position: 'absolute', left: 24, bottom: 24, width: 34, height: 34, borderRadius: '50%', background: color + '18', border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: '0.85rem', color }}>←</span>
+      </div>
+    </motion.button>
   );
 }
 
