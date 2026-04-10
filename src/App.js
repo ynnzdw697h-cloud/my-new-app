@@ -89,7 +89,7 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
       {/* ── Main content ── */}
       <main className="flex-1 overflow-y-auto" style={{ paddingTop: '64px', paddingBottom: '96px' }}>
         {view === 'dashboard' && (
-          <Dashboard station={station} user={user} completedTasks={completedTasks} onNavigate={setView} />
+          <Dashboard station={station} user={user} completedTasks={completedTasks} onNavigate={setView} role={role} />
         )}
         {view === 'prep' && (
           <PrepChecklist

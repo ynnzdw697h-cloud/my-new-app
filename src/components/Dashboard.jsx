@@ -304,9 +304,72 @@ function CropModal({ url, color, onConfirm, onCancel }) {
 }
 
 /* ════════════════════════════════════════════
+   Shared Hero Card
+════════════════════════════════════════════ */
+function HeroCard({ user, st, tod, palette, avatars, saveAvatar, done, total, pct, showProgress }) {
+  const today = new Date().toLocaleDateString('he-IL', { weekday: 'long', month: 'long', day: 'numeric' });
+  const isDay = tod !== 'evening';
+
+  return (
+    <div
+      className="relative rounded-3xl overflow-hidden p-6"
+      style={{
+        background: `linear-gradient(135deg, ${palette.bg} 0%, rgba(255,255,255,0.02) 70%, #16161e 100%)`,
+        border: `1px solid ${palette.primary}28`,
+        boxShadow: `0 8px 40px ${palette.glow}`,
+      }}
+    >
+      <div style={{ position: 'absolute', top: isDay ? -30 : -20, left: isDay ? -30 : -20, opacity: 0.9, pointerEvents: 'none' }}>
+        {isDay ? <Sun /> : <Moon />}
+      </div>
+      <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full opacity-20 pointer-events-none" style={{ background: palette.primary, filter: 'blur(55px)' }} />
+
+      <motion.div
+        className="relative z-10"
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
+      >
+        <p className="text-xs font-medium mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>{today}</p>
+        <div className="flex items-center gap-3 mb-1">
+          <Avatar name={user} color={palette.primary} avatarData={avatars[user]} onUpload={data => saveAvatar(user, data)} />
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>{GREETING[tod]}</p>
+            <h1 className="text-2xl font-black leading-tight" style={{ color: palette.primary }}>{user}</h1>
+          </div>
+        </div>
+
+        {showProgress && (
+          <>
+            <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              {st.emoji} {st.name} — {done === total && total > 0 ? 'כל המשימות הושלמו 🎉' : `נותרו ${total - done} משימות`}
+            </p>
+            <div className="mt-5">
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{done} / {total} משימות</span>
+                <span className="text-4xl font-black" style={{ color: palette.primary, lineHeight: 1 }}>{pct}%</span>
+              </div>
+              <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                <motion.div
+                  className="h-full rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.9, ease: 'easeOut', delay: 0.3 }}
+                  style={{ background: `linear-gradient(90deg, ${palette.primary}cc, ${palette.primary})`, boxShadow: `0 0 12px ${palette.primary}80` }}
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════
    Main Dashboard
 ════════════════════════════════════════════ */
-export default function Dashboard({ station, user, completedTasks, onNavigate }) {
+export default function Dashboard({ station, user, completedTasks, onNavigate, role }) {
   const st       = STATIONS[station];
   const tod      = getTimeOfDay();
   const palette  = TIME_PALETTE[tod];
@@ -321,104 +384,82 @@ export default function Dashboard({ station, user, completedTasks, onNavigate })
   const myWeekly  = WEEKLY_TASKS.filter(t => t.assignedTo === station);
   const pending   = myTasks.filter(t => !completedTasks.has(t.id));
 
-  const today = new Date().toLocaleDateString('he-IL', {
-    weekday: 'long', month: 'long', day: 'numeric',
-  });
+  const isChecker = role === 'checker';
 
-  const isDay = tod !== 'evening';
-
-  return (
-    <div className="px-4 py-5 space-y-4 max-w-xl mx-auto" dir="rtl">
-
-      {/* ── Hero card ── */}
-      <div
-        className="relative rounded-3xl overflow-hidden p-6"
-        style={{
-          background: `linear-gradient(135deg, ${palette.bg} 0%, rgba(255,255,255,0.02) 70%, #16161e 100%)`,
-          border: `1px solid ${palette.primary}28`,
-          boxShadow: `0 8px 40px ${palette.glow}`,
-        }}
-      >
-        {/* Sun / Moon — top-left, partially clipped */}
-        <div
-          style={{
-            position: 'absolute',
-            top: isDay ? -30 : -20,
-            left: isDay ? -30 : -20,
-            opacity: 0.9,
-            pointerEvents: 'none',
-          }}
-        >
-          {isDay ? <Sun /> : <Moon />}
-        </div>
-
-        {/* Ambient glow blob */}
-        <div
-          className="absolute -top-8 -right-8 w-40 h-40 rounded-full opacity-20 pointer-events-none"
-          style={{ background: palette.primary, filter: 'blur(55px)' }}
+  /* ── Checker / Manager view ── */
+  if (isChecker) {
+    return (
+      <div className="px-4 py-5 space-y-4 max-w-xl mx-auto" dir="rtl">
+        <HeroCard
+          user={user} st={st} tod={tod} palette={palette}
+          avatars={avatars} saveAvatar={saveAvatar}
+          done={0} total={0} pct={0} showProgress={false}
         />
 
-        {/* Content — slide down + fade in */}
-        <motion.div
-          className="relative z-10"
-          initial={{ opacity: 0, y: -16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
-        >
-          {/* Date */}
-          <p className="text-xs font-medium mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>{today}</p>
-
-          {/* Avatar + Greeting */}
-          <div className="flex items-center gap-3 mb-1">
-            <Avatar name={user} color={palette.primary} avatarData={avatars[user]} onUpload={data => saveAvatar(user, data)} />
-            <div>
-              <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                {GREETING[tod]}
-              </p>
-              <h1 className="text-2xl font-black leading-tight" style={{ color: palette.primary }}>
-                {user}
-              </h1>
-            </div>
-          </div>
-
-          <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            {st.emoji} {st.name} — {done === total && total > 0 ? 'כל המשימות הושלמו 🎉' : `נותרו ${total - done} משימות`}
+        {/* Quick actions */}
+        <div>
+          <p className="text-xs font-bold mb-3 px-1" style={{ color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em' }}>
+            פעולות ניהול
           </p>
-
-          {/* Progress */}
-          <div className="mt-5">
-            <div className="flex justify-between items-end mb-2">
-              <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                {done} / {total} משימות
-              </span>
-              <span className="text-4xl font-black" style={{ color: palette.primary, lineHeight: 1 }}>
-                {pct}%
-              </span>
-            </div>
-            <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-              <motion.div
-                className="h-full rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${pct}%` }}
-                transition={{ duration: 0.9, ease: 'easeOut', delay: 0.3 }}
-                style={{
-                  background: `linear-gradient(90deg, ${palette.primary}cc, ${palette.primary})`,
-                  boxShadow: `0 0 12px ${palette.primary}80`,
-                }}
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            <QuickAction emoji="📦" label="קבלת סחורה"    sub="סריקה ובדיקה"       color="#10b981" onClick={() => onNavigate('checker_hub')} />
+            <QuickAction emoji="🛒" label="הזמנות ספקים"  sub="עלה עלה, דגים, יבש" color="#8b5cf6" onClick={() => onNavigate('supplier')} />
+            <QuickAction emoji="🐟" label="ספירת חיות"    sub="סוף יום"            color="#f59e0b" onClick={() => onNavigate('proteins')} />
           </div>
-        </motion.div>
-      </div>
+        </div>
 
-      {/* ── Stat row ── */}
+        {/* All-station status */}
+        <SectionCard title="סטטוס תחנות" icon="📊">
+          <div className="space-y-3">
+            {Object.values(STATIONS).filter(s => s.id !== 'checker').map(s => {
+              const tasks  = PREP_TASKS[s.id] || [];
+              const doneN  = tasks.filter(t => completedTasks.has(t.id)).length;
+              const totalN = tasks.length;
+              const p      = totalN > 0 ? Math.round((doneN / totalN) * 100) : 0;
+              const statusColor = p === 100 ? '#10b981' : p >= 50 ? '#f59e0b' : '#ef4444';
+              return (
+                <div key={s.id}>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="font-medium text-white flex items-center gap-1.5">
+                      <span>{s.emoji}</span> {s.name}
+                    </span>
+                    <span style={{ color: statusColor, fontWeight: 700 }}>{p}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                    <motion.div
+                      className="h-full rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${p}%` }}
+                      transition={{ duration: 0.7, ease: 'easeOut' }}
+                      style={{ backgroundColor: statusColor }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </SectionCard>
+      </div>
+    );
+  }
+
+  /* ── Line Cook view ── */
+  return (
+    <div className="px-4 py-5 space-y-4 max-w-xl mx-auto" dir="rtl">
+      <HeroCard
+        user={user} st={st} tod={tod} palette={palette}
+        avatars={avatars} saveAvatar={saveAvatar}
+        done={done} total={total} pct={pct} showProgress
+      />
+
+      {/* Stat row */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="משימות" value={`${done}/${total}`} sub="פריפ"    color={st.color} onClick={() => onNavigate('prep')} />
-        <StatCard label="מתכונים" value={myRecipes.length}  sub="במאגר"   color={st.color} onClick={() => onNavigate('recipes')} />
-        <StatCard label="שבועי"   value={myWeekly.length}   sub="משימות"  color={st.color} onClick={() => onNavigate('weekly')} />
+        <StatCard label="משימות" value={`${done}/${total}`} sub="פריפ"   color={st.color} onClick={() => onNavigate('prep')} />
+        <StatCard label="מתכונים" value={myRecipes.length}  sub="במאגר"  color={st.color} onClick={() => onNavigate('recipes')} />
+        <StatCard label="שבועי"   value={myWeekly.length}   sub="משימות" color={st.color} onClick={() => onNavigate('weekly')} />
       </div>
 
-      {/* ── Pending tasks ── */}
+      {/* Pending tasks preview */}
       <SectionCard title="משימות ממתינות" icon="⏳" onClick={() => onNavigate('prep')}>
         {pending.length === 0 ? (
           <div className="flex items-center gap-3 py-3 px-1">
@@ -427,18 +468,21 @@ export default function Dashboard({ station, user, completedTasks, onNavigate })
           </div>
         ) : (
           <div className="space-y-2">
-            {pending.slice(0, 5).map(task => (
+            {pending.slice(0, 5).map((task, idx) => (
               <div
                 key={task.id}
                 className="flex items-center justify-between rounded-2xl px-4 py-3 gap-2"
-                style={{ background: 'rgba(255,255,255,0.04)' }}
+                style={{
+                  background: idx === 0 && pending.length > 0 ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
+                  border: idx === 0 && pending.length > 0 ? '1px solid rgba(239,68,68,0.2)' : '1px solid transparent',
+                }}
               >
-                <span className="text-sm font-medium text-white truncate">{task.task}</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  {idx === 0 && pending.length > 0 && <span className="text-xs flex-shrink-0">🔴</span>}
+                  <span className="text-sm font-medium text-white truncate">{task.task}</span>
+                </div>
                 {task.estimatedTime && (
-                  <span
-                    className="text-xs flex-shrink-0 rounded-xl px-2.5 py-1 font-semibold"
-                    style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.45)' }}
-                  >
+                  <span className="text-xs flex-shrink-0 rounded-xl px-2.5 py-1 font-semibold" style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.45)' }}>
                     {task.estimatedTime}
                   </span>
                 )}
@@ -453,42 +497,16 @@ export default function Dashboard({ station, user, completedTasks, onNavigate })
         )}
       </SectionCard>
 
-      {/* ── Quick actions ── */}
+      {/* Primary quick actions */}
       <div>
         <p className="text-xs font-bold mb-3 px-1" style={{ color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em' }}>
-          פעולות נוספות
+          גישה מהירה
         </p>
         <div className="grid grid-cols-2 gap-3">
-          <QuickAction emoji="🐟" label="ספירת חיות"    sub="סוף יום"            color="#f59e0b" onClick={() => onNavigate('proteins')} />
-          <QuickAction emoji="🛒" label="הזמנות ספקים"  sub="עלה עלה, דגים, יבש" color="#8b5cf6" onClick={() => onNavigate('supplier')} />
+          <QuickAction emoji="✅" label="פריפ יומי"  sub="צ׳ק ליסט תחנה" color={st.color} onClick={() => onNavigate('prep')} />
+          <QuickAction emoji="📖" label="מתכונים"    sub="ספר המתכונים"  color={st.color} onClick={() => onNavigate('recipes')} />
         </div>
       </div>
-
-      {/* ── Station status ── */}
-      <SectionCard title="סטטוס תחנות" icon="📊">
-        <div className="space-y-3">
-          {Object.values(STATIONS).map(s => {
-            const tasks  = PREP_TASKS[s.id] || [];
-            const doneN  = tasks.filter(t => completedTasks.has(t.id)).length;
-            const totalN = tasks.length;
-            const p      = totalN > 0 ? Math.round((doneN / totalN) * 100) : 0;
-            return (
-              <div key={s.id}>
-                <div className="flex justify-between text-sm mb-1.5">
-                  <span className="font-medium text-white flex items-center gap-1.5">
-                    <span>{s.emoji}</span> {s.name}
-                  </span>
-                  <span style={{ color: 'rgba(255,255,255,0.4)' }}>{p}%</span>
-                </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${p}%`, backgroundColor: s.color }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </SectionCard>
-
     </div>
   );
 }
