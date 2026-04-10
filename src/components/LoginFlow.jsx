@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { UtensilsCrossed, User, Snowflake, Flame, PackageCheck, ChefHat } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 import { CHEFS } from '../data/chefs';
+
+const STATION_ICONS = {
+  cold:    <Snowflake    size={36} strokeWidth={1.25} />,
+  hot:     <Flame        size={36} strokeWidth={1.25} />,
+  checker: <PackageCheck size={36} strokeWidth={1.25} />,
+};
 
 export default function LoginFlow({ onLogin }) {
   const [step, setStep]                 = useState(1); // 1=pick chef, 2=pin, 3=station
@@ -45,14 +52,14 @@ export default function LoginFlow({ onLogin }) {
       {/* Logo */}
       <div className="text-center mb-10">
         <div
-          className="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-5"
+          className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-5"
           style={{
             background: 'linear-gradient(135deg, #1e293b, #0f172a)',
             border: '1px solid rgba(255,255,255,0.1)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           }}
         >
-          🍽️
+          <UtensilsCrossed size={36} style={{ color: 'rgba(255,255,255,0.7)' }} strokeWidth={1.25} />
         </div>
         <h1 className="text-4xl font-black text-white tracking-tight">וילה אכדיה</h1>
         <p className="text-sm mt-2" style={{ color: 'rgba(255,255,255,0.35)' }}>{today}</p>
@@ -102,7 +109,9 @@ function ChefStep({ onSelect }) {
               boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
             }}
           >
-            <span className="block text-2xl mb-1">{chef.emoji}</span>
+            <div className="flex items-center justify-center mb-1.5">
+              <ChefHat size={22} style={{ color: 'rgba(255,255,255,0.5)' }} strokeWidth={1.5} />
+            </div>
             {chef.displayName}
           </button>
         ))}
@@ -184,7 +193,7 @@ function PinStep({ chef, onSuccess, onBack }) {
           className="flex items-center gap-2 rounded-2xl px-4 py-2"
           style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)' }}
         >
-          <span>{chef.emoji}</span>
+          <ChefHat size={16} style={{ color: 'rgba(255,255,255,0.5)' }} strokeWidth={1.5} />
           <span className="text-white font-bold text-sm">{chef.displayName}</span>
         </div>
       </div>
@@ -288,7 +297,7 @@ function StationStep({ user, onSelect, onBack }) {
           className="flex items-center gap-2 rounded-2xl px-4 py-2"
           style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)' }}
         >
-          <span>👤</span>
+          <User size={16} style={{ color: 'rgba(255,255,255,0.5)' }} strokeWidth={1.5} />
           <span className="text-white font-bold text-sm">{user}</span>
         </div>
       </div>
@@ -314,10 +323,10 @@ function StationStep({ user, onSelect, onBack }) {
           >
             <div className="absolute inset-0 opacity-0 group-active:opacity-10 transition-opacity" style={{ background: station.color }} />
             <span
-              className="relative z-10 text-4xl w-16 h-16 flex items-center justify-center rounded-2xl flex-shrink-0"
-              style={{ background: station.color + '18', border: `1px solid ${station.color}30` }}
+              className="relative z-10 w-16 h-16 flex items-center justify-center rounded-2xl flex-shrink-0"
+              style={{ background: station.color + '18', border: `1px solid ${station.color}30`, color: station.color }}
             >
-              {station.emoji}
+              {STATION_ICONS[station.id] || <PackageCheck size={36} strokeWidth={1.25} />}
             </span>
             <div className="relative z-10 text-right">
               <div className="text-white font-black text-xl">{station.name}</div>

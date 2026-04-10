@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FileText, AlertCircle, User, MessageSquare, Trash2 } from 'lucide-react';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 
 // Both lists are global (shared across all stations/cooks)
@@ -61,7 +62,8 @@ export default function ShiftNotes({ user }) {
       {/* ── Page header ── */}
       <div>
         <h2 className="text-2xl font-black text-white flex items-center gap-2 mb-1">
-          <span>📝</span> חוסרים והערות משמרת
+          <FileText size={22} style={{ color: 'rgba(255,255,255,0.5)' }} strokeWidth={1.5} />
+          חוסרים והערות משמרת
         </h2>
         <p className="text-slate-400 text-sm">משותף לכל הטבחים בכל התחנות</p>
       </div>
@@ -73,7 +75,7 @@ export default function ShiftNotes({ user }) {
         {/* Section header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🚫</span>
+            <AlertCircle size={18} style={{ color: '#ef4444' }} strokeWidth={1.5} />
             <h3 className="text-white font-bold text-lg">רשימת 86 — חוסרים</h3>
             {missingItems.length > 0 && (
               <span className="bg-red-900 text-red-300 text-xs font-bold px-2 py-0.5 rounded-lg">
@@ -154,7 +156,7 @@ export default function ShiftNotes({ user }) {
       <section className="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
         {/* Section header */}
         <div className="px-5 py-4 border-b border-slate-700 flex items-center gap-2">
-          <span className="text-xl">💬</span>
+          <MessageSquare size={18} style={{ color: '#3b82f6' }} strokeWidth={1.5} />
           <h3 className="text-white font-bold text-lg">הערות משמרת</h3>
           {shiftNotes.length > 0 && (
             <span className="bg-blue-900 text-blue-300 text-xs font-bold px-2 py-0.5 rounded-lg">
@@ -166,7 +168,7 @@ export default function ShiftNotes({ user }) {
         {/* Input area */}
         <div className="px-5 py-4 border-b border-slate-700 space-y-3">
           <div className="flex items-center gap-2 text-sm text-slate-400 mb-1">
-            <span>👤</span>
+            <User size={14} style={{ color: 'rgba(255,255,255,0.4)' }} strokeWidth={1.5} />
             <span className="text-white font-semibold">{user}</span>
             <span>•</span>
             <span>{nowLabel()}</span>
@@ -235,9 +237,10 @@ export default function ShiftNotes({ user }) {
             onClick={() => setConfirmClear(true)}
             className="w-full py-3 rounded-2xl border border-slate-700 text-slate-400
                        hover:border-red-800 hover:text-red-400 hover:bg-red-900/20
-                       text-sm font-medium transition-all duration-150"
+                       text-sm font-medium transition-all duration-150 flex items-center justify-center gap-2"
           >
-            🗑️ נקה הכל בסוף יום
+            <Trash2 size={15} strokeWidth={1.5} />
+            נקה הכל בסוף יום
           </button>
         ) : (
           <div className="bg-red-900/30 border border-red-800 rounded-2xl p-4 flex items-center justify-between gap-4 flex-wrap">

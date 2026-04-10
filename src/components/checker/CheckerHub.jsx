@@ -1,10 +1,10 @@
 import { useState } from 'react';
+import { Package, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDeliveries } from '../../hooks/useDeliveries';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTenantId } from '../../context/TenantContext';
-import { SUPPLIERS } from '../../data/suppliers';
 import ScanStep from './ScanStep';
 
 const STATUS_LABEL = {
@@ -99,14 +99,15 @@ export default function CheckerHub({ user, onOpenDelivery }) {
       {/* Delivery list */}
       {deliveries.length === 0 ? (
         <div className="rounded-3xl p-8 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <p className="text-4xl mb-3">📦</p>
+          <div className="flex justify-center mb-3">
+            <Package size={40} style={{ color: 'rgba(255,255,255,0.15)' }} strokeWidth={1.25} />
+          </div>
           <p className="text-white font-bold">אין משלוחים עדיין</p>
           <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>לחץ + כדי לסרוק חשבונית</p>
         </div>
       ) : (
         <div className="space-y-3">
           {deliveries.map(d => {
-            const sup = SUPPLIERS.find(s => s.id === d.supplierId);
             const isToday = d.deliveryDate === today;
             return (
               <motion.button
@@ -120,7 +121,9 @@ export default function CheckerHub({ user, onOpenDelivery }) {
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{sup?.emoji || '📦'}</span>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                      <Truck size={18} style={{ color: '#10B981' }} strokeWidth={1.5} />
+                    </div>
                     <div className="text-right">
                       <p className="text-white font-bold">{d.supplierName}</p>
                       <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>

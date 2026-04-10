@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { Camera, ImageIcon, AlertTriangle, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SUPPLIERS } from '../../data/suppliers';
 import ReviewStep from './ReviewStep';
@@ -116,7 +117,7 @@ export default function ScanStep({ user, onSaved, onCancel }) {
               className="flex-1 rounded-3xl p-6 flex flex-col items-center gap-3 active:scale-95 transition-transform"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}
             >
-              <span className="text-4xl">📷</span>
+              <Camera size={32} style={{ color: 'rgba(255,255,255,0.6)' }} strokeWidth={1.25} />
               <span className="text-white font-bold text-sm">צלם</span>
             </button>
             <button
@@ -124,7 +125,7 @@ export default function ScanStep({ user, onSaved, onCancel }) {
               className="flex-1 rounded-3xl p-6 flex flex-col items-center gap-3 active:scale-95 transition-transform"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}
             >
-              <span className="text-4xl">🖼</span>
+              <ImageIcon size={32} style={{ color: 'rgba(255,255,255,0.6)' }} strokeWidth={1.25} />
               <span className="text-white font-bold text-sm">העלה</span>
             </button>
           </div>
@@ -154,7 +155,7 @@ export default function ScanStep({ user, onSaved, onCancel }) {
                   color: supplierId === s.id ? '#10B981' : 'rgba(255,255,255,0.6)',
                 }}
               >
-                <span>{s.emoji}</span> {s.name}
+                <Truck size={13} strokeWidth={1.5} /> {s.name}
               </button>
             ))}
           </div>
@@ -165,7 +166,7 @@ export default function ScanStep({ user, onSaved, onCancel }) {
             className="rounded-2xl px-4 py-3 flex items-start gap-3"
             style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}
           >
-            <span className="text-lg flex-shrink-0">⚠️</span>
+            <AlertTriangle size={18} style={{ color: '#FCA5A5', flexShrink: 0 }} strokeWidth={1.5} />
             <p className="text-sm font-semibold break-all" style={{ color: '#FCA5A5' }}>{scanError}</p>
           </div>
         )}

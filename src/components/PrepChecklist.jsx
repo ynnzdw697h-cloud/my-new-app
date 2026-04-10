@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Sun, Trash2, Sparkles, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STATIONS } from '../data/stations';
 import { PREP_TASKS } from '../data/prepTasks';
@@ -7,7 +8,7 @@ import { useFirestoreArray } from '../hooks/useFirestoreArray';
 
 const SHIFTS     = ['הכנות בוקר', 'הכנות צהריים'];
 const SHIFT_KEYS = { 'הכנות בוקר': 'בוקר', 'הכנות צהריים': 'צהריים' };
-const SHIFT_ICONS = { 'הכנות בוקר': null, 'הכנות צהריים': '☀️' };
+const SHIFT_HAS_ICON = { 'הכנות בוקר': false, 'הכנות צהריים': true };
 
 /* ─── Liquid Progress Card ─── */
 function LiquidProgressCard({ pct, color }) {
@@ -193,7 +194,7 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
       isCustom: true,
       task: name,
       category: 'מותאם אישית',
-      categoryIcon: '📝',
+      categoryIcon: null,
       shift,
       estimatedTime: targetQty ? `${targetQty}${targetUnit ? ' ' + targetUnit : ''}` : null,
       details: notes.trim() || null,
@@ -434,7 +435,8 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-semibold"
             style={{ border: '1px solid rgba(255,255,255,0.13)', color: 'rgba(255,255,255,0.38)', background: 'transparent' }}
           >
-            🗑 איפוס יום
+            <Trash2 size={13} strokeWidth={1.5} />
+            איפוס יום
           </button>
         </div>
         <LiquidProgressCard pct={pct} color={st.color} />
@@ -472,7 +474,7 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
         return (
           <section key={shiftLabel}>
             <div className="flex items-center gap-3 mb-3">
-              {SHIFT_ICONS[shiftLabel] && <span className="text-2xl">{SHIFT_ICONS[shiftLabel]}</span>}
+              {SHIFT_HAS_ICON[shiftLabel] && <Sun size={20} style={{ color: '#F59E0B' }} strokeWidth={1.5} />}
               <div>
                 <h3 className="text-white font-black text-xl">{shiftLabel}</h3>
                 <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
@@ -542,7 +544,9 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
             className="rounded-3xl p-6 text-center"
             style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}
           >
-            <div className="text-4xl mb-3">🎉</div>
+            <div className="flex justify-center mb-3">
+              <Sparkles size={36} style={{ color: '#34d399' }} strokeWidth={1.25} />
+            </div>
             <div className="font-black text-xl" style={{ color: '#34d399' }}>כל המשימות הושלמו!</div>
             <div className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>עבודה מעולה — הפריפ היומי הושלם.</div>
           </motion.div>
@@ -650,7 +654,7 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
     >
       {/* Category label */}
       <div className="flex items-center gap-2 px-5 pt-3 pb-1">
-        <span className="text-sm">{task.categoryIcon}</span>
+        <Tag size={12} style={{ color: stationColor + 'bb' }} strokeWidth={1.5} />
         <span className="text-xs font-bold uppercase tracking-wider" style={{ color: stationColor + 'bb' }}>
           {task.category}
         </span>

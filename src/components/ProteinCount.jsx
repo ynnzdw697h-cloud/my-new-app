@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Fish } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -105,7 +106,8 @@ export default function ProteinCount() {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-black text-white flex items-center gap-2">
-          <span>🐟</span> חיות — ספירת סוף יום
+          <Fish size={22} style={{ color: 'rgba(255,255,255,0.5)' }} strokeWidth={1.5} />
+          חיות — ספירת סוף יום
         </h2>
         <p className="text-slate-400 text-sm mt-1">משותף לכל הטבחים • מתעדכן בזמן אמת</p>
       </div>

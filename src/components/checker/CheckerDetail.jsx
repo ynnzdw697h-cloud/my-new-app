@@ -247,7 +247,7 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
               className="flex-1 rounded-2xl py-3.5 font-black text-sm text-white"
               style={{ background: '#EF4444', boxShadow: '0 0 20px rgba(239,68,68,0.35)' }}
             >
-              📝 צור RMA →
+              צור RMA ←
             </button>
           </div>
         ) : (

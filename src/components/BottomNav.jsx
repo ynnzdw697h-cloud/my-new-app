@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Timer, Fish, ShoppingCart, LogOut } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 
 const MAIN_NAV = [
@@ -10,9 +11,9 @@ const MAIN_NAV = [
 ];
 
 const MORE_NAV = [
-  { id: 'prep_tracker', label: 'תפוגה ובזבוז',          emoji: '⏳' },
-  { id: 'proteins',     label: 'חיות — ספירת סוף יום', emoji: '🐟' },
-  { id: 'supplier',     label: 'הזמנות ספקים',          emoji: '🛒' },
+  { id: 'prep_tracker', label: 'תפוגה ובזבוז',          Icon: Timer },
+  { id: 'proteins',     label: 'חיות — ספירת סוף יום', Icon: Fish },
+  { id: 'supplier',     label: 'הזמנות ספקים',          Icon: ShoppingCart },
 ];
 
 export default function BottomNav({ currentView, onNavigate, station, onLogout, role }) {
@@ -112,10 +113,10 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
                   }}
                 >
                   <span
-                    className="w-11 h-11 flex items-center justify-center rounded-2xl text-xl flex-shrink-0"
+                    className="w-11 h-11 flex items-center justify-center rounded-2xl flex-shrink-0"
                     style={{ background: 'rgba(255,255,255,0.06)' }}
                   >
-                    {item.emoji}
+                    <item.Icon size={20} style={{ color: 'rgba(255,255,255,0.6)' }} strokeWidth={1.5} />
                   </span>
                   <span className="text-white font-semibold text-base">{item.label}</span>
                 </button>
@@ -128,10 +129,10 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
                 className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-right transition-all active:scale-[0.97]"
               >
                 <span
-                  className="w-11 h-11 flex items-center justify-center rounded-2xl text-xl flex-shrink-0"
+                  className="w-11 h-11 flex items-center justify-center rounded-2xl flex-shrink-0"
                   style={{ background: 'rgba(255,255,255,0.06)' }}
                 >
-                  🔓
+                  <LogOut size={20} style={{ color: 'rgba(255,255,255,0.6)' }} strokeWidth={1.5} />
                 </span>
                 <span style={{ color: 'rgba(255,255,255,0.7)' }} className="font-medium text-base">
                   התנתק

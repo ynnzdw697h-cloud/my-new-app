@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CalendarDays, RotateCcw, Calendar } from 'lucide-react';
 import { WEEKLY_TASKS, DAYS, CATEGORIES } from '../data/weeklyTasks';
 import { STATIONS } from '../data/stations';
 import { useFirestoreSet } from '../hooks/useFirestoreSet';
@@ -39,17 +40,19 @@ export default function WeeklyTasks({ station }) {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-black text-white flex items-center gap-2 mb-1">
-            <span>📅</span> משימות שבועיות
+            <CalendarDays size={22} style={{ color: 'rgba(255,255,255,0.5)' }} strokeWidth={1.5} />
+            משימות שבועיות
           </h2>
           <p className="text-slate-400">ניקוי ותחזוקה שוטפת</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setCompletedWeekly(new Set())}
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 border border-slate-700
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 border border-slate-700
                        text-slate-400 hover:text-white hover:border-slate-500 transition-all duration-150"
           >
-            🔄 איפוס שבוע
+            <RotateCcw size={14} strokeWidth={1.5} />
+            איפוס שבוע
           </button>
           <div className="text-left">
             <div className="text-slate-400 text-sm">הושלמו השבוע</div>
@@ -107,7 +110,9 @@ export default function WeeklyTasks({ station }) {
 
       {filtered.length === 0 && (
         <div className="text-center py-16 text-slate-500">
-          <div className="text-4xl mb-3">📅</div>
+          <div className="flex justify-center mb-3">
+            <CalendarDays size={40} style={{ color: 'rgba(255,255,255,0.15)' }} strokeWidth={1.25} />
+          </div>
           <div>לא נמצאו משימות</div>
         </div>
       )}
@@ -144,7 +149,8 @@ function DayGroup({ day, tasks, completedWeekly, onToggle, stationById }) {
   return (
     <div>
       <h3 className="text-white font-bold text-lg mb-3 flex items-center gap-2">
-        <span className="text-slate-500">📆</span> {day}
+        <Calendar size={16} style={{ color: 'rgba(255,255,255,0.3)' }} strokeWidth={1.5} />
+        {day}
         <span className="text-slate-500 text-sm font-normal">({tasks.length} משימות)</span>
       </h3>
       <div className="space-y-3">
@@ -182,10 +188,11 @@ function DayGroup({ day, tasks, completedWeekly, onToggle, stationById }) {
                     {/* Station badge */}
                     {taskStation && (
                       <span
-                        className="text-xs px-2 py-0.5 rounded-lg font-medium"
+                        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-lg font-medium"
                         style={{ backgroundColor: taskStation.color + '25', color: taskStation.color }}
                       >
-                        {taskStation.emoji} {taskStation.name}
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: taskStation.color, display: 'inline-block', flexShrink: 0 }} />
+                        {taskStation.name}
                       </span>
                     )}
                     {/* Category */}

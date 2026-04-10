@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ClipboardList, BookOpen, ChevronLeft } from 'lucide-react';
+import { ClipboardList, BookOpen, ChevronLeft, Moon as MoonIcon, Camera, PackageCheck, ShoppingCart, Fish, BarChart3, Flame, Sparkles } from 'lucide-react';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { STATIONS } from '../data/stations';
 import { PREP_TASKS } from '../data/prepTasks';
@@ -69,11 +69,10 @@ function Sun() {
   );
 }
 
-/* ── Moon (emoji + glow) ── */
+/* ── Moon (lucide icon + glow) ── */
 function Moon() {
   return (
     <div style={{ width: 100, height: 100, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {/* Soft glow halo */}
       <div
         style={{
           position: 'absolute',
@@ -85,9 +84,9 @@ function Moon() {
       <motion.div
         animate={{ opacity: [0.85, 1, 0.85] }}
         transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
-        style={{ fontSize: 52, lineHeight: 1, filter: 'drop-shadow(0 0 14px rgba(147,197,253,0.75))' }}
+        style={{ filter: 'drop-shadow(0 0 14px rgba(147,197,253,0.75))' }}
       >
-        🌙
+        <MoonIcon size={52} style={{ color: '#93c5fd' }} strokeWidth={1.25} />
       </motion.div>
     </div>
   );
@@ -196,10 +195,10 @@ function Avatar({ name, color, avatarData, onUpload }) {
             width: 18, height: 18, borderRadius: '50%',
             background: color, border: '2px solid #121212',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 9, pointerEvents: 'none',
+            pointerEvents: 'none',
           }}
         >
-          {uploading ? '…' : '📷'}
+          {uploading ? <span style={{ fontSize: 7, color: '#fff' }}>…</span> : <Camera size={9} style={{ color: '#fff' }} strokeWidth={2} />}
         </div>
 
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
@@ -342,8 +341,14 @@ function HeroCard({ user, st, tod, palette, avatars, saveAvatar, done, total, pc
 
         {showProgress && (
           <>
-            <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              {st.emoji} {st.name} — {done === total && total > 0 ? 'כל המשימות הושלמו 🎉' : `נותרו ${total - done} משימות`}
+            <p className="mt-2 text-sm flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.primary, display: 'inline-block', flexShrink: 0 }} />
+              {st.name} — {done === total && total > 0 ? (
+                <span className="inline-flex items-center gap-1">
+                  כל המשימות הושלמו
+                  <Sparkles size={12} strokeWidth={1.5} style={{ color: palette.primary }} />
+                </span>
+              ) : `נותרו ${total - done} משימות`}
             </p>
             <div className="mt-5">
               <div className="flex justify-between items-end mb-2">
@@ -403,14 +408,14 @@ export default function Dashboard({ station, user, completedTasks, onNavigate, r
             פעולות ניהול
           </p>
           <div className="grid grid-cols-2 gap-3">
-            <QuickAction emoji="📦" label="קבלת סחורה"    sub="סריקה ובדיקה"       color="#10b981" onClick={() => onNavigate('checker_hub')} />
-            <QuickAction emoji="🛒" label="הזמנות ספקים"  sub="עלה עלה, דגים, יבש" color="#8b5cf6" onClick={() => onNavigate('supplier')} />
-            <QuickAction emoji="🐟" label="ספירת חיות"    sub="סוף יום"            color="#f59e0b" onClick={() => onNavigate('proteins')} />
+            <QuickAction Icon={PackageCheck} label="קבלת סחורה"    sub="סריקה ובדיקה"       color="#10b981" onClick={() => onNavigate('checker_hub')} />
+            <QuickAction Icon={ShoppingCart} label="הזמנות ספקים"  sub="עלה עלה, דגים, יבש" color="#8b5cf6" onClick={() => onNavigate('supplier')} />
+            <QuickAction Icon={Fish}         label="ספירת חיות"    sub="סוף יום"            color="#f59e0b" onClick={() => onNavigate('proteins')} />
           </div>
         </div>
 
         {/* All-station status */}
-        <SectionCard title="סטטוס תחנות" icon="📊">
+        <SectionCard title="סטטוס תחנות" Icon={BarChart3}>
           <div className="space-y-3">
             {Object.values(STATIONS).filter(s => s.id !== 'checker').map(s => {
               const tasks  = PREP_TASKS[s.id] || [];
@@ -422,7 +427,8 @@ export default function Dashboard({ station, user, completedTasks, onNavigate, r
                 <div key={s.id}>
                   <div className="flex justify-between text-sm mb-1.5">
                     <span className="font-medium text-white flex items-center gap-1.5">
-                      <span>{s.emoji}</span> {s.name}
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.color, display: 'inline-block', flexShrink: 0 }} />
+                      {s.name}
                     </span>
                     <span style={{ color: statusColor, fontWeight: 700 }}>{p}%</span>
                   </div>
@@ -586,7 +592,7 @@ function StatCard({ label, value, sub, color, onClick }) {
   );
 }
 
-function SectionCard({ title, icon, children, onClick }) {
+function SectionCard({ title, Icon, children, onClick }) {
   const Wrapper = onClick ? 'button' : 'div';
   return (
     <Wrapper
@@ -595,7 +601,7 @@ function SectionCard({ title, icon, children, onClick }) {
       style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
     >
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-lg">{icon}</span>
+        {Icon && <Icon size={16} style={{ color: 'rgba(255,255,255,0.4)' }} strokeWidth={1.5} />}
         <span className="text-white font-bold text-base">{title}</span>
         {onClick && <span className="mr-auto text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>הצג הכל ←</span>}
       </div>
@@ -604,15 +610,15 @@ function SectionCard({ title, icon, children, onClick }) {
   );
 }
 
-function QuickAction({ emoji, label, sub, color, onClick }) {
+function QuickAction({ Icon, label, sub, color, onClick }) {
   return (
     <button
       onClick={onClick}
       className="glow-btn rounded-3xl p-5 text-right w-full"
       style={{ background: color + '12', border: `1px solid ${color}25`, '--gc': color, '--gca': color + '50', '--gcb': color + '18' }}
     >
-      <span className="inline-flex items-center justify-center w-12 h-12 rounded-2xl text-2xl mb-3" style={{ background: color + '20' }}>
-        {emoji}
+      <span className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-3" style={{ background: color + '20' }}>
+        {Icon && <Icon size={22} style={{ color }} strokeWidth={1.5} />}
       </span>
       <div className="text-white font-bold text-sm leading-tight">{label}</div>
       <div className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{sub}</div>

@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
+import { AlertTriangle, TrendingDown, Clock, Camera, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ISSUE_TYPES = [
-  { id: 'quality',     label: 'איכות ירודה',   emoji: '⚠️' },
-  { id: 'missing_qty', label: 'כמות חסרה',      emoji: '📉' },
-  { id: 'expired',     label: 'פג תוקף',         emoji: '🚫' },
+  { id: 'quality',     label: 'איכות ירודה',   Icon: AlertTriangle },
+  { id: 'missing_qty', label: 'כמות חסרה',      Icon: TrendingDown  },
+  { id: 'expired',     label: 'פג תוקף',         Icon: Clock         },
 ];
 
 function compressImage(file, maxWidth = 800, quality = 0.82) {
@@ -92,7 +93,7 @@ export default function IssueSheet({ item, user, onSave, onClose }) {
                 color:      type === t.id ? '#EF4444' : 'rgba(255,255,255,0.5)',
               }}
             >
-              <span className="text-xl">{t.emoji}</span>
+              <t.Icon size={18} strokeWidth={1.5} />
               {t.label}
             </button>
           ))}
@@ -114,7 +115,11 @@ export default function IssueSheet({ item, user, onSave, onClose }) {
           className="w-full rounded-2xl py-3 mb-5 flex items-center justify-center gap-2 font-semibold text-sm"
           style={{ background: 'rgba(255,255,255,0.05)', border: '1px dashed rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)' }}
         >
-          {uploading ? '...' : photo ? '✅ תמונה צורפה — החלף' : '📷 צרף תמונה'}
+          {uploading ? '...' : photo ? (
+            <><CheckCircle2 size={15} strokeWidth={1.5} /> תמונה צורפה — החלף</>
+          ) : (
+            <><Camera size={15} strokeWidth={1.5} /> צרף תמונה</>
+          )}
         </button>
         {photo && (
           <img src={photo} alt="issue" className="w-full rounded-2xl object-cover mb-5" style={{ maxHeight: 140 }} />

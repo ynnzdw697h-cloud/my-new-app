@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Utensils } from 'lucide-react';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { TenantProvider } from './context/TenantContext';
@@ -72,7 +73,7 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
         }}
       >
         <div className="flex items-center gap-2.5">
-          {isDashboard && <span className="text-xl">🍽️</span>}
+          {isDashboard && <Utensils size={18} style={{ color: 'rgba(255,255,255,0.45)' }} strokeWidth={1.5} />}
           <span className="text-white font-black text-lg tracking-tight">
             {PAGE_TITLES[view]}
           </span>
@@ -81,7 +82,7 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
           className="flex items-center gap-2 rounded-2xl px-3 py-1.5"
           style={{ background: st.color + '18', border: `1px solid ${st.color}35` }}
         >
-          <span className="text-base">{st.emoji}</span>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: st.color, flexShrink: 0 }} />
           <span className="text-sm font-bold" style={{ color: st.color }}>{user}</span>
         </div>
       </header>
