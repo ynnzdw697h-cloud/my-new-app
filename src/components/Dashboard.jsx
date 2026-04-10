@@ -1,10 +1,8 @@
 import { motion } from 'framer-motion';
-import { ClipboardList, BookOpen, ChevronLeft, Moon as MoonIcon, Camera, PackageCheck, ShoppingCart, Fish, BarChart3, Flame, Sparkles } from 'lucide-react';
+import { ClipboardList, BookOpen, ChevronLeft, Moon as MoonIcon, Camera, PackageCheck, ShoppingCart, Fish, BarChart3, Sparkles } from 'lucide-react';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { STATIONS } from '../data/stations';
 import { PREP_TASKS } from '../data/prepTasks';
-import { RECIPES } from '../data/recipes';
-import { WEEKLY_TASKS } from '../data/weeklyTasks';
 import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { useTenantId } from '../context/TenantContext';
@@ -386,8 +384,6 @@ export default function Dashboard({ station, user, completedTasks, onNavigate, r
   const total     = myTasks.length;
   const pct       = total > 0 ? Math.round((done / total) * 100) : 0;
 
-  const myRecipes = RECIPES.filter(r => r.station === station);
-  const myWeekly  = WEEKLY_TASKS.filter(t => t.assignedTo === station);
   const pending   = myTasks.filter(t => !completedTasks.has(t.id));
 
   const isChecker = role === 'checker';
@@ -578,20 +574,6 @@ function CockpitCard({ Icon, label, sub, onClick }) {
 }
 
 /* ─── Sub-components ─── */
-function StatCard({ label, value, sub, color, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className="glow-btn rounded-2xl p-4 text-right w-full"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', '--gc': color, '--gca': color + '50', '--gcb': color + '18' }}
-    >
-      <div className="text-2xl font-black mb-0.5" style={{ color }}>{value}</div>
-      <div className="text-white text-sm font-semibold leading-tight">{label}</div>
-      <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{sub}</div>
-    </button>
-  );
-}
-
 function SectionCard({ title, Icon, children, onClick }) {
   const Wrapper = onClick ? 'button' : 'div';
   return (
