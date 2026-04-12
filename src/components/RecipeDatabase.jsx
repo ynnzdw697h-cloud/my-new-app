@@ -4,7 +4,7 @@ import { RECIPES, CATEGORIES } from '../data/recipes';
 import { MAIN_DISHES, DISH_CATEGORIES } from '../data/mainDishes';
 import { STATIONS } from '../data/stations';
 import { db } from '../firebase';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, collection, onSnapshot, setDoc } from 'firebase/firestore';
 import { useTenantId } from '../context/TenantContext';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import AddRecipeModal from './AddRecipeModal';
@@ -55,18 +55,51 @@ function foodCostColor(pct) {
 }
 
 // ─── Hook: load recipe images from Firestore ───
+// Images are stored per-recipe in a subcollection to avoid the 1 MB document limit.
+// The legacy single-doc is also read so old saved images still appear.
 function useRecipeImages() {
   const tenantId            = useTenantId();
   const [images, setImages] = useState({});
+
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'tenants', tenantId, 'kitchen', 'recipe_images'), snap => {
-      if (snap.exists()) setImages(snap.data());
-    });
-    return unsub;
+    if (!tenantId) return;
+    // Shared mutable accumulator so both callbacks stay in sync
+    const merged = {};
+
+    // (1) Legacy: single combined document — backward compat
+    const unsub1 = onSnapshot(
+      doc(db, 'tenants', tenantId, 'kitchen', 'recipe_images'),
+      snap => {
+        if (snap.exists()) {
+          Object.assign(merged, snap.data());
+          setImages({ ...merged });
+        }
+      },
+      err => console.warn('[recipe_images legacy]', err.code)
+    );
+
+    // (2) New: per-recipe collection — no document-size limit
+    const unsub2 = onSnapshot(
+      collection(db, 'tenants', tenantId, 'recipe_images_col'),
+      snapshot => {
+        snapshot.forEach(docSnap => { merged[docSnap.id] = docSnap.data().url; });
+        setImages({ ...merged });
+      },
+      err => console.warn('[recipe_images_col]', err.code)
+    );
+
+    return () => { unsub1(); unsub2(); };
   }, [tenantId]);
 
   const saveImage = useCallback(async (id, imageUrl) => {
-    await setDoc(doc(db, 'tenants', tenantId, 'kitchen', 'recipe_images'), { [id]: imageUrl }, { merge: true });
+    // Each recipe's image gets its own document — no 1 MB combined-doc overflow
+    const safeId = String(id).replace(/\./g, '_');
+    await setDoc(
+      doc(db, 'tenants', tenantId, 'recipe_images_col', safeId),
+      { url: imageUrl }
+    );
+    // Optimistic local update so the UI doesn't wait for the snapshot
+    setImages(prev => ({ ...prev, [safeId]: imageUrl }));
   }, [tenantId]);
 
   return { images, saveImage };
@@ -138,7 +171,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
         onUpdateBatches={() => {}}
         onBack={() => setDrillRecipe(null)}
         stationColor={st.color}
-        imageUrl={images[drillRecipe.id] || null}
+        imageUrl={images[String(drillRecipe.id)] || null}
         onSaveImage={url => saveImage(drillRecipe.id, url)}
       />
     );
@@ -152,7 +185,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
         onOpenSubRecipe={recipe => setDrillRecipe(recipe)}
         onBack={() => setSelectedDish(null)}
         stationColor={st.color}
-        imageUrl={images[selectedDish.id] || null}
+        imageUrl={images[String(selectedDish.id)] || null}
         onSaveImage={url => saveImage(selectedDish.id, url)}
         allPrepRecipes={allRecipes}
       />
@@ -169,7 +202,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
         onUpdateBatches={val => setBatches(Math.max(0.25, parseFloat(val) || 1))}
         onBack={() => setSelectedRecipe(null)}
         stationColor={st.color}
-        imageUrl={images[selectedRecipe.id] || null}
+        imageUrl={images[String(selectedRecipe.id)] || null}
         onSaveImage={url => saveImage(selectedRecipe.id, url)}
         onMarkReady={onMarkReady}
       />
@@ -289,7 +322,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
         <div className="grid grid-cols-2 gap-3">
           {filteredDishes.map(dish => {
             const meta   = DISH_CAT_META[dish.category] || DEFAULT_META;
-            const imgUrl = images[dish.id];
+            const imgUrl = images[String(dish.id)];
             const fcp    = dish.sellingPrice > 0 ? (dish.costPerPortion / dish.sellingPrice * 100) : 0;
             return (
               <button
@@ -356,7 +389,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
           <div className="grid grid-cols-2 gap-3">
             {filteredPrep.map(recipe => {
               const meta   = CAT_META[recipe.category] || DEFAULT_META;
-              const imgUrl = images[recipe.id];
+              const imgUrl = images[String(recipe.id)];
               return (
                 <button
                   key={recipe.id}
@@ -421,7 +454,8 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
   const [portions, setPortions]   = useState(dish.defaultPortions);
   const [fohOpen, setFohOpen]     = useState(false);
   const fileRef                   = useRef();
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading]     = useState(false);
+  const [uploadError, setUploadError] = useState(null);
 
   const scale     = portions / dish.defaultPortions;
   const totalCost = dish.costPerPortion * portions;
@@ -433,11 +467,13 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const base64 = await compressImage(file, 900, 0.72);
       await onSaveImage(base64);
     } catch (err) {
       console.error('Upload failed', err);
+      setUploadError(err.message || 'שגיאה בהעלאה');
     } finally {
       setUploading(false);
     }
@@ -492,6 +528,16 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
           )}
         </button>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+
+        {/* Upload error */}
+        {uploadError && (
+          <div
+            className="absolute top-16 left-4 right-4 rounded-2xl px-4 py-2 text-xs font-bold"
+            style={{ background: 'rgba(220,38,38,0.9)', color: 'white', backdropFilter: 'blur(8px)' }}
+          >
+            שגיאה: {uploadError}
+          </div>
+        )}
 
         {/* Title overlay */}
         <div className="absolute bottom-0 inset-x-0 p-5">
