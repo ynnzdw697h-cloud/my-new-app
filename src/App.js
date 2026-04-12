@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Utensils } from 'lucide-react';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
 import { auth } from './firebase';
@@ -89,37 +90,47 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
 
       {/* ── Main content ── */}
       <main className="flex-1 overflow-y-auto" style={{ paddingTop: '64px', paddingBottom: '96px' }}>
-        {view === 'dashboard' && (
-          <Dashboard station={station} user={user} completedTasks={completedTasks} onNavigate={setView} role={role} />
-        )}
-        {view === 'prep' && (
-          <PrepChecklist
-            station={station}
-            completedTasks={completedTasks}
-            onToggle={toggleTask}
-            onReset={() => setCompletedTasks(new Set())}
-          />
-        )}
-        {view === 'recipes'        && (
-          <RecipeDatabase
-            station={station}
-            onMarkReady={r => { setMarkReadyRecipe(r); setView('prep_tracker'); }}
-          />
-        )}
-        {view === 'prep_tracker'   && (
-          <PrepTracker
-            user={user}
-            station={station}
-            initialRecipe={markReadyRecipe}
-            onClearInitial={() => setMarkReadyRecipe(null)}
-          />
-        )}
-        {view === 'weekly'         && <WeeklyTasks station={station} />}
-        {view === 'shift'          && <ShiftNotes user={user} />}
-        {view === 'proteins'       && <ProteinCount />}
-        {view === 'supplier'       && <SupplierOrder />}
-        {view === 'checker_hub'    && <CheckerHub user={user} onOpenDelivery={openDelivery} />}
-        {view === 'checker_detail' && <CheckerDetail deliveryId={activeDeliveryId} user={user} onBack={() => setView('checker_hub')} />}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={view}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.18, ease: 'easeInOut' }}
+          >
+            {view === 'dashboard' && (
+              <Dashboard station={station} user={user} completedTasks={completedTasks} onNavigate={setView} role={role} />
+            )}
+            {view === 'prep' && (
+              <PrepChecklist
+                station={station}
+                completedTasks={completedTasks}
+                onToggle={toggleTask}
+                onReset={() => setCompletedTasks(new Set())}
+              />
+            )}
+            {view === 'recipes'        && (
+              <RecipeDatabase
+                station={station}
+                onMarkReady={r => { setMarkReadyRecipe(r); setView('prep_tracker'); }}
+              />
+            )}
+            {view === 'prep_tracker'   && (
+              <PrepTracker
+                user={user}
+                station={station}
+                initialRecipe={markReadyRecipe}
+                onClearInitial={() => setMarkReadyRecipe(null)}
+              />
+            )}
+            {view === 'weekly'         && <WeeklyTasks station={station} />}
+            {view === 'shift'          && <ShiftNotes user={user} />}
+            {view === 'proteins'       && <ProteinCount />}
+            {view === 'supplier'       && <SupplierOrder />}
+            {view === 'checker_hub'    && <CheckerHub user={user} onOpenDelivery={openDelivery} />}
+            {view === 'checker_detail' && <CheckerDetail deliveryId={activeDeliveryId} user={user} onBack={() => setView('checker_hub')} />}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       <BottomNav

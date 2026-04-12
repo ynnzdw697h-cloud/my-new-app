@@ -135,7 +135,7 @@ function spawnParticles(color) {
 /* ─── SwipeableRow: drag right (RTL) to reveal left delete button ─── */
 function SwipeableRow({ rowId, swipedId, setSwipedId, onDeleteRequest, children }) {
   return (
-    <div className="relative rounded-3xl overflow-hidden">
+    <motion.div layout className="relative rounded-3xl overflow-hidden">
       {/* Delete button — revealed on the left */}
       <div
         className="absolute inset-y-0 left-0 flex items-center justify-center bg-red-600 rounded-3xl"
@@ -153,8 +153,9 @@ function SwipeableRow({ rowId, swipedId, setSwipedId, onDeleteRequest, children 
       <motion.div
         drag="x"
         dragConstraints={{ left: 0, right: 80 }}
-        dragElastic={0.05}
+        dragElastic={0.2}
         animate={{ x: swipedId === rowId ? 80 : 0 }}
+        transition={{ type: 'spring', stiffness: 280, damping: 26 }}
         onDragEnd={(_, info) => {
           if (info.offset.x > 40) setSwipedId(rowId);
           else setSwipedId(null);
@@ -164,7 +165,7 @@ function SwipeableRow({ rowId, swipedId, setSwipedId, onDeleteRequest, children 
       >
         {children}
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -643,6 +644,7 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
 
   return (
     <motion.div
+      layout
       animate={isDone ? { scale: [1, 1.025, 0.99, 1] } : { scale: 1 }}
       transition={{ duration: 0.45, ease: 'easeInOut' }}
       className="rounded-3xl overflow-hidden"
@@ -662,7 +664,7 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
 
       {/* Main row */}
       <div
-        className={`flex items-start gap-4 px-5 pb-4 pt-1 select-none ${!hasSubItems ? 'cursor-pointer' : ''}`}
+        className={`flex items-center gap-4 px-5 pb-4 pt-1 select-none min-h-[72px] ${!hasSubItems ? 'cursor-pointer' : ''}`}
         onClick={handleToggle}
       >
         {/* Checkbox */}
@@ -714,21 +716,23 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
           )}
         </div>
 
-        {/* "הושלם" badge */}
-        <AnimatePresence>
-          {isDone && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.6, x: -8 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.6 }}
-              transition={{ type: 'spring', stiffness: 450, damping: 22, delay: 0.15 }}
-              className="text-xs font-bold px-2.5 py-1 rounded-xl flex-shrink-0"
-              style={{ background: stationColor + '18', color: stationColor, border: `1px solid ${stationColor}35` }}
-            >
-              הושלם
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* "הושלם" badge — fixed-width slot so appearance never shifts text */}
+        <div className="flex-shrink-0 flex items-center justify-end" style={{ width: 52 }}>
+          <AnimatePresence>
+            {isDone && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.6 }}
+                transition={{ type: 'spring', stiffness: 450, damping: 22, delay: 0.15 }}
+                className="text-xs font-bold px-2.5 py-1 rounded-xl"
+                style={{ background: stationColor + '18', color: stationColor, border: `1px solid ${stationColor}35` }}
+              >
+                הושלם
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Sub-items */}
