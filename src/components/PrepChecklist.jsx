@@ -649,7 +649,7 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
       transition={{ duration: 0.45, ease: 'easeInOut' }}
       className="rounded-3xl overflow-hidden"
       style={{
-        background: 'var(--bg-card)',
+        background: 'var(--bg-card-solid)',
         border: isDone ? `1px solid ${stationColor}30` : '1px solid var(--border)',
         transition: 'border-color 0.4s ease',
       }}

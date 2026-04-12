@@ -178,10 +178,10 @@ function PinStep({ chef, onSuccess, onBack }) {
   return (
     <div className="w-full max-w-xs flex flex-col items-center gap-7">
       {/* Back */}
-      <div className="w-full flex items-center justify-between">
+      <div className="w-full flex items-center justify-between gap-6">
         <button
           onClick={onBack}
-          className="flex items-center gap-1 text-sm font-medium"
+          className="flex items-center gap-1 text-sm font-medium min-h-[44px] px-2"
           style={{ color: 'rgba(255,255,255,0.4)' }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -221,14 +221,14 @@ function PinStep({ chef, onSuccess, onBack }) {
       </motion.div>
 
       {/* Keypad */}
-      <div className="grid grid-cols-3 gap-3 w-full">
+      <div className="grid grid-cols-3 gap-4 w-full">
         {PAD.flat().map((key, i) => {
           if (key === 'del') {
             return (
               <button
                 key={i}
                 onClick={del}
-                className="rounded-2xl h-16 flex items-center justify-center text-xl active:scale-90 transition-transform"
+                className="rounded-2xl h-20 flex items-center justify-center text-2xl active:scale-90 transition-transform"
                 style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}
               >
                 ⌫
@@ -240,7 +240,7 @@ function PinStep({ chef, onSuccess, onBack }) {
               <button
                 key={i}
                 onClick={() => pin.length === 4 && !loading && validate(pin)}
-                className="rounded-2xl h-16 flex items-center justify-center text-lg active:scale-90 transition-transform font-black"
+                className="rounded-2xl h-20 flex items-center justify-center text-lg active:scale-90 transition-transform font-black"
                 style={{
                   background: pin.length === 4 ? '#3B82F6' : 'rgba(255,255,255,0.06)',
                   color: pin.length === 4 ? '#fff' : 'rgba(255,255,255,0.25)',
@@ -256,7 +256,7 @@ function PinStep({ chef, onSuccess, onBack }) {
             <button
               key={i}
               onClick={() => press(key)}
-              className="rounded-2xl h-16 flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform"
+              className="rounded-2xl h-20 flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white' }}
             >
               {key}
