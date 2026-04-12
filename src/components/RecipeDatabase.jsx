@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { RECIPES, CATEGORIES } from '../data/recipes';
 import { MAIN_DISHES, DISH_CATEGORIES } from '../data/mainDishes';
 import { STATIONS } from '../data/stations';
 import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { useTenantId } from '../context/TenantContext';
+import { useFirestoreArray } from '../hooks/useFirestoreArray';
+import AddRecipeModal from './AddRecipeModal';
 
 // ─── Prep category metadata ───
 const CAT_META = {
@@ -80,7 +83,14 @@ export default function RecipeDatabase({ station, onMarkReady }) {
   const [category, setCategory]             = useState('הכל');
   const [search, setSearch]                 = useState('');
   const [batches, setBatches]               = useState(1);
+  const [showAddModal, setShowAddModal]     = useState(false);
   const { images, saveImage }               = useRecipeImages();
+
+  const [customRecipes, setCustomRecipes] = useFirestoreArray('custom_recipes');
+  const [customDishes,  setCustomDishes]  = useFirestoreArray('custom_dishes');
+
+  const allRecipes = [...RECIPES, ...customRecipes];
+  const allDishes  = [...MAIN_DISHES, ...customDishes];
 
   const st = STATIONS[station];
 
@@ -90,15 +100,24 @@ export default function RecipeDatabase({ station, onMarkReady }) {
     setSearch('');
   }
 
-  const filteredPrep = RECIPES.filter(r => {
+  function handleSaveRecipe(type, data) {
+    if (type === 'prep') {
+      setCustomRecipes(prev => [data, ...prev]);
+    } else {
+      setCustomDishes(prev => [data, ...prev]);
+    }
+    setShowAddModal(false);
+  }
+
+  const filteredPrep = allRecipes.filter(r => {
     const matchCat    = category === 'הכל' || r.category === category;
-    const matchSearch = r.name.includes(search) || r.description.includes(search);
+    const matchSearch = r.name.includes(search) || (r.description || '').includes(search);
     return matchCat && matchSearch;
   });
 
-  const filteredDishes = MAIN_DISHES.filter(d => {
+  const filteredDishes = allDishes.filter(d => {
     const matchCat    = category === 'הכל' || d.category === category;
-    const matchSearch = d.name.includes(search) || d.description.includes(search);
+    const matchSearch = d.name.includes(search) || (d.description || '').includes(search);
     return matchCat && matchSearch;
   });
 
@@ -135,6 +154,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
         stationColor={st.color}
         imageUrl={images[selectedDish.id] || null}
         onSaveImage={url => saveImage(selectedDish.id, url)}
+        allPrepRecipes={allRecipes}
       />
     );
   }
@@ -160,7 +180,33 @@ export default function RecipeDatabase({ station, onMarkReady }) {
   const catMeta = activeTab === 'dish' ? DISH_CAT_META   : CAT_META;
 
   return (
-    <div className="px-4 py-5 max-w-xl mx-auto" dir="rtl">
+    <div className="px-4 py-5 max-w-xl mx-auto" dir="rtl" style={{ position: 'relative' }}>
+      <AnimatePresence>
+        {showAddModal && (
+          <AddRecipeModal
+            onSave={handleSaveRecipe}
+            onClose={() => setShowAddModal(false)}
+            existingPrepRecipes={customRecipes}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* FAB */}
+      <button
+        onClick={() => setShowAddModal(true)}
+        style={{
+          position: 'fixed', bottom: 104, left: 20, zIndex: 40,
+          width: 52, height: 52, borderRadius: '50%',
+          background: '#10B981',
+          boxShadow: '0 4px 20px rgba(16,185,129,0.55)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 26, color: 'white', fontWeight: 300,
+          border: 'none',
+          transition: 'transform 0.15s, box-shadow 0.15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+      >+</button>
 
       {/* ── Tab switcher ── */}
       <div
@@ -280,6 +326,12 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                       {fcp.toFixed(0)}% FC
                     </div>
                   )}
+                  {dish.isCustom && (
+                    <div
+                      className="absolute top-2.5 left-2.5 px-1.5 py-0.5 rounded-lg text-xs font-bold"
+                      style={{ background: 'rgba(16,185,129,0.7)', color: 'white', backdropFilter: 'blur(6px)' }}
+                    >✎</div>
+                  )}
                 </div>
                 <div className="p-3">
                   <h3 className="text-white font-bold text-sm leading-tight mb-1.5">{dish.name}</h3>
@@ -332,6 +384,12 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                     >
                       {recipe.category}
                     </div>
+                    {recipe.isCustom && (
+                      <div
+                        className="absolute top-2.5 left-2.5 px-1.5 py-0.5 rounded-lg text-xs font-bold"
+                        style={{ background: 'rgba(16,185,129,0.7)', color: 'white', backdropFilter: 'blur(6px)' }}
+                      >✎</div>
+                    )}
                   </div>
                   <div className="p-3">
                     <h3 className="text-white font-bold text-sm leading-tight mb-1.5">{recipe.name}</h3>
@@ -359,7 +417,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
 /* ════════════════════════════════════════════════════
    Dish Detail (Main / Assembly Recipe)
 ════════════════════════════════════════════════════ */
-function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onSaveImage }) {
+function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onSaveImage, allPrepRecipes = RECIPES }) {
   const [portions, setPortions]   = useState(dish.defaultPortions);
   const [fohOpen, setFohOpen]     = useState(false);
   const fileRef                   = useRef();
@@ -596,7 +654,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
                 </p>
                 <div className="space-y-2 pb-1">
                   {dish.subRecipes.map(sr => {
-                    const recipe = RECIPES.find(r => r.id === sr.recipeId);
+                    const recipe = allPrepRecipes.find(r => r.id === sr.recipeId);
                     return (
                       <button
                         key={sr.recipeId}
