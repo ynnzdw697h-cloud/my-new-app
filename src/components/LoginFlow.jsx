@@ -94,7 +94,7 @@ export default function LoginFlow({ onLogin }) {
 function ChefStep({ onSelect }) {
   return (
     <div className="w-full max-w-md">
-      <p className="text-center font-semibold text-lg mb-6" style={{ color: 'rgba(255,255,255,0.6)' }}>
+      <p className="text-center font-bold text-xl mb-6" style={{ color: 'rgba(255,255,255,0.85)' }}>
         מי אתה?
       </p>
       <div className="grid grid-cols-2 gap-3">
@@ -198,7 +198,7 @@ function PinStep({ chef, onSuccess, onBack }) {
         </div>
       </div>
 
-      <p className="text-base font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>הכנס קוד PIN</p>
+      <p className="text-xl font-bold" style={{ color: 'rgba(255,255,255,0.85)' }}>הכנס קוד PIN</p>
 
       {/* Dots */}
       <motion.div
@@ -302,7 +302,7 @@ function StationStep({ user, onSelect, onBack }) {
         </div>
       </div>
 
-      <p className="text-center font-semibold text-lg mb-6" style={{ color: 'rgba(255,255,255,0.6)' }}>
+      <p className="text-center font-bold text-xl mb-6" style={{ color: 'rgba(255,255,255,0.85)' }}>
         בחר את הפס שלך
       </p>
 

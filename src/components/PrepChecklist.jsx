@@ -426,14 +426,14 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
         <div className="flex items-center justify-between">
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-semibold"
+            className="flex items-center gap-1.5 px-4 py-3 rounded-2xl text-xs font-semibold min-h-[44px]"
             style={{ border: '1px solid rgba(255,255,255,0.13)', color: 'rgba(255,255,255,0.38)', background: 'transparent' }}
           >
             + הוסף הכנה
           </button>
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-semibold"
+            className="flex items-center gap-1.5 px-4 py-3 rounded-2xl text-xs font-semibold min-h-[44px]"
             style={{ border: '1px solid rgba(255,255,255,0.13)', color: 'rgba(255,255,255,0.38)', background: 'transparent' }}
           >
             <Trash2 size={13} strokeWidth={1.5} />

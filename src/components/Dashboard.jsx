@@ -326,7 +326,7 @@ function HeroCard({ user, st, tod, palette, avatars, saveAvatar, done, total, pc
         className="relative z-10"
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
+        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
       >
         <p className="text-xs font-medium mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>{today}</p>
         <div className="flex items-center gap-3 mb-1">
@@ -511,7 +511,7 @@ function UrgentAlertBanner({ pending }) {
         />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(239,68,68,0.7)', marginBottom: 2 }}>
+        <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#ef4444', marginBottom: 2 }}>
           דרוש לסרוויס
         </p>
         <p style={{ fontSize: '0.88rem', fontWeight: 600, color: 'rgba(255,255,255,0.9)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -560,7 +560,7 @@ function CockpitCard({ Icon, label, sub, onClick }) {
         <p style={{ fontSize: '1.2rem', fontWeight: 700, color: '#f4f4f5', letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 5 }}>
           {label}
         </p>
-        <p style={{ fontSize: '0.75rem', fontWeight: 400, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.01em' }}>
+        <p style={{ fontSize: '0.75rem', fontWeight: 400, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.01em' }}>
           {sub}
         </p>
       </div>

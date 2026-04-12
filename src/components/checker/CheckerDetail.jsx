@@ -137,14 +137,14 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
       </div>
 
       {/* Items */}
-      <div className="mx-4 mt-4 space-y-2">
+      <div className="mx-4 mt-4 space-y-3">
         {delivery.items.map(item => {
           const hasIssue = item.itemStatus === 'issue';
           return (
             <motion.div
               key={item.id}
               layout
-              className="rounded-2xl p-4"
+              className="rounded-2xl p-5"
               style={{
                 background: hasIssue ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
                 border: hasIssue ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.07)',
@@ -168,19 +168,21 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.4)' }}>התקבל</p>
                 <div className="flex items-center gap-3">
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
                     onClick={() => updateReceivedQty(item.id, Math.max(0, (item.receivedQty || 0) - 1))}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-lg"
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl"
                     style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
-                  >−</button>
+                  >−</motion.button>
                   <span className="text-white font-black text-base min-w-[2.5rem] text-center">
                     {item.receivedQty ?? item.orderedQty}
                   </span>
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
                     onClick={() => updateReceivedQty(item.id, (item.receivedQty || 0) + 1)}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-lg"
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl"
                     style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
-                  >+</button>
+                  >+</motion.button>
                 </div>
               </div>
 
@@ -207,15 +209,15 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
                 {hasIssue ? (
                   <button
                     onClick={() => clearIssue(item.id)}
-                    className="flex-1 rounded-xl py-2 text-xs font-bold"
-                    style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.5)' }}
+                    className="flex-1 rounded-2xl py-3.5 text-sm font-bold min-h-[48px] active:scale-[0.97] transition-all duration-150"
+                    style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }}
                   >
                     בטל דיווח
                   </button>
                 ) : null}
                 <button
                   onClick={() => setActiveItem(item)}
-                  className="flex-1 rounded-xl py-2 text-xs font-bold"
+                  className="flex-1 rounded-2xl py-3.5 text-sm font-bold min-h-[48px] active:scale-[0.97] transition-all duration-150"
                   style={{
                     background: hasIssue ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.07)',
                     color:      hasIssue ? '#EF4444' : 'rgba(255,255,255,0.6)',

@@ -107,13 +107,14 @@ export default function CheckerHub({ user, onOpenDelivery }) {
         </div>
       ) : (
         <div className="space-y-3">
-          {deliveries.map(d => {
+          {deliveries.map((d, index) => {
             const isToday = d.deliveryDate === today;
             return (
               <motion.button
                 key={d.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index * 0.05, 0.2) }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onOpenDelivery(d.id)}
                 className="w-full rounded-3xl p-5 text-right"

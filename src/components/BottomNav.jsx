@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Timer, Fish, ShoppingCart, LogOut } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 
@@ -90,14 +91,23 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
   return (
     <>
       {/* More overlay */}
-      {showMore && (
-        <>
-          <div
+      <AnimatePresence>
+        {showMore && (
+          <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
             className="fixed inset-0 z-40"
             style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
             onClick={() => setShowMore(false)}
           />
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             className="fixed bottom-24 inset-x-4 z-50 rounded-3xl overflow-hidden"
             style={{ background: '#1a1a23', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 -8px 40px rgba(0,0,0,0.6)' }}
           >
@@ -139,9 +149,10 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
                 </span>
               </button>
             </div>
-          </div>
-        </>
-      )}
+          </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Nav bar */}
       <nav
