@@ -51,16 +51,19 @@ function MenuItemSheet({ dish, onClose }) {
       transition={{ type: 'spring', stiffness: 280, damping: 30 }}
       style={{
         position: 'fixed', inset: 0, zIndex: 60,
-        background: '#121212',
+        background: '#131314',
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}
       dir="rtl"
     >
-      {/* Header */}
+      {/* Header with gradient overlay */}
       <div
         className="flex items-center justify-between px-5 h-16 flex-shrink-0"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+        style={{
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          background: 'linear-gradient(180deg, rgba(16,185,129,0.08), transparent)',
+        }}
       >
         <button
           onClick={onClose}
@@ -79,16 +82,16 @@ function MenuItemSheet({ dish, onClose }) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
 
         {/* Allergens */}
         {dish.allergens?.length > 0 && (
           <div className="rounded-2xl p-4" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
-            <p className="text-xs font-bold mb-2" style={{ color: 'rgba(245,158,11,0.7)' }}>⚠ אלרגנים</p>
+            <p className="text-xs font-bold mb-3" style={{ color: 'rgba(245,158,11,0.7)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>⚠ אלרגנים</p>
             <div className="flex flex-wrap gap-2">
               {dish.allergens.map(a => (
-                <span key={a} className="text-xs font-bold px-2.5 py-1 rounded-full"
-                  style={{ background: 'rgba(245,158,11,0.18)', color: '#F59E0B' }}>{a}</span>
+                <span key={a} className="text-sm font-bold"
+                  style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B', padding: '6px 14px', borderRadius: 20 }}>{a}</span>
               ))}
             </div>
           </div>
@@ -96,73 +99,90 @@ function MenuItemSheet({ dish, onClose }) {
 
         {/* Description */}
         {dish.description && (
-          <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>{dish.description}</p>
+          <>
+            <p className="text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>{dish.description}</p>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} />
+          </>
         )}
 
         {/* Why this dish */}
         {dish.foh?.sellingPoints?.length > 0 && (
-          <div className="rounded-2xl p-4" style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.18)' }}>
-            <p className="text-xs font-bold mb-3" style={{ color: 'rgba(245,158,11,0.7)' }}>למה המנה הזו?</p>
-            <div className="space-y-2.5">
-              {dish.foh.sellingPoints.map((pt, i) => (
-                <div key={i} className="flex gap-2.5 items-start">
-                  <span className="text-xs font-black flex-shrink-0 mt-0.5" style={{ color: '#F59E0B' }}>✓</span>
-                  <p className="text-sm font-medium text-white leading-snug">{pt}</p>
-                </div>
-              ))}
+          <>
+            <div className="rounded-2xl p-4" style={{
+              background: 'rgba(245,158,11,0.07)',
+              borderRight: '3px solid #F59E0B',
+              border: '1px solid rgba(245,158,11,0.18)',
+              borderRightWidth: 3,
+            }}>
+              <p className="text-xs font-bold mb-3" style={{ color: 'rgba(245,158,11,0.8)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>למה המנה הזו?</p>
+              <div className="space-y-2.5">
+                {dish.foh.sellingPoints.map((pt, i) => (
+                  <div key={i} className="flex gap-2.5 items-start">
+                    <span className="text-xs font-black flex-shrink-0 mt-0.5" style={{ color: '#F59E0B' }}>✓</span>
+                    <p className="text-base font-medium text-white leading-snug">{pt}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} />
+          </>
         )}
 
         {/* Service info */}
         {dish.foh && (
-          <div className="rounded-2xl p-4 space-y-2.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <p className="text-xs font-bold mb-1" style={{ color: 'rgba(255,255,255,0.45)' }}>הגשה</p>
-            {dish.foh.serveTemp && (
-              <div className="flex gap-2">
-                <span style={{ color: 'rgba(255,255,255,0.3)' }}>🌡</span>
-                <p className="text-sm text-white">{dish.foh.serveTemp}</p>
-              </div>
-            )}
-            {dish.foh.pairing && (
-              <div className="flex gap-2">
-                <span style={{ color: 'rgba(255,255,255,0.3)' }}>🍷</span>
-                <p className="text-sm text-white">{dish.foh.pairing}</p>
-              </div>
-            )}
-            {dish.foh.platingNote && (
-              <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>
-                {dish.foh.platingNote}
-              </p>
-            )}
-          </div>
+          <>
+            <div className="rounded-2xl p-4 space-y-2.5" style={{ background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.09)' }}>
+              <p className="text-xs font-bold mb-1" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>הגשה</p>
+              {dish.foh.serveTemp && (
+                <div className="flex gap-2">
+                  <span style={{ color: 'rgba(255,255,255,0.3)' }}>🌡</span>
+                  <p className="text-base text-white">{dish.foh.serveTemp}</p>
+                </div>
+              )}
+              {dish.foh.pairing && (
+                <div className="flex gap-2">
+                  <span style={{ color: 'rgba(255,255,255,0.3)' }}>🍷</span>
+                  <p className="text-base text-white">{dish.foh.pairing}</p>
+                </div>
+              )}
+              {dish.foh.platingNote && (
+                <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>
+                  {dish.foh.platingNote}
+                </p>
+              )}
+            </div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} />
+          </>
         )}
 
         {/* Ingredients */}
         {dish.directIngredients?.length > 0 && (
-          <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>רכיבים עיקריים</p>
-            <div className="space-y-2">
-              {dish.directIngredients.map((ing, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{ing.qty} {ing.unit}</span>
-                  <span className="text-sm text-white">{ing.name}</span>
-                </div>
-              ))}
+          <>
+            <div className="rounded-2xl p-4" style={{ background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.09)' }}>
+              <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>רכיבים עיקריים</p>
+              <div className="space-y-2">
+                {dish.directIngredients.map((ing, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>{ing.qty} {ing.unit}</span>
+                    <span className="text-base text-white">{ing.name}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} />
+          </>
         )}
 
         {/* Method */}
         {dish.method?.length > 0 && (
-          <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>הכנה</p>
+          <div className="rounded-2xl p-4" style={{ background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.09)' }}>
+            <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>הכנה</p>
             <div className="space-y-3">
               {dish.method.map((step, i) => (
                 <div key={i} className="flex gap-3">
                   <span className="text-xs font-black mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
                     style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>{i+1}</span>
-                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>{step}</p>
+                  <p className="text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>{step}</p>
                 </div>
               ))}
             </div>
@@ -268,13 +288,13 @@ export default function FohDemo() {
     <div
       dir="rtl"
       className="flex flex-col min-h-screen"
-      style={{ background: '#121212' }}
+      style={{ background: '#131314' }}
     >
       {/* Header */}
       <header
         className="fixed top-0 inset-x-0 z-30 h-16 flex items-center justify-between px-5"
         style={{
-          background: 'rgba(18,18,18,0.9)',
+          background: 'rgba(19,19,20,0.93)',
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
           borderBottom: '1px solid rgba(255,255,255,0.07)',
@@ -286,7 +306,7 @@ export default function FohDemo() {
         >
           DEMO
         </span>
-        <span className="font-black text-lg tracking-tight" style={{ color: 'rgba(255,255,255,0.95)' }}>{PAGE_TITLE[view]}</span>
+        <span className="font-black text-xl tracking-tight" style={{ color: 'rgba(255,255,255,0.95)' }}>{PAGE_TITLE[view]}</span>
       </header>
 
       {/* Main content */}
@@ -302,22 +322,24 @@ export default function FohDemo() {
 
             {/* ─── MENU SCREEN ─── */}
             {view === 'menu' && (
-              <div>
-                {/* 86 Banner */}
+              <div className="px-4 pt-5">
+                {/* 86 Banner — bold card */}
                 <div
-                  className="mx-4 mt-4 rounded-2xl overflow-hidden"
-                  style={{ border: '1px solid rgba(239,68,68,0.35)' }}
+                  className="rounded-3xl overflow-hidden"
+                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}
                 >
                   <button
-                    className="w-full flex items-center justify-between px-4 py-3"
-                    style={{ background: 'rgba(239,68,68,0.1)' }}
+                    className="w-full flex items-center justify-between px-5 min-h-[56px] active:opacity-80 transition-all duration-150"
                     onClick={() => setEightySixOpen(o => !o)}
                   >
-                    <div className="flex items-center gap-2 flex-1 justify-start flex-wrap">
-                      <span className="text-xs font-black" style={{ color: '#EF4444' }}>חוסרים:</span>
-                      {EIGHTY_SIX.map(i => (
-                        <span key={i.id} className="text-xs font-bold" style={{ color: 'rgba(239,68,68,0.85)' }}>{i.name}</span>
-                      )).reduce((prev, curr) => [prev, <span key={'dot'+prev} style={{ color: 'rgba(239,68,68,0.4)' }}>·</span>, curr])}
+                    <div className="flex items-center gap-2.5 flex-1 justify-start">
+                      <span className="text-sm font-black" style={{ color: '#EF4444' }}>
+                        {eightySixOpen ? 'חוסרים' : `${EIGHTY_SIX.length} חוסרים`}
+                      </span>
+                      {!eightySixOpen && EIGHTY_SIX.map(i => (
+                        <span key={i.id} className="text-xs font-bold px-2.5 py-0.5 rounded-full"
+                          style={{ background: 'rgba(239,68,68,0.15)', color: 'rgba(239,68,68,0.9)' }}>{i.name}</span>
+                      ))}
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
                       style={{ color: '#EF4444', flexShrink: 0, transform: eightySixOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
@@ -331,17 +353,20 @@ export default function FohDemo() {
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        style={{ overflow: 'hidden', background: 'rgba(239,68,68,0.06)' }}
+                        style={{ overflow: 'hidden' }}
                       >
                         {EIGHTY_SIX.map(item => (
                           <div key={item.id}
-                            className="flex items-center justify-between px-4 py-2.5"
+                            className="flex items-center justify-between px-5 py-3"
                             style={{ borderTop: '1px solid rgba(239,68,68,0.15)' }}>
+                            <span
+                              className="text-xs font-bold px-2.5 py-1 rounded-full"
+                              style={{ background: 'rgba(239,68,68,0.12)', color: 'rgba(239,68,68,0.75)' }}
+                            >{item.since}</span>
                             <div className="text-right">
-                              <span className="text-sm font-bold" style={{ color: '#EF4444' }}>{item.name}</span>
-                              <span className="text-xs ml-2" style={{ color: 'rgba(239,68,68,0.6)' }}>— {item.reason}</span>
+                              <span className="text-base font-bold text-white">{item.name}</span>
+                              <span className="text-sm mr-2" style={{ color: 'rgba(239,68,68,0.6)' }}>— {item.reason}</span>
                             </div>
-                            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{item.since}</span>
                           </div>
                         ))}
                       </motion.div>
@@ -349,9 +374,9 @@ export default function FohDemo() {
                   </AnimatePresence>
                 </div>
 
-                {/* Specials */}
-                <div className="mt-4 px-4">
-                  <p className="text-xs font-bold mb-2.5" style={{ color: 'rgba(245,158,11,0.7)', letterSpacing: '0.04em' }}>Off Menu</p>
+                {/* Specials / Off Menu */}
+                <div className="mt-5">
+                  <p className="text-xs font-bold mb-3" style={{ color: 'rgba(245,158,11,0.8)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Off Menu</p>
                   <div className="flex gap-3 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: 'touch' }}>
                     {SPECIALS.map(s => (
                       <motion.button
@@ -360,20 +385,23 @@ export default function FohDemo() {
                         onClick={() => setExpandedSpecial(expandedSpecial?.id === s.id ? null : s)}
                         className="flex-shrink-0 rounded-2xl p-4 text-right"
                         style={{
-                          background: 'rgba(245,158,11,0.08)',
-                          border: expandedSpecial?.id === s.id ? '1px solid rgba(245,158,11,0.5)' : '1px solid rgba(245,158,11,0.2)',
-                          minWidth: 160,
+                          background: expandedSpecial?.id === s.id
+                            ? 'rgba(245,158,11,0.14)'
+                            : 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05))',
+                          border: expandedSpecial?.id === s.id ? '1px solid rgba(245,158,11,0.5)' : '1px solid rgba(245,158,11,0.22)',
+                          minWidth: 164,
+                          transition: 'all 0.15s ease-out',
                         }}
                       >
-                        <p className="text-sm font-black" style={{ color: '#F59E0B' }}>{s.name}</p>
-                        <p className="text-xs font-bold mt-0.5" style={{ color: 'rgba(245,158,11,0.6)' }}>₪{s.price}</p>
+                        <p className="text-base font-black" style={{ color: '#F59E0B' }}>{s.name}</p>
+                        <p className="text-sm font-bold mt-0.5" style={{ color: 'rgba(245,158,11,0.6)' }}>₪{s.price}</p>
                         <AnimatePresence>
                           {expandedSpecial?.id === s.id && (
                             <motion.p
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: 'auto' }}
                               exit={{ opacity: 0, height: 0 }}
-                              className="text-xs mt-2 leading-relaxed"
+                              className="text-sm mt-2 leading-relaxed"
                               style={{ color: 'rgba(255,255,255,0.5)' }}
                             >
                               {s.desc}
@@ -386,18 +414,20 @@ export default function FohDemo() {
                 </div>
 
                 {/* Search */}
-                <div className="mx-4 mt-4">
+                <div className="mt-5">
                   <input
                     type="text"
                     placeholder="חפש מנה..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className="w-full rounded-2xl px-4 text-base text-white"
+                    className="w-full text-base text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-white/10"
                     style={{
                       height: 52,
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      outline: 'none',
+                      background: '#1c1c1e',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 16,
+                      paddingRight: 16,
+                      paddingLeft: 16,
                       caretColor: '#F59E0B',
                     }}
                     dir="rtl"
@@ -405,29 +435,39 @@ export default function FohDemo() {
                 </div>
 
                 {/* Dish list */}
-                <div className="mx-4 mt-3 space-y-3">
+                <div className="mt-4 space-y-3 pb-4">
                   {filteredDishes.length === 0 && (
-                    <p className="text-center text-sm py-8" style={{ color: 'rgba(255,255,255,0.3)' }}>לא נמצאו מנות</p>
+                    <p className="text-center text-base py-8" style={{ color: 'rgba(255,255,255,0.3)' }}>לא נמצאו מנות</p>
                   )}
                   {filteredDishes.map(dish => (
                     <motion.button
                       key={dish.id}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setSelectedDish(dish)}
-                      className="w-full rounded-2xl p-4 text-right"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+                      className="w-full rounded-2xl p-4 text-right active:opacity-80 transition-all duration-150 overflow-hidden"
+                      style={{
+                        background: '#1c1c1e',
+                        border: '1px solid rgba(255,255,255,0.09)',
+                        position: 'relative',
+                      }}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="text-right">
-                          <p className="text-white font-bold">{dish.name}</p>
-                          <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{dish.category} · ₪{dish.sellingPrice}</p>
-                        </div>
+                      {/* 7shifts-style color bar on the right edge */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        width: 3,
+                        bottom: 0,
+                        background: '#10B981',
+                        borderRadius: '0 8px 8px 0',
+                      }} />
+                      <div className="flex items-start justify-between gap-3 pr-3">
                         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                           {dish.allergens?.length > 0 && (
                             <div className="flex flex-wrap gap-1 justify-end">
                               {dish.allergens.map(a => (
-                                <span key={a} className="text-xs px-2 py-0.5 rounded-full font-semibold"
-                                  style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>{a}</span>
+                                <span key={a} className="text-xs px-2.5 py-1 rounded-full font-semibold"
+                                  style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B' }}>{a}</span>
                               ))}
                             </div>
                           )}
@@ -438,6 +478,10 @@ export default function FohDemo() {
                             </span>
                           )}
                         </div>
+                        <div className="text-right flex-1">
+                          <p className="text-base text-white font-bold">{dish.name}</p>
+                          <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{dish.category} · ₪{dish.sellingPrice}</p>
+                        </div>
                       </div>
                     </motion.button>
                   ))}
@@ -447,22 +491,35 @@ export default function FohDemo() {
 
             {/* ─── QUIZ SCREEN ─── */}
             {view === 'quiz' && (
-              <div className="px-4 pt-4">
+              <div className="px-4 pt-5">
                 <AnimatePresence mode="wait">
 
                   {quizPhase === 'idle' && (
                     <motion.div key="idle" initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}>
-                      <div className="rounded-3xl p-6 text-center mt-8"
-                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div className="rounded-3xl p-6 text-center mt-6"
+                        style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.04))', border: '1px solid rgba(16,185,129,0.2)' }}>
                         <p className="text-5xl mb-4">⚡</p>
-                        <p className="text-2xl font-black text-white mb-2">אימון תפריט</p>
-                        <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                        <p className="text-2xl font-black text-white mb-1">אימון תפריט</p>
+                        <p className="text-base mb-5" style={{ color: 'rgba(255,255,255,0.4)' }}>
                           {QUIZ.length} שאלות על המנות, אלרגנים, ואופן ההגשה
                         </p>
+                        {/* Stats row */}
+                        <div className="flex items-center justify-center gap-6 mb-6 py-3 rounded-2xl"
+                          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                          <div className="text-center">
+                            <p className="text-xl font-black" style={{ color: '#F59E0B' }}>🔥 {maxStreak}</p>
+                            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>רצף שיא</p>
+                          </div>
+                          <div style={{ width: 1, height: 32, background: 'rgba(255,255,255,0.1)' }} />
+                          <div className="text-center">
+                            <p className="text-xl font-black text-white">{QUIZ.length}</p>
+                            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>שאלות סה״כ</p>
+                          </div>
+                        </div>
                         <button
                           onClick={() => setQuizPhase('active')}
-                          className="w-full rounded-2xl py-4 font-black text-white text-lg"
-                          style={{ background: '#10B981', boxShadow: '0 0 24px rgba(16,185,129,0.4)' }}
+                          className="w-full h-14 rounded-2xl font-black text-white text-lg active:scale-[0.97] transition-all duration-150"
+                          style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 0 24px rgba(16,185,129,0.4)' }}
                         >
                           התחל אימון
                         </button>
@@ -473,21 +530,23 @@ export default function FohDemo() {
                   {quizPhase === 'active' && (
                     <motion.div key={`q-${quizIndex}`} initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-20 }}>
                       {/* Progress + streak */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-1.5">
-                          <span style={{ color: '#F59E0B', fontSize: 16 }}>🔥</span>
-                          <span className="text-sm font-black" style={{ color: '#F59E0B' }}>{streak}</span>
+                      <div className="flex items-center justify-between mb-3">
+                        {/* Streak badge — 7shifts pill style */}
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                          style={{ background: streak > 0 ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.06)', border: streak > 0 ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
+                          <span style={{ fontSize: 14 }}>🔥</span>
+                          <span className="text-sm font-black" style={{ color: streak > 0 ? '#F59E0B' : 'rgba(255,255,255,0.3)' }}>{streak}</span>
                         </div>
-                        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                        <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.35)' }}>
                           {quizIndex + 1} / {QUIZ.length}
                         </p>
                       </div>
 
-                      {/* Progress bar */}
-                      <div className="h-1 rounded-full mb-5" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                      {/* Progress bar — thicker, brighter */}
+                      <div className="h-1.5 rounded-full mb-5" style={{ background: 'rgba(255,255,255,0.08)' }}>
                         <motion.div
                           className="h-full rounded-full"
-                          style={{ background: '#10B981' }}
+                          style={{ background: 'linear-gradient(90deg, #10B981, #34D399)' }}
                           animate={{ width: `${((quizIndex + 1) / QUIZ.length) * 100}%` }}
                           transition={{ duration: 0.3 }}
                         />
@@ -499,19 +558,19 @@ export default function FohDemo() {
                         animate={{
                           borderColor: selected !== null
                             ? (selected === currentQ.ans ? 'rgba(16,185,129,0.6)' : 'rgba(239,68,68,0.6)')
-                            : 'rgba(255,255,255,0.08)',
+                            : 'rgba(255,255,255,0.09)',
                         }}
                         transition={{ duration: 0.35 }}
                         style={{
-                          background: 'rgba(255,255,255,0.04)',
-                          border: '1px solid rgba(255,255,255,0.08)',
+                          background: '#1c1c1e',
+                          border: '1px solid rgba(255,255,255,0.09)',
                         }}
                       >
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full mb-3 inline-block"
-                          style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }}>
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full mb-3 inline-block"
+                          style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.05em' }}>
                           {{allergens:'אלרגנים', method:'הגשה', ingredients:'רכיבים', pairing:'יין'}[currentQ.cat] || currentQ.cat}
                         </span>
-                        <p className="text-lg font-black text-white leading-snug">{currentQ.q}</p>
+                        <p className="text-xl font-black text-white leading-snug">{currentQ.q}</p>
                       </motion.div>
 
                       {/* Options */}
@@ -526,10 +585,11 @@ export default function FohDemo() {
                               key={i}
                               whileTap={selected === null ? { scale: 0.98 } : {}}
                               onClick={() => handleAnswer(i)}
-                              className="w-full rounded-2xl px-4 text-right font-semibold text-sm min-h-[56px] flex items-center gap-3"
+                              className="w-full text-right font-semibold text-base min-h-[56px] flex items-center gap-3 px-5 py-4"
                               style={{
+                                borderRadius: 14,
                                 background: !answered
-                                  ? 'rgba(255,255,255,0.06)'
+                                  ? '#252528'
                                   : isCorrect
                                     ? 'rgba(16,185,129,0.15)'
                                     : isChosen
@@ -588,19 +648,19 @@ export default function FohDemo() {
                             {selected !== currentQ.ans && (
                               <div className="rounded-2xl px-4 py-3 mb-3"
                                 style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                                <p className="text-xs font-bold" style={{ color: '#EF4444' }}>💡 {currentQ.exp}</p>
+                                <p className="text-sm font-bold" style={{ color: '#EF4444' }}>💡 {currentQ.exp}</p>
                               </div>
                             )}
                             {selected === currentQ.ans && (
                               <div className="rounded-2xl px-4 py-3 mb-3"
                                 style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                                <p className="text-xs font-bold" style={{ color: '#10B981' }}>✓ נכון! {currentQ.exp}</p>
+                                <p className="text-sm font-bold" style={{ color: '#10B981' }}>✓ נכון! {currentQ.exp}</p>
                               </div>
                             )}
                             <button
                               onClick={handleNext}
-                              className="w-full rounded-2xl py-4 font-black text-white"
-                              style={{ background: 'rgba(255,255,255,0.08)' }}
+                              className="w-full h-14 rounded-2xl font-black text-white text-base active:scale-[0.97] transition-all duration-150"
+                              style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.1)' }}
                             >
                               {quizIndex < QUIZ.length - 1 ? '← הבא' : 'סיום'}
                             </button>
@@ -612,31 +672,31 @@ export default function FohDemo() {
 
                   {quizPhase === 'result' && (
                     <motion.div key="result" initial={{ opacity:0, scale:0.97 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0 }}>
-                      <div className="rounded-3xl p-6 text-center mt-8"
-                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div className="rounded-3xl p-6 text-center mt-6"
+                        style={{ background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.09)' }}>
                         <p className="text-5xl mb-4">
                           {correctCount >= 8 ? '🏆' : correctCount >= 5 ? '⭐' : '💪'}
                         </p>
                         <p className="text-3xl font-black text-white mb-1">
                           {correctCount}/{QUIZ.length}
                         </p>
-                        <p className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                        <p className="text-base mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
                           {correctCount >= 8 ? 'מדהים! אתה מומחה תפריט' : correctCount >= 5 ? 'כל הכבוד!' : 'כדאי לחזור על התפריט'}
                         </p>
                         <div className="flex items-center justify-center gap-4 my-5">
                           <div className="text-center">
                             <p className="text-2xl font-black" style={{ color: '#F59E0B' }}>🔥 {maxStreak}</p>
-                            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>רצף מקסימלי</p>
+                            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>רצף מקסימלי</p>
                           </div>
                           <div className="text-center">
                             <p className="text-2xl font-black" style={{ color: '#10B981' }}>{correctCount * 10} XP</p>
-                            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>ניקוד</p>
+                            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>ניקוד</p>
                           </div>
                         </div>
                         <button
                           onClick={resetQuiz}
-                          className="w-full rounded-2xl py-4 font-black text-white"
-                          style={{ background: '#10B981', boxShadow: '0 0 20px rgba(16,185,129,0.35)' }}
+                          className="w-full h-14 rounded-2xl font-black text-white text-lg active:scale-[0.97] transition-all duration-150"
+                          style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 0 20px rgba(16,185,129,0.35)' }}
                         >
                           שחק שוב
                         </button>
@@ -650,32 +710,35 @@ export default function FohDemo() {
 
             {/* ─── PULSE SCREEN ─── */}
             {view === 'pulse' && (
-              <div className="px-4 pt-4 space-y-4">
+              <div className="px-4 pt-5 space-y-5">
 
-                {/* BOH Load */}
+                {/* BOH Load — 7shifts large number style */}
                 <div>
-                  <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>עומס תחנות</p>
-                  <div className="space-y-2.5">
+                  <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>עומס תחנות</p>
+                  <div className="space-y-3">
                     {BOH_LOAD.map(s => {
                       const loadColor = s.load >= 85 ? '#EF4444' : s.load >= 70 ? '#F59E0B' : '#10B981';
                       return (
-                        <div key={s.station} className="rounded-2xl p-4"
-                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color }} />
-                              <span className="text-sm font-bold text-white">תחנת {s.station}</span>
+                        <div key={s.station} className="rounded-2xl overflow-hidden"
+                          style={{ background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.09)', position: 'relative' }}>
+                          {/* Right accent bar in station color (RTL) */}
+                          <div style={{ position: 'absolute', top: 0, right: 0, width: 3, bottom: 0, background: s.color, borderRadius: '0 8px 8px 0' }} />
+                          <div className="flex items-center justify-end px-5 pt-4 pb-2 pr-6">
+                            <div className="text-left flex flex-col items-end">
+                              <span className="font-black tabular-nums leading-none" style={{ fontSize: '2.5rem', color: loadColor }}>{s.load}%</span>
+                              <span className="text-sm font-semibold mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>תחנת {s.station}</span>
                             </div>
-                            <span className="text-lg font-black" style={{ color: loadColor }}>{s.load}%</span>
                           </div>
-                          <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                            <motion.div
-                              className="h-full rounded-full"
-                              style={{ background: loadColor }}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${s.load}%` }}
-                              transition={{ duration: 0.8, delay: 0.1, ease: 'easeOut' }}
-                            />
+                          <div className="px-5 pb-3">
+                            <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                              <motion.div
+                                className="h-full rounded-full"
+                                style={{ background: loadColor }}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${s.load}%` }}
+                                transition={{ duration: 0.8, delay: 0.15, ease: 'easeOut' }}
+                              />
+                            </div>
                           </div>
                         </div>
                       );
@@ -685,44 +748,52 @@ export default function FohDemo() {
 
                 {/* Chef Alerts */}
                 <div>
-                  <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>התראות שף</p>
-                  <div className="space-y-2.5">
+                  <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>התראות שף</p>
+                  <div className="space-y-3">
                     {CHEF_ALERTS.map(alert => (
                       <div key={alert.id} className="rounded-2xl p-4 flex gap-3"
-                        style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRightWidth: 3 }}>
-                        <span style={{ color: '#EF4444', flexShrink: 0 }}>🔴</span>
+                        style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', borderRightWidth: 3, borderRightColor: '#EF4444' }}>
+                        <span style={{ color: '#EF4444', flexShrink: 0, fontSize: 16 }}>🔴</span>
                         <div className="flex-1 text-right">
-                          <p className="text-sm font-bold text-white">{alert.msg}</p>
-                          <p className="text-xs mt-0.5" style={{ color: 'rgba(239,68,68,0.6)' }}>{alert.from} · {alert.time}</p>
+                          <p className="text-base font-bold text-white leading-snug">{alert.msg}</p>
+                          <div className="flex items-center justify-end gap-2 mt-1.5">
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                              style={{ background: 'rgba(239,68,68,0.1)', color: 'rgba(239,68,68,0.7)' }}>{alert.time}</span>
+                            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{alert.from}</span>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Broadcast */}
+                {/* Broadcast — push notification composer */}
                 <div>
-                  <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>שדר הודעה לכל הצוות</p>
-                  <div className="rounded-2xl p-1"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <p className="text-sm font-bold mb-3" style={{ color: 'rgba(255,255,255,0.7)', letterSpacing: '0.02em' }}>📢 שידור לצוות</p>
+                  <div className="rounded-3xl p-4"
+                    style={{ background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.1)' }}>
                     <textarea
                       value={broadcastText}
                       onChange={e => setBroadcastText(e.target.value)}
                       placeholder="הקלד הודעה לכל הצוות..."
                       rows={3}
-                      className="w-full text-sm text-white px-3 pt-3 pb-1 resize-none"
-                      style={{ background: 'transparent', outline: 'none', border: 'none' }}
+                      className="w-full text-base text-white px-1 pt-1 pb-2 resize-none placeholder:text-white/25 focus:outline-none"
+                      style={{ background: 'transparent', border: 'none' }}
                       dir="rtl"
                     />
-                    <div className="flex justify-start px-3 pb-3">
+                    <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                      <span className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>{broadcastText.length}/160</span>
                       <motion.button
                         whileTap={{ scale: 0.96 }}
                         onClick={handleBroadcast}
-                        className="rounded-xl px-5 py-2.5 text-sm font-black text-white"
+                        className="rounded-2xl px-6 h-10 text-sm font-black text-white active:scale-95 transition-all duration-150"
                         style={{
-                          background: broadcastText.trim() ? '#3B82F6' : 'rgba(255,255,255,0.08)',
+                          background: broadcastText.trim()
+                            ? 'linear-gradient(135deg, #10B981, #059669)'
+                            : 'rgba(255,255,255,0.07)',
                           color: broadcastText.trim() ? 'white' : 'rgba(255,255,255,0.3)',
                           transition: 'all 0.2s',
+                          boxShadow: broadcastText.trim() ? '0 0 16px rgba(16,185,129,0.3)' : 'none',
                         }}
                       >
                         שדר לכולם
@@ -739,7 +810,7 @@ export default function FohDemo() {
                         className="mt-3 rounded-2xl px-4 py-3 text-center"
                         style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}
                       >
-                        <p className="text-sm font-bold" style={{ color: '#10B981' }}>✓ ההודעה נשלחה לכל הצוות</p>
+                        <p className="text-base font-bold" style={{ color: '#10B981' }}>✓ ההודעה נשלחה לכל הצוות</p>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -770,23 +841,25 @@ export default function FohDemo() {
             <button
               key={tab.id}
               onClick={() => setView(tab.id)}
-              className="flex flex-col items-center gap-1 min-w-[60px] py-2"
+              className="flex flex-col items-center gap-1 min-w-[60px] py-2 relative active:scale-95 transition-all duration-150"
               style={{
-                color: active ? '#10B981' : 'rgba(255,255,255,0.35)',
+                color: active ? '#10B981' : 'rgba(255,255,255,0.3)',
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              <div style={{ color: active ? '#10B981' : 'rgba(255,255,255,0.35)' }}>
-                {tab.icon}
-              </div>
-              <span className="text-xs font-bold">{tab.label}</span>
+              {/* Active pill background */}
               {active && (
                 <motion.div
-                  layoutId="activeTabDot"
-                  className="w-1 h-1 rounded-full"
-                  style={{ background: '#10B981' }}
+                  layoutId="activeTabPill"
+                  className="absolute inset-x-0 inset-y-0 rounded-2xl"
+                  style={{ background: 'rgba(16,185,129,0.15)' }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 />
               )}
+              <div className="relative z-10" style={{ color: active ? '#10B981' : 'rgba(255,255,255,0.3)' }}>
+                {tab.icon}
+              </div>
+              <span className="relative z-10 text-xs font-bold">{tab.label}</span>
             </button>
           );
         })}
