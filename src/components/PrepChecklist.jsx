@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { Sun, Trash2, Sparkles, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STATIONS } from '../data/stations';
@@ -42,7 +42,7 @@ function LiquidProgressCard({ pct, color }) {
           <div style={{ position: 'absolute', top: -13, left: 0, right: 0, height: 14 }}>
             {/* Primary wave */}
             <motion.div
-              style={{ position: 'absolute', top: 0, left: 0, width: '200%', height: '100%' }}
+              style={{ position: 'absolute', top: 0, left: 0, width: '200%', height: '100%', willChange: 'transform' }}
               animate={{ x: '-50%' }}
               transition={{ duration: 3.2, ease: 'linear', repeat: Infinity }}
             >
@@ -55,7 +55,7 @@ function LiquidProgressCard({ pct, color }) {
             </motion.div>
             {/* Secondary wave — offset phase, faster */}
             <motion.div
-              style={{ position: 'absolute', top: 2, left: '-25%', width: '200%', height: '100%', opacity: 0.55 }}
+              style={{ position: 'absolute', top: 2, left: '-25%', width: '200%', height: '100%', opacity: 0.55, willChange: 'transform' }}
               animate={{ x: '-50%' }}
               transition={{ duration: 2.1, ease: 'linear', repeat: Infinity }}
             >
@@ -390,23 +390,23 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
     t.subItems ? t.subItems.every(s => completedSubs.has(s.id)) : completedTasks.has(t.id)
   ).length;
 
-  function toggleSub(id) {
+  const toggleSub = useCallback((id) => {
     setCompletedSubs(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
-  }
+  }, [setCompletedSubs]);
 
   function handleReset() {
     setCompletedSubs(new Set());
     onReset();
   }
 
-  function requestDelete(task) {
+  const requestDelete = useCallback((task) => {
     setSwipedId(null);
     setConfirmDelete(task);
-  }
+  }, []);
 
   function executeDelete() {
     if (!confirmDelete) return;
@@ -619,12 +619,13 @@ export default function PrepChecklist({ station, completedTasks, onToggle, onRes
 /* ════════════════════════════════════════════
    TaskCard — with celebration burst
 ════════════════════════════════════════════ */
-function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggleSub }) {
+const TaskCard = memo(function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggleSub }) {
   const hasSubItems = !!task.subItems;
   const [particles, setParticles] = useState([]);
 
   function handleToggle() {
     if (hasSubItems) return;
+    window.navigator?.vibrate?.(15);
     onToggle();
     if (!isDone) {
       const ps = spawnParticles(stationColor);
@@ -634,6 +635,7 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
   }
 
   function handleToggleSub(id, wasDone) {
+    window.navigator?.vibrate?.(15);
     onToggleSub(id);
     if (!wasDone) {
       const ps = spawnParticles(stationColor);
@@ -756,7 +758,7 @@ function TaskCard({ task, isDone, completedSubs, stationColor, onToggle, onToggl
       )}
     </motion.div>
   );
-}
+})
 
 /* ─── Sub-item ─── */
 function SubItem({ sub, subDone, stationColor, onToggle }) {

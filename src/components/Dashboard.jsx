@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { ClipboardList, BookOpen, ChevronLeft, Moon as MoonIcon, Camera, PackageCheck, ShoppingCart, Fish, BarChart3, Sparkles } from 'lucide-react';
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, memo } from 'react';
 import { STATIONS } from '../data/stations';
 import { PREP_TASKS } from '../data/prepTasks';
 import { db } from '../firebase';
@@ -27,13 +27,16 @@ const TIME_PALETTE = {
   evening:   { primary: '#3B82F6', glow: 'rgba(59,130,246,0.24)', bg: 'rgba(59,130,246,0.09)' },
 };
 
+/* ── Haptic feedback helper ── */
+function vibrate() { window.navigator?.vibrate?.(15); }
+
 /* ── Sun SVG (rotating rays) ── */
 function Sun() {
   return (
     <motion.div
       animate={{ rotate: 360 }}
       transition={{ duration: 24, ease: 'linear', repeat: Infinity }}
-      style={{ width: 120, height: 120, position: 'relative' }}
+      style={{ width: 120, height: 120, position: 'relative', willChange: 'transform' }}
     >
       {/* Rays */}
       {Array.from({ length: 8 }).map((_, i) => (
@@ -82,7 +85,7 @@ function Moon() {
       <motion.div
         animate={{ opacity: [0.85, 1, 0.85] }}
         transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
-        style={{ filter: 'drop-shadow(0 0 14px rgba(147,197,253,0.75))' }}
+        style={{ filter: 'drop-shadow(0 0 14px rgba(147,197,253,0.75))', willChange: 'opacity' }}
       >
         <MoonIcon size={52} style={{ color: '#93c5fd' }} strokeWidth={1.25} />
       </motion.div>
@@ -526,11 +529,11 @@ function UrgentAlertBanner({ pending }) {
 }
 
 /* ─── Cockpit Nav Card ─── */
-function CockpitCard({ Icon, label, sub, onClick }) {
+const CockpitCard = memo(function CockpitCard({ Icon, label, sub, onClick }) {
   const [hovered, setHovered] = useState(false);
   return (
     <motion.button
-      onClick={onClick}
+      onClick={() => { vibrate(); onClick(); }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       whileTap={{ scale: 0.98 }}
@@ -566,12 +569,12 @@ function CockpitCard({ Icon, label, sub, onClick }) {
       </div>
 
       {/* Right — icon (top-right in RTL = visually top-left of the card) */}
-      <div style={{ flexShrink: 0, padding: 10, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ flexShrink: 0, padding: 10, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', willChange: 'transform' }}>
         <Icon size={20} style={{ color: '#60a5fa' }} strokeWidth={1.5} />
       </div>
     </motion.button>
   );
-}
+})
 
 /* ─── Sub-components ─── */
 function SectionCard({ title, Icon, children, onClick }) {
@@ -592,10 +595,10 @@ function SectionCard({ title, Icon, children, onClick }) {
   );
 }
 
-function QuickAction({ Icon, label, sub, color, onClick }) {
+const QuickAction = memo(function QuickAction({ Icon, label, sub, color, onClick }) {
   return (
     <button
-      onClick={onClick}
+      onClick={() => { vibrate(); onClick(); }}
       className="glow-btn rounded-3xl p-5 text-right w-full"
       style={{ background: color + '12', border: `1px solid ${color}25`, '--gc': color, '--gca': color + '50', '--gcb': color + '18' }}
     >
@@ -606,4 +609,4 @@ function QuickAction({ Icon, label, sub, color, onClick }) {
       <div className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{sub}</div>
     </button>
   );
-}
+})

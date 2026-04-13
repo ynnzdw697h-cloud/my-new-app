@@ -7,7 +7,7 @@ import { db } from '../firebase';
 import { doc, collection, onSnapshot, setDoc } from 'firebase/firestore';
 import { useTenantId } from '../context/TenantContext';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
-import AddRecipeModal from './AddRecipeModal';
+import RecipeWizard from './RecipeWizard';
 
 // ─── Prep category metadata ───
 const CAT_META = {
@@ -133,13 +133,20 @@ export default function RecipeDatabase({ station, onMarkReady }) {
     setSearch('');
   }
 
-  function handleSaveRecipe(type, data) {
+  async function handleSaveRecipe(type, data, photoDataUrl) {
     if (type === 'prep') {
       setCustomRecipes(prev => [data, ...prev]);
+      setShowAddModal(false);
+      setSelectedRecipe(data);
+      setBatches(data.batches || 1);
     } else {
       setCustomDishes(prev => [data, ...prev]);
+      setShowAddModal(false);
+      setSelectedDish(data);
     }
-    setShowAddModal(false);
+    if (photoDataUrl) {
+      await saveImage(data.id, photoDataUrl);
+    }
   }
 
   const filteredPrep = allRecipes.filter(r => {
@@ -216,10 +223,10 @@ export default function RecipeDatabase({ station, onMarkReady }) {
     <div className="px-4 py-5 max-w-xl mx-auto" dir="rtl" style={{ position: 'relative' }}>
       <AnimatePresence>
         {showAddModal && (
-          <AddRecipeModal
+          <RecipeWizard
+            station={station}
             onSave={handleSaveRecipe}
             onClose={() => setShowAddModal(false)}
-            existingPrepRecipes={customRecipes}
           />
         )}
       </AnimatePresence>

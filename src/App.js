@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition, useCallback } from 'react';
+import WeighingDemo from './demo/WeighingDemo';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Utensils } from 'lucide-react';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
@@ -43,19 +44,22 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
 
   const stationKey = station || 'init';
   const [completedTasks, setCompletedTasks]     = useFirestoreSet(`prep_tasks_${stationKey}`);
+  const [, startTransition]                     = useTransition();
 
-  function toggleTask(taskId) {
-    setCompletedTasks(prev => {
-      const next = new Set(prev);
-      next.has(taskId) ? next.delete(taskId) : next.add(taskId);
-      return next;
+  const toggleTask = useCallback((taskId) => {
+    startTransition(() => {
+      setCompletedTasks(prev => {
+        const next = new Set(prev);
+        next.has(taskId) ? next.delete(taskId) : next.add(taskId);
+        return next;
+      });
     });
-  }
+  }, [setCompletedTasks]);
 
-  function openDelivery(id) {
+  const openDelivery = useCallback((id) => {
     setActiveDeliveryId(id);
     setView('checker_detail');
-  }
+  }, []);
 
   const st          = STATIONS[station];
   const isDashboard = view === 'dashboard';
@@ -196,6 +200,9 @@ function App() {
     setSession(null);
     try { await signOut(auth); } catch (_) { /* ignore */ }
   }
+
+  // Standalone demo routes — after all hooks, no auth/Firebase needed
+  if (window.location.pathname === '/demo/weighing') return <WeighingDemo />;
 
   if (!authReady) return null;
 

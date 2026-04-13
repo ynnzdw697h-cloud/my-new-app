@@ -20,6 +20,12 @@
 
 * { box-sizing: border-box; }
 
+/* ── Remove 300ms tap delay on all interactive elements ── */
+button, a, [role="button"], input, select, textarea, label {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* ── Base ── */
 body {
   margin: 0;
@@ -78,6 +84,7 @@ body::before {
 ── */
 .glow-btn {
   transition: box-shadow 0.28s ease, border-color 0.28s ease, background 0.28s ease !important;
+  will-change: transform;
 }
 .glow-btn:hover {
   box-shadow:
@@ -88,5 +95,5 @@ body::before {
 }
 .glow-btn:active {
   transform: scale(0.97);
-  transition: transform 0.1s ease !important;
+  transition: transform 0.08s ease !important;
 }

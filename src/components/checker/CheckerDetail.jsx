@@ -24,8 +24,35 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
 
   async function updateReceivedQty(itemId, qty) {
     if (!delivery) return;
-    const items = delivery.items.map(it => it.id === itemId ? { ...it, receivedQty: qty } : it);
-    await updateDelivery({ items });
+    const items = delivery.items.map(it => {
+      if (it.id !== itemId) return it;
+      const isShortage = qty < it.orderedQty;
+      // Auto-set shortage issue
+      if (isShortage) {
+        return {
+          ...it,
+          receivedQty: qty,
+          itemStatus: 'issue',
+          issue: {
+            type: 'missing_qty',
+            note: '',
+            photoBase64: null,
+            reportedAt: Date.now(),
+            reportedBy: user,
+          },
+        };
+      }
+      // Clear auto-shortage when qty restored; preserve manual issues (quality, expired)
+      if (!isShortage && it.itemStatus === 'issue' && it.issue?.type === 'missing_qty') {
+        return { ...it, receivedQty: qty, itemStatus: 'ok', issue: null };
+      }
+      return { ...it, receivedQty: qty };
+    });
+    const hasIssue = items.some(it => it.itemStatus === 'issue');
+    const disputed = items.filter(it => it.itemStatus === 'issue').reduce((s, it) => s + (it.lineTotal || 0), 0);
+    const status   = hasIssue ? 'disputed' : (delivery.status === 'disputed' ? 'reviewing' : delivery.status);
+    await updateDelivery({ items, status, disputedTotal: disputed });
+    syncIndex(status, disputed);
   }
 
   async function saveIssue(itemId, issueData) {
@@ -170,16 +197,29 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
                 <div className="flex items-center gap-3">
                   <motion.button
                     whileTap={{ scale: 0.88 }}
-                    onClick={() => updateReceivedQty(item.id, Math.max(0, (item.receivedQty || 0) - 1))}
+                    onClick={() => updateReceivedQty(item.id, Math.max(0, parseFloat((item.receivedQty ?? item.orderedQty)) - 1))}
                     className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl"
                     style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
                   >−</motion.button>
-                  <span className="text-white font-black text-base min-w-[2.5rem] text-center">
-                    {item.receivedQty ?? item.orderedQty}
-                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={item.receivedQty ?? item.orderedQty}
+                    onChange={e => updateReceivedQty(item.id, parseFloat(e.target.value) || 0)}
+                    className="font-black text-base text-center"
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      color: 'white',
+                      width: '3.5rem',
+                      MozAppearance: 'textfield',
+                    }}
+                  />
                   <motion.button
                     whileTap={{ scale: 0.88 }}
-                    onClick={() => updateReceivedQty(item.id, (item.receivedQty || 0) + 1)}
+                    onClick={() => updateReceivedQty(item.id, parseFloat((item.receivedQty ?? item.orderedQty)) + 1)}
                     className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl"
                     style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
                   >+</motion.button>
