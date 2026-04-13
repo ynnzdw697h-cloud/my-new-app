@@ -64,11 +64,11 @@ function MenuItemSheet({ dish, onClose }) {
       >
         <button
           onClick={onClose}
-          className="flex items-center gap-1.5 min-h-[44px] px-1"
+          className="flex items-center gap-1.5 min-h-[48px] px-1 active:scale-95 transition-all duration-150"
           style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600 }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M9 18l6-6-6-6"/>
+            <path d="M15 18l-6-6 6-6"/>
           </svg>
           חזרה
         </button>
@@ -101,13 +101,13 @@ function MenuItemSheet({ dish, onClose }) {
 
         {/* Why this dish */}
         {dish.foh?.sellingPoints?.length > 0 && (
-          <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>למה המנה הזו?</p>
-            <div className="space-y-2">
+          <div className="rounded-2xl p-4" style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.18)' }}>
+            <p className="text-xs font-bold mb-3" style={{ color: 'rgba(245,158,11,0.7)' }}>למה המנה הזו?</p>
+            <div className="space-y-2.5">
               {dish.foh.sellingPoints.map((pt, i) => (
-                <div key={i} className="flex gap-2.5">
-                  <span style={{ color: '#10B981', flexShrink: 0, marginTop: 1 }}>✓</span>
-                  <p className="text-sm font-medium text-white">{pt}</p>
+                <div key={i} className="flex gap-2.5 items-start">
+                  <span className="text-xs font-black flex-shrink-0 mt-0.5" style={{ color: '#F59E0B' }}>✓</span>
+                  <p className="text-sm font-medium text-white leading-snug">{pt}</p>
                 </div>
               ))}
             </div>
@@ -117,7 +117,7 @@ function MenuItemSheet({ dish, onClose }) {
         {/* Service info */}
         {dish.foh && (
           <div className="rounded-2xl p-4 space-y-2.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <p className="text-xs font-bold mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>הגשה</p>
+            <p className="text-xs font-bold mb-1" style={{ color: 'rgba(255,255,255,0.45)' }}>הגשה</p>
             {dish.foh.serveTemp && (
               <div className="flex gap-2">
                 <span style={{ color: 'rgba(255,255,255,0.3)' }}>🌡</span>
@@ -141,12 +141,12 @@ function MenuItemSheet({ dish, onClose }) {
         {/* Ingredients */}
         {dish.directIngredients?.length > 0 && (
           <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>רכיבים עיקריים</p>
+            <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>רכיבים עיקריים</p>
             <div className="space-y-2">
               {dish.directIngredients.map((ing, i) => (
                 <div key={i} className="flex items-center justify-between">
-                  <span className="text-sm text-white">{ing.name}</span>
                   <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{ing.qty} {ing.unit}</span>
+                  <span className="text-sm text-white">{ing.name}</span>
                 </div>
               ))}
             </div>
@@ -156,7 +156,7 @@ function MenuItemSheet({ dish, onClose }) {
         {/* Method */}
         {dish.method?.length > 0 && (
           <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>הכנה</p>
+            <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>הכנה</p>
             <div className="space-y-3">
               {dish.method.map((step, i) => (
                 <div key={i} className="flex gap-3">
@@ -286,7 +286,7 @@ export default function FohDemo() {
         >
           DEMO
         </span>
-        <span className="text-white font-black text-lg tracking-tight">{PAGE_TITLE[view]}</span>
+        <span className="font-black text-lg tracking-tight" style={{ color: 'rgba(255,255,255,0.95)' }}>{PAGE_TITLE[view]}</span>
       </header>
 
       {/* Main content */}
@@ -313,16 +313,16 @@ export default function FohDemo() {
                     style={{ background: 'rgba(239,68,68,0.1)' }}
                     onClick={() => setEightySixOpen(o => !o)}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                      style={{ color: '#EF4444', flexShrink: 0, transform: eightySixOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                      <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                    <div className="flex items-center gap-2 flex-1 justify-end flex-wrap">
-                      <span className="text-xs font-black" style={{ color: '#EF4444' }}>86:</span>
+                    <div className="flex items-center gap-2 flex-1 justify-start flex-wrap">
+                      <span className="text-xs font-black" style={{ color: '#EF4444' }}>חוסרים:</span>
                       {EIGHTY_SIX.map(i => (
                         <span key={i.id} className="text-xs font-bold" style={{ color: 'rgba(239,68,68,0.85)' }}>{i.name}</span>
                       )).reduce((prev, curr) => [prev, <span key={'dot'+prev} style={{ color: 'rgba(239,68,68,0.4)' }}>·</span>, curr])}
                     </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                      style={{ color: '#EF4444', flexShrink: 0, transform: eightySixOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
                   </button>
                   <AnimatePresence>
                     {eightySixOpen && (
@@ -337,11 +337,11 @@ export default function FohDemo() {
                           <div key={item.id}
                             className="flex items-center justify-between px-4 py-2.5"
                             style={{ borderTop: '1px solid rgba(239,68,68,0.15)' }}>
-                            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{item.since}</span>
                             <div className="text-right">
                               <span className="text-sm font-bold" style={{ color: '#EF4444' }}>{item.name}</span>
-                              <span className="text-xs mr-2" style={{ color: 'rgba(239,68,68,0.6)' }}>— {item.reason}</span>
+                              <span className="text-xs ml-2" style={{ color: 'rgba(239,68,68,0.6)' }}>— {item.reason}</span>
                             </div>
+                            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{item.since}</span>
                           </div>
                         ))}
                       </motion.div>
@@ -351,7 +351,7 @@ export default function FohDemo() {
 
                 {/* Specials */}
                 <div className="mt-4 px-4">
-                  <p className="text-xs font-bold mb-2.5" style={{ color: 'rgba(255,255,255,0.35)' }}>מיוחדי הערב</p>
+                  <p className="text-xs font-bold mb-2.5" style={{ color: 'rgba(245,158,11,0.7)', letterSpacing: '0.04em' }}>Off Menu</p>
                   <div className="flex gap-3 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: 'touch' }}>
                     {SPECIALS.map(s => (
                       <motion.button
@@ -392,11 +392,13 @@ export default function FohDemo() {
                     placeholder="חפש מנה..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className="w-full rounded-2xl px-4 py-3 text-sm text-white"
+                    className="w-full rounded-2xl px-4 text-base text-white"
                     style={{
+                      height: 52,
                       background: 'rgba(255,255,255,0.06)',
                       border: '1px solid rgba(255,255,255,0.1)',
                       outline: 'none',
+                      caretColor: '#F59E0B',
                     }}
                     dir="rtl"
                   />
@@ -416,9 +418,13 @@ export default function FohDemo() {
                       style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex flex-col items-start gap-1.5">
+                        <div className="text-right">
+                          <p className="text-white font-bold">{dish.name}</p>
+                          <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{dish.category} · ₪{dish.sellingPrice}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                           {dish.allergens?.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
+                            <div className="flex flex-wrap gap-1 justify-end">
                               {dish.allergens.map(a => (
                                 <span key={a} className="text-xs px-2 py-0.5 rounded-full font-semibold"
                                   style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>{a}</span>
@@ -431,10 +437,6 @@ export default function FohDemo() {
                               🌡 {dish.foh.serveTemp.split('—')[0].trim()}
                             </span>
                           )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-white font-bold">{dish.name}</p>
-                          <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{dish.category} · ₪{dish.sellingPrice}</p>
                         </div>
                       </div>
                     </motion.button>
@@ -469,7 +471,7 @@ export default function FohDemo() {
                   )}
 
                   {quizPhase === 'active' && (
-                    <motion.div key={`q-${quizIndex}`} initial={{ opacity:0, x:-20 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:20 }}>
+                    <motion.div key={`q-${quizIndex}`} initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-20 }}>
                       {/* Progress + streak */}
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-1.5">
@@ -513,43 +515,63 @@ export default function FohDemo() {
                       </motion.div>
 
                       {/* Options */}
-                      <div className="space-y-2.5 mb-4">
+                      <div className="space-y-3 mb-4">
                         {currentQ.opts.map((opt, i) => {
                           const isChosen  = selected === i;
                           const isCorrect = i === currentQ.ans;
                           const answered  = selected !== null;
+                          const optLabel  = ['א','ב','ג','ד'][i];
                           return (
                             <motion.button
                               key={i}
                               whileTap={selected === null ? { scale: 0.98 } : {}}
                               onClick={() => handleAnswer(i)}
-                              className="w-full rounded-2xl py-4 px-4 text-right font-semibold text-sm min-h-[52px]"
+                              className="w-full rounded-2xl px-4 text-right font-semibold text-sm min-h-[56px] flex items-center gap-3"
                               style={{
                                 background: !answered
                                   ? 'rgba(255,255,255,0.06)'
                                   : isCorrect
-                                    ? 'rgba(16,185,129,0.18)'
+                                    ? 'rgba(16,185,129,0.15)'
                                     : isChosen
-                                      ? 'rgba(239,68,68,0.18)'
-                                      : 'rgba(255,255,255,0.03)',
+                                      ? 'rgba(239,68,68,0.15)'
+                                      : 'rgba(255,255,255,0.02)',
                                 color: !answered
-                                  ? 'rgba(255,255,255,0.85)'
+                                  ? 'rgba(255,255,255,0.9)'
                                   : isCorrect
                                     ? '#10B981'
                                     : isChosen
                                       ? '#EF4444'
                                       : 'rgba(255,255,255,0.25)',
                                 border: !answered
-                                  ? '1px solid rgba(255,255,255,0.08)'
+                                  ? '1px solid rgba(255,255,255,0.1)'
                                   : isCorrect
-                                    ? '1px solid rgba(16,185,129,0.35)'
+                                    ? '1px solid rgba(16,185,129,0.4)'
                                     : isChosen
-                                      ? '1px solid rgba(239,68,68,0.35)'
+                                      ? '1px solid rgba(239,68,68,0.4)'
                                       : '1px solid rgba(255,255,255,0.04)',
-                                transition: 'all 0.25s',
+                                transition: 'all 0.2s ease-out',
                               }}
                             >
-                              {opt}
+                              <span
+                                className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black"
+                                style={{
+                                  background: !answered
+                                    ? 'rgba(255,255,255,0.08)'
+                                    : isCorrect
+                                      ? 'rgba(16,185,129,0.25)'
+                                      : isChosen
+                                        ? 'rgba(239,68,68,0.25)'
+                                        : 'rgba(255,255,255,0.04)',
+                                  color: !answered
+                                    ? 'rgba(255,255,255,0.5)'
+                                    : isCorrect
+                                      ? '#10B981'
+                                      : isChosen
+                                        ? '#EF4444'
+                                        : 'rgba(255,255,255,0.2)',
+                                }}
+                              >{optLabel}</span>
+                              <span className="flex-1">{opt}</span>
                             </motion.button>
                           );
                         })}
@@ -580,7 +602,7 @@ export default function FohDemo() {
                               className="w-full rounded-2xl py-4 font-black text-white"
                               style={{ background: 'rgba(255,255,255,0.08)' }}
                             >
-                              {quizIndex < QUIZ.length - 1 ? 'הבא ←' : 'סיום'}
+                              {quizIndex < QUIZ.length - 1 ? '← הבא' : 'סיום'}
                             </button>
                           </motion.div>
                         )}
@@ -632,7 +654,7 @@ export default function FohDemo() {
 
                 {/* BOH Load */}
                 <div>
-                  <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>עומס תחנות</p>
+                  <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>עומס תחנות</p>
                   <div className="space-y-2.5">
                     {BOH_LOAD.map(s => {
                       const loadColor = s.load >= 85 ? '#EF4444' : s.load >= 70 ? '#F59E0B' : '#10B981';
@@ -640,11 +662,11 @@ export default function FohDemo() {
                         <div key={s.station} className="rounded-2xl p-4"
                           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-lg font-black" style={{ color: loadColor }}>{s.load}%</span>
                             <div className="flex items-center gap-2">
                               <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color }} />
                               <span className="text-sm font-bold text-white">תחנת {s.station}</span>
                             </div>
+                            <span className="text-lg font-black" style={{ color: loadColor }}>{s.load}%</span>
                           </div>
                           <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
                             <motion.div
@@ -663,16 +685,16 @@ export default function FohDemo() {
 
                 {/* Chef Alerts */}
                 <div>
-                  <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>התראות שף</p>
+                  <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>התראות שף</p>
                   <div className="space-y-2.5">
                     {CHEF_ALERTS.map(alert => (
                       <div key={alert.id} className="rounded-2xl p-4 flex gap-3"
                         style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRightWidth: 3 }}>
+                        <span style={{ color: '#EF4444', flexShrink: 0 }}>🔴</span>
                         <div className="flex-1 text-right">
                           <p className="text-sm font-bold text-white">{alert.msg}</p>
                           <p className="text-xs mt-0.5" style={{ color: 'rgba(239,68,68,0.6)' }}>{alert.from} · {alert.time}</p>
                         </div>
-                        <span style={{ color: '#EF4444', flexShrink: 0 }}>🔴</span>
                       </div>
                     ))}
                   </div>
@@ -680,7 +702,7 @@ export default function FohDemo() {
 
                 {/* Broadcast */}
                 <div>
-                  <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>שדר הודעה לכל הצוות</p>
+                  <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>שדר הודעה לכל הצוות</p>
                   <div className="rounded-2xl p-1"
                     style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                     <textarea
@@ -692,7 +714,7 @@ export default function FohDemo() {
                       style={{ background: 'transparent', outline: 'none', border: 'none' }}
                       dir="rtl"
                     />
-                    <div className="flex justify-end px-3 pb-3">
+                    <div className="flex justify-start px-3 pb-3">
                       <motion.button
                         whileTap={{ scale: 0.96 }}
                         onClick={handleBroadcast}
