@@ -1,5 +1,6 @@
 import { useState, useEffect, useTransition, useCallback } from 'react';
 import WeighingDemo from './demo/WeighingDemo';
+import FohDemo from './demo/FohDemo';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Utensils } from 'lucide-react';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
@@ -203,6 +204,7 @@ function App() {
 
   // Standalone demo routes — after all hooks, no auth/Firebase needed
   if (window.location.pathname === '/demo/weighing') return <WeighingDemo />;
+  if (window.location.pathname === '/demo/foh')      return <FohDemo />;
 
   if (!authReady) return null;
 
