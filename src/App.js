@@ -57,8 +57,6 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
   const [view, setView]                         = useState(role === 'checker' ? 'checker_hub' : 'dashboard');
   const [activeDeliveryId, setActiveDeliveryId] = useState(null);
   const [markReadyRecipe,  setMarkReadyRecipe]   = useState(null);
-  const [sidebarOpen, setSidebarOpen]           = useState(false);
-
   const isTablet    = useIsTablet();
   const stationKey  = station || 'init';
   const [completedTasks, setCompletedTasks]     = useFirestoreSet(`prep_tasks_${stationKey}`);
@@ -81,7 +79,6 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
 
   const navigate = useCallback((id) => {
     setView(id);
-    setSidebarOpen(false);
   }, []);
 
   const st          = STATIONS[station];
