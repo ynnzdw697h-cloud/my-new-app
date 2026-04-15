@@ -3,89 +3,64 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Timer, Fish, ShoppingCart, LogOut } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 
-const MAIN_NAV = [
-  { id: 'dashboard', label: 'בית',     Icon: HomeIcon },
-  { id: 'prep',      label: 'פריפ',    Icon: CheckIcon },
-  { id: 'recipes',   label: 'מתכונים', Icon: BookIcon },
-  { id: 'weekly',    label: 'שבועי',   Icon: CalIcon },
-  { id: 'shift',     label: 'הערות',   Icon: NoteIcon },
-];
+/* ── Role → navigation profile mapping ── */
+function navForProfile(role) {
+  // Lead / admin: full access including station overview
+  if (role === 'admin') {
+    return {
+      main: [
+        { id: 'dashboard', label: 'בית',     Icon: HomeIcon },
+        { id: 'prep',      label: 'פריפ',    Icon: CheckIcon },
+        { id: 'recipes',   label: 'מתכונים', Icon: BookIcon },
+        { id: 'shift',     label: 'הערות',   Icon: NoteIcon },
+        { id: 'supplier',  label: 'ספקים',   Icon: TruckIcon },
+      ],
+      more: [
+        { id: 'weekly',       label: 'משימות שבועיות',      Icon: CalIcon },
+        { id: 'prep_tracker', label: 'תפוגה ובזבוז',         Icon: Timer },
+        { id: 'proteins',     label: 'חיות — ספירת סוף יום', Icon: Fish },
+        { id: 'checker_hub',  label: 'קבלת סחורה',           Icon: InboxIcon },
+      ],
+    };
+  }
 
-const MORE_NAV = [
-  { id: 'prep_tracker', label: 'תפוגה ובזבוז',          Icon: Timer },
-  { id: 'proteins',     label: 'חיות — ספירת סוף יום', Icon: Fish },
-  { id: 'supplier',     label: 'הזמנות ספקים',          Icon: ShoppingCart },
-];
+  // Checker: intake-focused
+  if (role === 'checker') {
+    return {
+      main: [
+        { id: 'checker_hub', label: 'קבלה',  Icon: InboxIcon },
+        { id: 'supplier',    label: 'ספקים', Icon: TruckIcon },
+      ],
+      more: [],
+    };
+  }
+
+  // Line (default — cold/hot chef)
+  return {
+    main: [
+      { id: 'dashboard', label: 'בית',     Icon: HomeIcon },
+      { id: 'prep',      label: 'פריפ',    Icon: CheckIcon },
+      { id: 'recipes',   label: 'מתכונים', Icon: BookIcon },
+      { id: 'weekly',    label: 'שבועי',   Icon: CalIcon },
+      { id: 'shift',     label: 'הערות',   Icon: NoteIcon },
+    ],
+    more: [
+      { id: 'prep_tracker', label: 'תפוגה ובזבוז',          Icon: Timer },
+      { id: 'proteins',     label: 'חיות — ספירת סוף יום', Icon: Fish },
+      { id: 'supplier',     label: 'הזמנות ספקים',          Icon: ShoppingCart },
+    ],
+  };
+}
 
 export default function BottomNav({ currentView, onNavigate, station, onLogout, role }) {
   const [showMore, setShowMore] = useState(false);
   const st = STATIONS[station] || STATIONS['cold'];
 
-  const isChecker = role === 'checker';
+  const { main: mainNav, more: moreNav } = navForProfile(role);
 
   function go(id) {
     onNavigate(id);
     setShowMore(false);
-  }
-
-  // Checker gets a simplified 2-tab nav
-  if (isChecker) {
-    return (
-      <nav
-        className="fixed bottom-0 inset-x-0 z-30 pb-safe"
-        style={{
-          background: 'rgba(18,18,18,0.94)',
-          backdropFilter: 'blur(28px)',
-          WebkitBackdropFilter: 'blur(28px)',
-          borderTop: '1px solid rgba(255,255,255,0.07)',
-        }}
-      >
-        <div className="flex items-center justify-around max-w-lg mx-auto px-2" style={{ height: '76px' }}>
-          {[
-            { id: 'checker_hub', label: 'קבלה',  Icon: InboxIcon },
-            { id: 'supplier',    label: 'ספקים', Icon: TruckIcon },
-          ].map(({ id, label, Icon }) => {
-            const active = currentView === id;
-            return (
-              <button
-                key={id}
-                onClick={() => go(id)}
-                className="flex flex-col items-center gap-1 flex-1 transition-all duration-200 active:scale-90 py-2"
-              >
-                <div
-                  className="w-12 h-12 flex items-center justify-center rounded-2xl transition-all duration-200"
-                  style={{
-                    background: active ? st.color : 'transparent',
-                    boxShadow: active ? `0 0 0 1px ${st.color}, 0 0 18px ${st.color}70, 0 0 40px ${st.color}28` : 'none',
-                  }}
-                >
-                  <Icon active={active} color={st.color} />
-                </div>
-                <span
-                  className="text-xs font-semibold transition-colors duration-200"
-                  style={{ color: active ? st.color : 'rgba(255,255,255,0.35)' }}
-                >
-                  {label}
-                </span>
-              </button>
-            );
-          })}
-          <button
-            onClick={onLogout}
-            className="flex flex-col items-center gap-1 flex-1 transition-all duration-200 active:scale-90 py-2"
-          >
-            <div className="w-12 h-12 flex items-center justify-center rounded-2xl" style={{ background: 'transparent' }}>
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-            </div>
-            <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.35)' }}>יציאה</span>
-          </button>
-        </div>
-      </nav>
-    );
   }
 
   return (
@@ -112,7 +87,7 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
             style={{ background: '#1a1a23', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 -8px 40px rgba(0,0,0,0.6)' }}
           >
             <div className="p-2">
-              {MORE_NAV.map(item => (
+              {moreNav.map(item => (
                 <button
                   key={item.id}
                   onClick={() => go(item.id)}
@@ -165,7 +140,7 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
         }}
       >
         <div className="flex items-center justify-around max-w-lg mx-auto px-2" style={{ height: '76px' }}>
-          {MAIN_NAV.map(({ id, label, Icon }) => {
+          {mainNav.map(({ id, label, Icon }) => {
             const active = currentView === id;
             return (
               <button
@@ -192,8 +167,8 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
             );
           })}
 
-          {/* More */}
-          <button
+          {/* More — only shown when there are overflow items */}
+          {moreNav.length > 0 && (<button
             onClick={() => setShowMore(v => !v)}
             className="flex flex-col items-center gap-1 flex-1 transition-all duration-200 active:scale-90 py-2"
           >
@@ -209,7 +184,7 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
             >
               עוד
             </span>
-          </button>
+          </button>)}
         </div>
       </nav>
     </>

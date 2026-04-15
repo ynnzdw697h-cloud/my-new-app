@@ -197,6 +197,7 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
                 <div className="flex items-center gap-3">
                   <motion.button
                     whileTap={{ scale: 0.88 }}
+                    aria-label="הפחת כמות"
                     onClick={() => updateReceivedQty(item.id, Math.max(0, parseFloat((item.receivedQty ?? item.orderedQty)) - 1))}
                     className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl"
                     style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
@@ -219,6 +220,7 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
                   />
                   <motion.button
                     whileTap={{ scale: 0.88 }}
+                    aria-label="הוסף כמות"
                     onClick={() => updateReceivedQty(item.id, parseFloat((item.receivedQty ?? item.orderedQty)) + 1)}
                     className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl"
                     style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}

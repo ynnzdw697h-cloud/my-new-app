@@ -6,6 +6,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTenantId } from '../../context/TenantContext';
 import ScanStep from './ScanStep';
+import { EmptyState } from '../ui';
 
 const STATUS_LABEL = {
   pending:   'ממתין',
@@ -98,13 +99,11 @@ export default function CheckerHub({ user, onOpenDelivery }) {
 
       {/* Delivery list */}
       {deliveries.length === 0 ? (
-        <div className="rounded-3xl p-8 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div className="flex justify-center mb-3">
-            <Package size={40} style={{ color: 'rgba(255,255,255,0.15)' }} strokeWidth={1.25} />
-          </div>
-          <p className="text-white font-bold">אין משלוחים עדיין</p>
-          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>לחץ + כדי לסרוק חשבונית</p>
-        </div>
+        <EmptyState
+          icon={Package}
+          title="אין משלוחים עדיין"
+          description="לחץ + כדי לסרוק חשבונית ולפתוח משלוח חדש"
+        />
       ) : (
         <div className="space-y-3">
           {deliveries.map((d, index) => {

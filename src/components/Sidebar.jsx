@@ -1,109 +1,148 @@
+import { Home, ClipboardList, BookOpen, CalendarDays, FileText, Fish, ShoppingCart, LogOut, X } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', label: 'דשבורד',            icon: '🏠' },
-  { id: 'prep',      label: "צ'ק ליסט יומי",        icon: '📋' },
-  { id: 'recipes',   label: 'מתכונים',            icon: '📖' },
-  { id: 'weekly',    label: 'משימות שבועיות',     icon: '📅' },
-  { id: 'shift',     label: 'חוסרים והערות',      icon: '📝' },
-  { id: 'proteins',  label: 'חיות — ספירת סוף יום', icon: '🐟' },
-  { id: 'supplier',  label: 'הזמנות ספקים',         icon: '🛒' },
+  { id: 'dashboard',    label: 'בית',                 Icon: Home },
+  { id: 'prep',         label: "צ'ק ליסט יומי",       Icon: ClipboardList },
+  { id: 'recipes',      label: 'מתכונים',             Icon: BookOpen },
+  { id: 'weekly',       label: 'משימות שבועיות',      Icon: CalendarDays },
+  { id: 'shift',        label: 'חוסרים והערות',       Icon: FileText },
+  { id: 'proteins',     label: 'חיות — ספירת סוף יום', Icon: Fish },
+  { id: 'supplier',     label: 'הזמנות ספקים',        Icon: ShoppingCart },
 ];
 
-export default function Sidebar({ currentView, onNavigate, station, user, onChangeCook, isOpen, onClose }) {
-  const st = STATIONS[station];
+export default function Sidebar({ currentView, onNavigate, station, user, onLogout, isOpen, onClose }) {
+  const st = STATIONS[station] || STATIONS['cold'];
 
   return (
     <aside
       dir="rtl"
       className={`
-        w-64 bg-slate-900 border-l border-slate-700 flex flex-col
+        w-72 flex flex-col flex-shrink-0
         fixed top-0 right-0 h-full z-50
         transition-transform duration-300 ease-in-out
         md:relative md:translate-x-0
         ${isOpen ? 'translate-x-0' : 'translate-x-full'}
       `}
+      style={{
+        background: 'var(--bg-surface)',
+        borderLeft: '1px solid var(--border)',
+      }}
     >
-
-      {/* Logo + close button */}
-      <div className="p-5 border-b border-slate-700 flex items-center justify-between">
+      {/* ── Logo ── */}
+      <div
+        className="flex items-center justify-between px-5 py-5"
+        style={{ borderBottom: '1px solid var(--border)' }}
+      >
         <div className="flex items-center gap-3">
-          <span className="text-3xl">🍽️</span>
+          <div
+            className="w-10 h-10 rounded-2xl flex items-center justify-center"
+            style={{ background: 'rgba(212,237,49,0.10)', border: '1px solid rgba(212,237,49,0.20)' }}
+          >
+            <span style={{ fontSize: '20px' }}>🍽️</span>
+          </div>
           <div>
-            <div className="text-white font-bold text-lg leading-tight">וילה אכדיה</div>
-            <div className="text-slate-500 text-xs">מערכת ניהול מטבח</div>
+            <div className="text-h3 text-text-primary font-black leading-tight">וילה אכדיה</div>
+            <div className="text-meta text-text-tertiary">מטבח</div>
           </div>
         </div>
-        {/* Close button — mobile only */}
         <button
           onClick={onClose}
-          className="md:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
           aria-label="סגור תפריט"
+          className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center
+                     transition-all duration-150 active:scale-90 press"
+          style={{ background: 'rgba(255,255,255,0.06)' }}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X size={17} strokeWidth={2} style={{ color: 'rgba(255,255,255,0.5)' }} />
         </button>
       </div>
 
-      {/* Cook + Station */}
-      <div className="p-4 border-b border-slate-700 space-y-3">
-        <div className="flex items-center gap-2.5 bg-slate-800 rounded-xl px-3 py-2.5 border border-slate-700">
-          <span className="text-xl">👤</span>
+      {/* ── User + Station ── */}
+      <div className="px-4 py-4 space-y-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
+        <div
+          className="flex items-center gap-3 rounded-2xl px-3.5 py-3"
+          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+        >
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(255,255,255,0.08)' }}
+          >
+            <span className="text-label text-text-secondary font-bold">{user?.[0]}</span>
+          </div>
           <div className="min-w-0">
-            <div className="text-slate-500 text-xs leading-none mb-0.5">טבח</div>
-            <div className="text-white font-bold text-sm truncate">{user}</div>
+            <div className="text-meta text-text-tertiary leading-none mb-0.5">טבח</div>
+            <div className="text-label text-text-primary font-bold truncate">{user}</div>
           </div>
         </div>
 
         <div
-          className="flex items-center gap-2 rounded-xl px-3 py-2.5 border"
-          style={{ borderColor: st.color + '60', backgroundColor: st.color + '15' }}
+          className="flex items-center gap-3 rounded-2xl px-3.5 py-3"
+          style={{ background: st.color + '12', border: `1px solid ${st.color}30` }}
         >
-          <span className="text-xl">{st.emoji}</span>
+          <div
+            className="w-3 h-3 rounded-full flex-shrink-0"
+            style={{ background: st.color, boxShadow: `0 0 8px ${st.color}70` }}
+          />
           <div>
-            <div className="text-slate-400 text-xs leading-none mb-0.5">תחנה</div>
-            <div className="text-white font-semibold text-sm">{st.name}</div>
+            <div className="text-meta leading-none mb-0.5" style={{ color: st.color + 'AA' }}>תחנה</div>
+            <div className="text-label font-bold" style={{ color: st.color }}>{st.name}</div>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
-        {NAV_ITEMS.map(item => (
-          <button
-            key={item.id}
-            onClick={() => onNavigate(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-right transition-all duration-150
-              ${currentView === item.id
-                ? 'bg-slate-700 text-white font-semibold'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-          >
-            <span className="text-xl">{item.icon}</span>
-            <span>{item.label}</span>
-            {currentView === item.id && (
-              <div
-                className="mr-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: st.color }}
+      {/* ── Navigation ── */}
+      <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
+        {NAV_ITEMS.map(({ id, label, Icon }) => {
+          const active = currentView === id;
+          return (
+            <button
+              key={id}
+              onClick={() => onNavigate(id)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-right
+                         transition-all duration-150 active:scale-[0.98] press"
+              style={
+                active
+                  ? { background: st.color + '1A', border: `1px solid ${st.color}35` }
+                  : { background: 'transparent', border: '1px solid transparent' }
+              }
+            >
+              <Icon
+                size={18}
+                strokeWidth={1.5}
+                style={{ color: active ? st.color : 'rgba(255,255,255,0.45)', flexShrink: 0 }}
               />
-            )}
-          </button>
-        ))}
+              <span
+                className="text-body font-semibold"
+                style={{ color: active ? st.color : 'rgba(255,255,255,0.65)' }}
+              >
+                {label}
+              </span>
+              {active && (
+                <div
+                  className="mr-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ background: st.color }}
+                />
+              )}
+            </button>
+          );
+        })}
       </nav>
 
-      {/* Change Cook */}
-      <div className="p-4 border-t border-slate-700">
+      {/* ── Logout ── */}
+      <div className="p-3" style={{ borderTop: '1px solid var(--border)' }}>
         <button
-          onClick={onChangeCook}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl
-                     text-slate-400 hover:bg-slate-800 hover:text-white transition-all duration-150"
+          onClick={onLogout}
+          aria-label="התנתק"
+          className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-right
+                     transition-all duration-150 active:scale-[0.98] press"
+          style={{ background: 'transparent', border: '1px solid transparent' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.08)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
         >
-          <span className="text-xl">🔄</span>
-          <span>החלף טבח</span>
+          <LogOut size={18} strokeWidth={1.5} style={{ color: 'rgba(248,113,113,0.7)', flexShrink: 0 }} />
+          <span className="text-body font-semibold" style={{ color: 'rgba(248,113,113,0.7)' }}>התנתק</span>
         </button>
       </div>
-
     </aside>
   );
 }
