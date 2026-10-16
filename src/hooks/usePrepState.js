@@ -23,6 +23,20 @@ export function getServiceDay(now = new Date()) {
   return toISODate(d);
 }
 
+// Sunday that starts the service week containing `isoDay` (weekly tasks reset on it).
+export function getWeekStart(isoDay) {
+  const [y, m, d] = isoDay.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() - date.getDay());
+  return toISODate(date);
+}
+
+// 0 = Sunday … 6 = Saturday, for the service day.
+export function getDayIndex(isoDay) {
+  const [y, m, d] = isoDay.split('-').map(Number);
+  return new Date(y, m - 1, d).getDay();
+}
+
 function previousDay(isoDay) {
   const [y, m, d] = isoDay.split('-').map(Number);
   return toISODate(new Date(y, m - 1, d - 1));
