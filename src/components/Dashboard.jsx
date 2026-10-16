@@ -2,7 +2,8 @@ import { motion } from 'framer-motion';
 import { ClipboardList, BookOpen, ChevronLeft, Moon as MoonIcon, Camera, PackageCheck, ShoppingCart, Fish, BarChart3, Sparkles } from 'lucide-react';
 import { useRef, useEffect, useState, useCallback, memo } from 'react';
 import { STATIONS } from '../data/stations';
-import { PREP_TASKS } from '../data/prepTasks';
+import { usePrepState } from '../hooks/usePrepState';
+import { StreakBadge } from './PrepCelebrations';
 import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { useTenantId } from '../context/TenantContext';
@@ -307,7 +308,7 @@ function CropModal({ url, color, onConfirm, onCancel }) {
 /* ════════════════════════════════════════════
    Shared Hero Card
 ════════════════════════════════════════════ */
-function HeroCard({ user, st, tod, palette, avatars, saveAvatar, done, total, pct, showProgress }) {
+function HeroCard({ user, st, tod, palette, avatars, saveAvatar, done, total, pct, streak = 0, showProgress }) {
   const today = new Date().toLocaleDateString('he-IL', { weekday: 'long', month: 'long', day: 'numeric' });
   const isDay = tod !== 'evening';
 
@@ -334,26 +335,23 @@ function HeroCard({ user, st, tod, palette, avatars, saveAvatar, done, total, pc
         <p className="text-xs font-medium mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>{today}</p>
         <div className="flex items-center gap-3 mb-1">
           <Avatar name={user} color={palette.primary} avatarData={avatars[user]} onUpload={data => saveAvatar(user, data)} />
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>{GREETING[tod]}</p>
             <h1 className="text-2xl font-black leading-tight" style={{ color: palette.primary }}>{user}</h1>
           </div>
+          {showProgress && <StreakBadge count={streak} />}
         </div>
 
         {showProgress && (
           <>
-            <p className="mt-2 text-sm flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.primary, display: 'inline-block', flexShrink: 0 }} />
-              {st.name} — {done === total && total > 0 ? (
-                <span className="inline-flex items-center gap-1">
-                  כל המשימות הושלמו
-                  <Sparkles size={12} strokeWidth={1.5} style={{ color: palette.primary }} />
-                </span>
-              ) : `נותרו ${total - done} משימות`}
+            <p className="mt-3 text-base font-semibold flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: st.color, display: 'inline-block', flexShrink: 0 }} />
+              {st.name} — {motivation(pct, total - done, streak)}
+              {pct === 100 && <Sparkles size={14} strokeWidth={1.5} style={{ color: palette.primary }} />}
             </p>
             <div className="mt-5">
               <div className="flex justify-between items-end mb-2">
-                <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{done} / {total} משימות</span>
+                <span className="text-sm tabular-nums" style={{ color: 'rgba(255,255,255,0.5)' }}>{done} / {total} פריטים</span>
                 <span className="text-4xl font-black" style={{ color: palette.primary, lineHeight: 1 }}>{pct}%</span>
               </div>
               <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
@@ -373,21 +371,52 @@ function HeroCard({ user, st, tod, palette, avatars, saveAvatar, done, total, pc
   );
 }
 
+/* Encouraging one-liner that follows the station's progress */
+function motivation(pct, remaining, streak) {
+  if (pct === 100) return 'הפריפ הושלם — אלופים!';
+  if (pct === 0)   return streak > 0 ? `רצף של ${streak} ימים — לא שוברים אותו היום 🔥` : 'יום חדש, דף חלק. יאללה מתחילים 💪';
+  if (pct < 50)    return `התחלה טובה — נותרו ${remaining} פריטים`;
+  if (pct < 85)    return `יותר מחצי! נותרו ${remaining} פריטים`;
+  return `כמעט שם — רק ${remaining} פריטים`;
+}
+
+/* ─── One station's progress row (manager view) ─── */
+function StationStatusRow({ station }) {
+  const { progress } = usePrepState(station.id);
+  const p = progress.pct;
+  const statusColor = p === 100 ? '#10b981' : p >= 50 ? '#f59e0b' : '#ef4444';
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-1.5">
+        <span className="font-medium text-white flex items-center gap-1.5">
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: station.color, display: 'inline-block', flexShrink: 0 }} />
+          {station.name}
+        </span>
+        <span style={{ color: statusColor, fontWeight: 700 }}>{p}%</span>
+      </div>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+        <motion.div
+          className="h-full rounded-full"
+          initial={{ width: 0 }}
+          animate={{ width: `${p}%` }}
+          transition={{ duration: 0.7, ease: 'easeOut' }}
+          style={{ backgroundColor: statusColor }}
+        />
+      </div>
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════════
    Main Dashboard
 ════════════════════════════════════════════ */
-export default function Dashboard({ station, user, completedTasks, onNavigate, role }) {
+export default function Dashboard({ station, user, prep, onNavigate, role }) {
   const st       = STATIONS[station];
   const tod      = getTimeOfDay();
   const palette  = TIME_PALETTE[tod];
   const { avatars, saveAvatar } = useChefAvatars();
 
-  const myTasks   = PREP_TASKS[station] || [];
-  const done      = myTasks.filter(t => completedTasks.has(t.id)).length;
-  const total     = myTasks.length;
-  const pct       = total > 0 ? Math.round((done / total) * 100) : 0;
-
-  const pending   = myTasks.filter(t => !completedTasks.has(t.id));
+  const { done, total, pct, pendingTasks: pending } = prep.progress;
 
   const isChecker = role === 'checker';
 
@@ -416,33 +445,9 @@ export default function Dashboard({ station, user, completedTasks, onNavigate, r
         {/* All-station status */}
         <SectionCard title="סטטוס תחנות" Icon={BarChart3}>
           <div className="space-y-3">
-            {Object.values(STATIONS).filter(s => s.id !== 'checker').map(s => {
-              const tasks  = PREP_TASKS[s.id] || [];
-              const doneN  = tasks.filter(t => completedTasks.has(t.id)).length;
-              const totalN = tasks.length;
-              const p      = totalN > 0 ? Math.round((doneN / totalN) * 100) : 0;
-              const statusColor = p === 100 ? '#10b981' : p >= 50 ? '#f59e0b' : '#ef4444';
-              return (
-                <div key={s.id}>
-                  <div className="flex justify-between text-sm mb-1.5">
-                    <span className="font-medium text-white flex items-center gap-1.5">
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.color, display: 'inline-block', flexShrink: 0 }} />
-                      {s.name}
-                    </span>
-                    <span style={{ color: statusColor, fontWeight: 700 }}>{p}%</span>
-                  </div>
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                    <motion.div
-                      className="h-full rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${p}%` }}
-                      transition={{ duration: 0.7, ease: 'easeOut' }}
-                      style={{ backgroundColor: statusColor }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+            {Object.values(STATIONS).filter(s => s.id !== 'checker').map(s => (
+              <StationStatusRow key={s.id} station={s} />
+            ))}
           </div>
         </SectionCard>
       </div>
@@ -455,7 +460,7 @@ export default function Dashboard({ station, user, completedTasks, onNavigate, r
       <HeroCard
         user={user} st={st} tod={tod} palette={palette}
         avatars={avatars} saveAvatar={saveAvatar}
-        done={done} total={total} pct={pct} showProgress
+        done={done} total={total} pct={pct} streak={prep.streak.count} showProgress
       />
 
       {/* Urgent alert — visible only when there are pending tasks */}
