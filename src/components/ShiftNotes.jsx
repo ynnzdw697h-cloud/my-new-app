@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, AlertCircle, User, MessageSquare, Trash2 } from 'lucide-react';
+import { AlertCircle, User, MessageSquare, Trash2 } from 'lucide-react';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { Card, Button, Input, EmptyState, Chip, Sheet } from './ui';
 
@@ -22,7 +22,7 @@ export default function ShiftNotes({ user }) {
   function addMissingItem() {
     const text = missingInput.trim();
     if (!text) return;
-    setMissingItems(prev => [...prev, { id: Date.now(), text }]);
+    setMissingItems(prev => [...prev, { id: Date.now(), text, author: user, time: nowLabel() }]);
     setMissingInput('');
     setShowMissingForm(false);
   }
@@ -51,12 +51,7 @@ export default function ShiftNotes({ user }) {
   return (
     <div className="p-5 md:p-6 space-y-5 max-w-2xl mx-auto" dir="rtl">
 
-      {/* ── Page header ── */}
-      <div className="flex items-center gap-2.5 mb-2">
-        <FileText size={20} style={{ color: 'rgba(255,255,255,0.4)' }} strokeWidth={1.5} />
-        <h2 className="text-h1 text-text-primary">חוסרים והערות</h2>
-        <span className="text-body text-text-tertiary">משותף לכל הפסים</span>
-      </div>
+      <p className="text-body text-text-secondary px-1">משותף לכל הפסים · מתעדכן בזמן אמת</p>
 
       {/* ══ Section 1 — רשימת 86 ══ */}
       <Card padded={false}>
@@ -104,6 +99,7 @@ export default function ShiftNotes({ user }) {
           {missingItems.length === 0 ? (
             <EmptyState
               icon={AlertCircle}
+              compact
               title="אין חוסרים כרגע"
               description="כשיש פריט חסר, הוסף אותו כאן"
             />
@@ -116,16 +112,21 @@ export default function ShiftNotes({ user }) {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-h3 font-black flex-shrink-0" style={{ color: 'var(--danger)' }}>86</span>
-                  <span className="text-body text-text-primary font-semibold truncate">{item.text}</span>
+                  <div className="min-w-0">
+                    <div className="text-body text-text-primary font-semibold truncate">{item.text}</div>
+                    {item.author && (
+                      <div className="text-meta text-text-tertiary">{item.author} · {item.time}</div>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={() => deleteMissingItem(item.id)}
-                  aria-label="מחק פריט"
-                  className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center
+                  aria-label={`מחק ${item.text}`}
+                  className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center
                              transition-all duration-150 active:scale-90 press"
                   style={{ background: 'rgba(248,113,113,0.08)', color: 'var(--danger)' }}
                 >
-                  <Trash2 size={15} strokeWidth={1.5} />
+                  <Trash2 size={18} strokeWidth={1.75} />
                 </button>
               </div>
             ))
@@ -169,10 +170,9 @@ export default function ShiftNotes({ user }) {
             onFocus={e => e.target.style.borderColor = 'var(--info)'}
             onBlur={e => e.target.style.borderColor = 'var(--border)'}
           />
-          <div className="flex items-center justify-between">
-            <span className="text-meta text-text-tertiary">Ctrl+Enter לשליחה</span>
+          <div className="flex items-center justify-end">
             <Button
-              variant="secondary"
+              variant="primary"
               size="sm"
               onClick={addNote}
               disabled={!noteInput.trim()}
@@ -187,6 +187,7 @@ export default function ShiftNotes({ user }) {
           {shiftNotes.length === 0 ? (
             <EmptyState
               icon={MessageSquare}
+              compact
               title="אין הערות עדיין"
               description="הערות נשמרות לכל הצוות"
             />
@@ -207,11 +208,11 @@ export default function ShiftNotes({ user }) {
                 <button
                   onClick={() => deleteNote(note.id)}
                   aria-label="מחק הערה"
-                  className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center
+                  className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center
                              transition-all duration-150 active:scale-90 press mt-0.5"
                   style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-3)' }}
                 >
-                  <Trash2 size={14} strokeWidth={1.5} />
+                  <Trash2 size={18} strokeWidth={1.75} />
                 </button>
               </div>
             ))
@@ -219,17 +220,18 @@ export default function ShiftNotes({ user }) {
         </div>
       </Card>
 
-      {/* ══ Clear all ══ */}
-      <div className="pt-1">
-        <Button
-          variant="danger"
-          fullWidth
-          icon={Trash2}
-          onClick={() => setConfirmClear(true)}
-        >
-          נקה הכל בסוף יום
-        </Button>
-      </div>
+      {/* ══ Clear all — subtle, behind a confirmation ══ */}
+      {(missingItems.length > 0 || shiftNotes.length > 0) && (
+        <div className="flex justify-center pt-2">
+          <button
+            onClick={() => setConfirmClear(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-text-tertiary min-h-[44px]"
+          >
+            <Trash2 size={14} strokeWidth={1.75} aria-hidden="true" />
+            נקה הכל בסוף יום
+          </button>
+        </div>
+      )}
 
       {/* Confirm sheet */}
       <Sheet

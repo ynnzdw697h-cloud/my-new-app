@@ -56,7 +56,7 @@ export default function RmaGenerator({ delivery, user, onClose, onRmaSent }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: '#0d0d0d' }} dir="rtl">
       <div className="flex items-center justify-between p-5 pt-12">
-        <button onClick={onClose} className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.45)' }}>← חזרה</button>
+        <button onClick={onClose} className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.62)' }}>← חזרה</button>
         <h2 className="text-white font-black text-lg">הודעת RMA</h2>
         <div style={{ width: 60 }} />
       </div>
@@ -68,7 +68,7 @@ export default function RmaGenerator({ delivery, user, onClose, onRmaSent }) {
           style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.25)' }}>
           <div>
             <p className="text-white font-bold">{sup?.name || delivery.supplierName}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>
               {(delivery.items || []).filter(i => i.itemStatus === 'issue').length} פריטים בבעיה
             </p>
           </div>
@@ -76,13 +76,13 @@ export default function RmaGenerator({ delivery, user, onClose, onRmaSent }) {
             <p className="text-2xl font-black" style={{ color: '#EF4444' }}>
               ₪{disputed.toLocaleString('he-IL', { minimumFractionDigits: 0 })}
             </p>
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>לזיכוי</p>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.62)' }}>לזיכוי</p>
           </div>
         </div>
 
         {/* Message preview */}
         <div className="rounded-3xl p-5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <p className="text-xs font-bold mb-3" style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em' }}>תצוגה מקדימה</p>
+          <p className="text-sm font-bold mb-3" style={{ color: 'rgba(255,255,255,0.62)', letterSpacing: '0.06em' }}>תצוגה מקדימה</p>
           <pre className="text-sm text-white whitespace-pre-wrap leading-relaxed font-sans">{message}</pre>
         </div>
 
@@ -93,7 +93,7 @@ export default function RmaGenerator({ delivery, user, onClose, onRmaSent }) {
             className="flex-1 rounded-2xl py-4 font-bold text-sm flex items-center justify-center gap-2"
             style={{ background: copied ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.08)', color: copied ? '#10B981' : 'white' }}
           >
-            {copied ? '✅ הועתק!' : '📋 העתק'}
+            {copied ? 'הועתק ✓' : 'העתק'}
           </button>
           {sup?.whatsapp ? (
             <button
@@ -106,7 +106,7 @@ export default function RmaGenerator({ delivery, user, onClose, onRmaSent }) {
           ) : (
             <button
               className="flex-1 rounded-2xl py-4 font-bold text-sm"
-              style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.25)', cursor: 'not-allowed' }}
+              style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.5)', cursor: 'not-allowed' }}
               disabled
             >
               💬 אין מספר WA

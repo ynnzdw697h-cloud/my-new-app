@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Fish, Plus, RotateCcw, Trash2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Plus, Minus, RotateCcw, Trash2, Pencil, Check, X } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useTenantId } from '../context/TenantContext';
@@ -35,7 +34,7 @@ export default function ProteinCount() {
   const [showAdd, setShowAdd]       = useState(false);
   const [confirmReset, setConfirmReset]     = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-  const [swipedId, setSwipedId]     = useState(null);
+  const [editing, setEditing]       = useState(false);
   const itemsRef = useRef(items);
   const vibrate  = useHaptic();
 
@@ -85,7 +84,6 @@ export default function ProteinCount() {
   function deleteItem(id) {
     persist(itemsRef.current.filter(i => i.id !== id));
     setConfirmDeleteId(null);
-    setSwipedId(null);
   }
 
   function resetAll() {
@@ -96,101 +94,87 @@ export default function ProteinCount() {
   return (
     <div className="p-5 md:p-6 space-y-5 max-w-lg mx-auto" dir="rtl">
 
-      {/* Header */}
-      <div>
-        <h2 className="text-h1 text-text-primary flex items-center gap-2">
-          <Fish size={20} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.4)' }} />
-          חיות — ספירת סוף יום
-        </h2>
-        <p className="text-body text-text-tertiary mt-1">משותף לכל הטבחים · מתעדכן בזמן אמת</p>
+      <div className="flex items-center justify-between gap-3 px-1">
+        <p className="text-body text-text-secondary">משותף לכל הצוות · בזמן אמת</p>
+        {items.some(i => !i.fixed) && (
+          <button
+            onClick={() => setEditing(v => !v)}
+            aria-pressed={editing}
+            className="flex items-center gap-1.5 px-4 min-h-[44px] rounded-xl text-sm font-bold flex-shrink-0"
+            style={editing
+              ? { background: 'rgba(255,255,255,0.92)', color: '#121212' }
+              : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            {editing ? <Check size={16} strokeWidth={2.5} aria-hidden="true" /> : <Pencil size={16} strokeWidth={2} aria-hidden="true" />}
+            {editing ? 'סיום' : 'עריכה'}
+          </button>
+        )}
       </div>
 
       {/* Items */}
       <div className="space-y-3">
         {items.map(item => (
-          <div key={item.id} className="relative rounded-2xl overflow-hidden">
-            {/* Swipe-to-delete background */}
-            {!item.fixed && (
-              <div
-                className="absolute inset-y-0 left-0 flex items-center justify-center rounded-2xl"
-                style={{ width: 80, background: 'var(--danger)', zIndex: 0 }}
+          <div
+            key={item.id}
+            className="flex items-center gap-3 rounded-2xl pr-5 pl-3 py-3"
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+          >
+            <span className="flex-1 min-w-0 text-lg font-bold text-text-primary">{item.name}</span>
+
+            {editing && !item.fixed ? (
+              <button
+                onClick={() => setConfirmDeleteId(item.id)}
+                aria-label={`מחק ${item.name}`}
+                className="w-12 h-12 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
+                style={{ background: 'rgba(248,113,113,0.12)', color: '#F87171' }}
               >
+                <Trash2 size={20} strokeWidth={2} />
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <button
-                  onClick={() => setConfirmDeleteId(item.id)}
-                  className="w-full h-full flex items-center justify-center"
-                  aria-label="מחק פריט"
+                  onClick={() => changeQty(item.id, -1)}
+                  disabled={item.qty === 0}
+                  aria-label={`הפחת ${item.name}`}
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-text-primary
+                             transition-all duration-100 active:scale-90 press
+                             disabled:opacity-30 disabled:pointer-events-none"
+                  style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
                 >
-                  <Trash2 size={20} strokeWidth={1.5} style={{ color: '#0E0E0E' }} />
+                  <Minus size={22} strokeWidth={2.25} />
+                </button>
+                <span className="text-display font-black text-text-primary tabular-nums w-12 text-center" aria-live="polite">
+                  {item.qty}
+                </span>
+                <button
+                  onClick={() => changeQty(item.id, +1)}
+                  aria-label={`הוסף ${item.name}`}
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-accent
+                             transition-all duration-100 active:scale-90 press"
+                  style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                >
+                  <Plus size={22} strokeWidth={2.25} />
                 </button>
               </div>
             )}
-
-            {/* Foreground row */}
-            <motion.div
-              drag={item.fixed ? false : 'x'}
-              dragConstraints={{ left: 0, right: 80 }}
-              dragElastic={0.05}
-              animate={{ x: swipedId === item.id ? 80 : 0 }}
-              onDragEnd={(_, info) => {
-                if (info.offset.x > 40) setSwipedId(item.id);
-                else setSwipedId(null);
-              }}
-              onClick={() => { if (swipedId === item.id) setSwipedId(null); }}
-              style={{ touchAction: 'pan-y', position: 'relative', zIndex: 1 }}
-              className="px-5 py-4 flex items-center gap-4"
-              style2={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '16px' }}
-            >
-              <div
-                className="flex items-center gap-4 w-full rounded-2xl px-5 py-4"
-                style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
-              >
-                <span className="flex-1 text-body font-bold text-text-primary">{item.name}</span>
-
-                {/* ± stepper inline */}
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <button
-                    onClick={e => { e.stopPropagation(); changeQty(item.id, -1); }}
-                    disabled={item.qty === 0}
-                    aria-label="הפחת"
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-text-primary text-2xl font-light
-                               transition-all duration-100 active:scale-90 press
-                               disabled:opacity-30 disabled:pointer-events-none"
-                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                  >
-                    −
-                  </button>
-                  <span className="text-display font-black text-text-primary tabular-nums w-12 text-center">
-                    {item.qty}
-                  </span>
-                  <button
-                    onClick={e => { e.stopPropagation(); changeQty(item.id, +1); }}
-                    aria-label="הוסף"
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-accent text-2xl font-light
-                               transition-all duration-100 active:scale-90 press"
-                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            </motion.div>
           </div>
         ))}
       </div>
 
       {/* Add item */}
       {showAdd ? (
-        <div className="flex gap-2.5">
+        <div className="flex gap-2.5 items-end">
           <Input
             className="flex-1"
-            placeholder="שם הפריט..."
+            label="פריט חדש"
+            placeholder="לדוגמה: פילה סלמון"
             value={addInput}
             onChange={e => setAddInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addItem()}
             autoFocus
           />
-          <Button variant="secondary" onClick={addItem}>הוסף</Button>
-          <Button variant="ghost" size="sm" onClick={() => { setShowAdd(false); setAddInput(''); }} ariaLabel="סגור">✕</Button>
+          <Button variant="secondary" onClick={addItem} disabled={!addInput.trim()}>הוסף</Button>
+          <Button variant="ghost" icon={X} onClick={() => { setShowAdd(false); setAddInput(''); }} ariaLabel="סגור" />
         </div>
       ) : (
         <Button variant="secondary" fullWidth icon={Plus} onClick={() => setShowAdd(true)}>
@@ -198,20 +182,26 @@ export default function ProteinCount() {
         </Button>
       )}
 
-      {/* Reset */}
-      <Button variant="danger" fullWidth icon={RotateCcw} onClick={() => setConfirmReset(true)}>
-        איפוס כל הכמויות
-      </Button>
+      {/* Reset — subtle, behind a confirmation */}
+      <div className="flex justify-center pt-4">
+        <button
+          onClick={() => setConfirmReset(true)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-text-tertiary min-h-[44px]"
+        >
+          <RotateCcw size={14} strokeWidth={1.75} aria-hidden="true" />
+          איפוס כל הכמויות
+        </button>
+      </div>
 
       {/* Delete confirm sheet */}
       <Sheet
         open={!!confirmDeleteId}
-        onClose={() => { setConfirmDeleteId(null); setSwipedId(null); }}
+        onClose={() => setConfirmDeleteId(null)}
         title="למחוק פריט זה?"
       >
         <div className="flex gap-3">
           <Button variant="danger" fullWidth onClick={() => deleteItem(confirmDeleteId)}>כן, מחק</Button>
-          <Button variant="ghost" fullWidth onClick={() => { setConfirmDeleteId(null); setSwipedId(null); }}>ביטול</Button>
+          <Button variant="ghost" fullWidth onClick={() => setConfirmDeleteId(null)}>ביטול</Button>
         </div>
       </Sheet>
 

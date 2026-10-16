@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, memo } from 'react';
-import { Sun, Sparkles, Tag, Plus, RotateCcw } from 'lucide-react';
+import { Sun, Sparkles, Tag, Plus, RotateCcw, Clock, Pencil, Check, Trash2, Undo2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STATIONS } from '../data/stations';
 import { Sheet, Button } from './ui';
@@ -36,39 +36,31 @@ function spawnParticles(color) {
   }));
 }
 
-/* ─── SwipeableRow: drag right (RTL) to reveal left delete button ─── */
-function SwipeableRow({ rowId, swipedId, setSwipedId, onDeleteRequest, children }) {
+/* ─── EditableRow: in edit mode, covers the card with a clear delete button ─── */
+function EditableRow({ editing, label, onDeleteRequest, children }) {
   return (
-    <motion.div layout className="relative rounded-3xl overflow-hidden">
-      {/* Delete button — revealed on the left */}
-      <div
-        className="absolute inset-y-0 left-0 flex items-center justify-center bg-red-600 rounded-3xl"
-        style={{ width: 80, zIndex: 0 }}
-      >
-        <button
-          onClick={onDeleteRequest}
-          className="w-full h-full flex items-center justify-center text-white font-bold text-2xl"
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* Draggable foreground */}
-      <motion.div
-        drag="x"
-        dragConstraints={{ left: 0, right: 80 }}
-        dragElastic={0.2}
-        animate={{ x: swipedId === rowId ? 80 : 0 }}
-        transition={{ type: 'spring', stiffness: 280, damping: 26 }}
-        onDragEnd={(_, info) => {
-          if (info.offset.x > 40) setSwipedId(rowId);
-          else setSwipedId(null);
-        }}
-        onClick={() => { if (swipedId === rowId) setSwipedId(null); }}
-        style={{ touchAction: 'pan-y', position: 'relative', zIndex: 1 }}
-      >
-        {children}
-      </motion.div>
+    <motion.div layout className="relative">
+      {children}
+      <AnimatePresence>
+        {editing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 rounded-3xl flex items-center justify-end pl-4"
+            style={{ background: 'rgba(0,0,0,0.45)' }}
+          >
+            <button
+              onClick={onDeleteRequest}
+              aria-label={`מחק ${label}`}
+              className="w-14 h-14 rounded-2xl flex items-center justify-center active:scale-90 transition-transform"
+              style={{ background: '#DC2626', color: '#fff', boxShadow: '0 4px 16px rgba(220,38,38,0.4)' }}
+            >
+              <Trash2 size={22} strokeWidth={2} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -134,7 +126,7 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
 
         {/* Shift toggle */}
         <div>
-          <p className="text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>משמרת</p>
+          <p className="text-sm font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>משמרת</p>
           <div className="flex gap-2">
             {['בוקר', 'צהריים'].map(s => (
               <button
@@ -144,7 +136,7 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
                 style={{
                   background: shift === s ? stationColor + '22' : 'rgba(255,255,255,0.05)',
                   border: shift === s ? `1px solid ${stationColor}55` : '1px solid rgba(255,255,255,0.08)',
-                  color: shift === s ? stationColor : 'rgba(255,255,255,0.45)',
+                  color: shift === s ? stationColor : 'rgba(255,255,255,0.62)',
                 }}
               >
                 {s === 'בוקר' ? 'הכנות בוקר' : 'הכנות צהריים'}
@@ -155,7 +147,7 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
 
         {/* Task name */}
         <div>
-          <p className="text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>שם ההכנה *</p>
+          <p className="text-sm font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>שם ההכנה *</p>
           <input
             autoFocus
             type="text"
@@ -163,13 +155,13 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
             onChange={e => setTaskName(e.target.value)}
             placeholder="לדוגמה: סלט קצוץ"
             className="w-full px-4 py-3 rounded-2xl text-white text-sm focus:outline-none"
-            style={{ ...inputStyle, '::placeholder': { color: 'rgba(255,255,255,0.25)' } }}
+            style={{ ...inputStyle, '::placeholder': { color: 'rgba(255,255,255,0.5)' } }}
           />
         </div>
 
         {/* Qty + unit */}
         <div>
-          <p className="text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>כמות ויחידות</p>
+          <p className="text-sm font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>כמות ויחידות</p>
           <div className="flex gap-2">
             <input
               type="text"
@@ -192,7 +184,7 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
 
         {/* Notes */}
         <div>
-          <p className="text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>הערות</p>
+          <p className="text-sm font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>הערות</p>
           <textarea
             value={notes}
             onChange={e => setNotes(e.target.value)}
@@ -205,7 +197,7 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
 
         {/* Sub-items builder */}
         <div>
-          <p className="text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>תת-הכנות — צ׳קליסט (אופציונלי)</p>
+          <p className="text-sm font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>תת-הכנות — צ׳קליסט (אופציונלי)</p>
           {subItems.length > 0 && (
             <div className="mb-2 space-y-1.5">
               {subItems.map((sub, idx) => (
@@ -222,7 +214,7 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
                   <button
                     onClick={() => setSubItems(prev => prev.filter((_, i) => i !== idx))}
                     className="text-lg transition-colors flex-shrink-0"
-                    style={{ color: 'rgba(255,255,255,0.3)' }}
+                    style={{ color: 'rgba(255,255,255,0.62)' }}
                   >
                     ✕
                   </button>
@@ -281,12 +273,12 @@ function vibrate(pattern) { window.navigator?.vibrate?.(pattern); }
 
 export default function PrepChecklist({ station, prep }) {
   const {
-    completedSubs, setCustomTasks, setHiddenIds,
+    completedSubs, setCustomTasks, hiddenIds, setHiddenIds,
     toggleTask, toggleSub, resetDay, progress, streak,
   } = prep;
 
   const [showAdd, setShowAdd]             = useState(false);
-  const [swipedId, setSwipedId]           = useState(null);
+  const [editing, setEditing]             = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null); // task object
   const [confirmReset, setConfirmReset]   = useState(false);
   const [toast, setToast]                 = useState(null);
@@ -338,7 +330,6 @@ export default function PrepChecklist({ station, prep }) {
   const onToggleSub  = useCallback(id => { lastActionRef.current = Date.now(); toggleSub(id); }, [toggleSub]);
 
   const requestDelete = useCallback((task) => {
-    setSwipedId(null);
     setConfirmDelete(task);
   }, []);
 
@@ -364,15 +355,28 @@ export default function PrepChecklist({ station, prep }) {
 
       <div className="p-4 md:p-6 space-y-6">
 
-      {/* ── Add prep ── */}
-      <button
-        onClick={() => setShowAdd(true)}
-        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-base font-bold min-h-[52px] active:scale-[0.98] transition-transform"
-        style={{ background: st.color + '18', border: `1px solid ${st.color}40`, color: st.color }}
-      >
-        <Plus size={20} strokeWidth={2.5} />
-        הוסף הכנה
-      </button>
+      {/* ── Add / edit ── */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setShowAdd(true)}
+          className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-base font-bold min-h-[52px] active:scale-[0.98] transition-transform"
+          style={{ background: st.color + '18', border: `1px solid ${st.color}40`, color: st.color }}
+        >
+          <Plus size={20} strokeWidth={2.5} aria-hidden="true" />
+          הוסף הכנה
+        </button>
+        <button
+          onClick={() => setEditing(v => !v)}
+          aria-pressed={editing}
+          className="flex items-center justify-center gap-2 px-5 min-h-[52px] rounded-2xl text-base font-bold active:scale-[0.98] transition-transform"
+          style={editing
+            ? { background: 'rgba(255,255,255,0.92)', color: '#121212' }
+            : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.1)' }}
+        >
+          {editing ? <Check size={18} strokeWidth={2.5} aria-hidden="true" /> : <Pencil size={18} strokeWidth={2} aria-hidden="true" />}
+          {editing ? 'סיום' : 'עריכה'}
+        </button>
+      </div>
 
       {/* ── Shift sections ── */}
       {shifts.map(({ label: shiftLabel, tasks: shiftTasks, done: shiftDone, total: shiftTotal, pct: shiftPct }) => {
@@ -415,11 +419,10 @@ export default function PrepChecklist({ station, prep }) {
 
             <div className="space-y-3">
               {shiftTasks.map(task => (
-                <SwipeableRow
+                <EditableRow
                   key={task.id}
-                  rowId={task.id}
-                  swipedId={swipedId}
-                  setSwipedId={setSwipedId}
+                  editing={editing}
+                  label={task.task}
                   onDeleteRequest={() => requestDelete(task)}
                 >
                   <TaskCard
@@ -430,7 +433,7 @@ export default function PrepChecklist({ station, prep }) {
                     onToggle={() => !task.subItems && onToggleTask(task.id)}
                     onToggleSub={onToggleSub}
                   />
-                </SwipeableRow>
+                </EditableRow>
               ))}
             </div>
           </section>
@@ -460,6 +463,17 @@ export default function PrepChecklist({ station, prep }) {
         )}
       </AnimatePresence>
 
+      {editing && hiddenIds.size > 0 && (
+        <button
+          onClick={() => setHiddenIds(new Set())}
+          className="w-full flex items-center justify-center gap-2 min-h-[48px] rounded-2xl text-base font-semibold text-text-secondary"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.18)' }}
+        >
+          <Undo2 size={18} strokeWidth={2} aria-hidden="true" />
+          שחזר {hiddenIds.size} הכנות קבועות שנמחקו
+        </button>
+      )}
+
       {/* ── Reset (rarely needed — the list resets itself every morning) ── */}
       <div className="flex justify-center pt-6 pb-2">
         <button
@@ -487,51 +501,17 @@ export default function PrepChecklist({ station, prep }) {
         </div>
       </Sheet>
 
-      {/* ── Delete confirmation dialog ── */}
-      <AnimatePresence>
-        {confirmDelete && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50"
-              style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
-              onClick={() => setConfirmDelete(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 20 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-              className="fixed z-50 inset-x-5 rounded-3xl p-6 space-y-4"
-              style={{ top: '50%', transform: 'translateY(-50%)', background: '#1e1e2e', border: '1px solid rgba(255,255,255,0.1)' }}
-              dir="rtl"
-            >
-              <p className="text-white font-bold text-base text-center">
-                האם אתה בטוח שברצונך למחוק הכנה זו?
-              </p>
-              <p className="text-center text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                {confirmDelete.task}
-              </p>
-              <div className="flex gap-3 pt-1">
-                <button
-                  onClick={executeDelete}
-                  className="flex-1 py-3 rounded-2xl font-bold text-sm transition-colors"
-                  style={{ background: '#dc2626', color: '#fff' }}
-                >
-                  כן, מחק
-                </button>
-                <button
-                  onClick={() => setConfirmDelete(null)}
-                  className="flex-1 py-3 rounded-2xl text-sm transition-colors"
-                  style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}
-                >
-                  ביטול
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* ── Delete confirmation ── */}
+      <Sheet open={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="למחוק את ההכנה?">
+        <p className="text-h3 text-text-primary font-bold mb-1">{confirmDelete?.task}</p>
+        <p className="text-body text-text-secondary mb-6">
+          {confirmDelete?.isCustom ? 'ההכנה תימחק מהרשימה.' : 'זו הכנה קבועה — אפשר לשחזר אותה במצב עריכה.'}
+        </p>
+        <div className="flex gap-3">
+          <Button variant="danger" fullWidth onClick={executeDelete}>כן, מחק</Button>
+          <Button variant="ghost" fullWidth onClick={() => setConfirmDelete(null)}>ביטול</Button>
+        </div>
+      </Sheet>
 
       {/* ── Add Prep Modal ── */}
       <AnimatePresence>
@@ -602,7 +582,7 @@ const TaskCard = memo(function TaskCard({ task, isDone, completedSubs, stationCo
       {/* Category label */}
       <div className="flex items-center gap-2 px-5 pt-3 pb-1">
         <Tag size={12} style={{ color: stationColor + 'bb' }} strokeWidth={1.5} />
-        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: stationColor + 'bb' }}>
+        <span className="text-sm font-bold uppercase tracking-wider" style={{ color: stationColor + 'bb' }}>
           {task.category}
         </span>
       </div>
@@ -648,16 +628,16 @@ const TaskCard = memo(function TaskCard({ task, isDone, completedSubs, stationCo
         {/* Text */}
         <div className="flex-1 min-w-0">
           <motion.div
-            animate={{ color: isDone ? 'rgba(255,255,255,0.35)' : '#ffffff' }}
+            animate={{ color: isDone ? 'rgba(255,255,255,0.62)' : '#ffffff' }}
             className="font-bold text-base leading-snug"
           >
             {task.task}
           </motion.div>
           {task.details && (
-            <div className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{task.details}</div>
+            <div className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>{task.details}</div>
           )}
           {task.estimatedTime && (
-            <div className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.2)' }}>⏱ {task.estimatedTime}</div>
+            <div className="text-sm mt-1 inline-flex items-center gap-1" style={{ color: 'rgba(255,255,255,0.5)' }}><Clock size={13} strokeWidth={2} aria-hidden="true" />{task.estimatedTime}</div>
           )}
         </div>
 
@@ -670,7 +650,7 @@ const TaskCard = memo(function TaskCard({ task, isDone, completedSubs, stationCo
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.6 }}
                 transition={{ type: 'spring', stiffness: 450, damping: 22, delay: 0.15 }}
-                className="text-xs font-bold px-2.5 py-1 rounded-xl"
+                className="text-sm font-bold px-2.5 py-1 rounded-xl"
                 style={{ background: stationColor + '18', color: stationColor, border: `1px solid ${stationColor}35` }}
               >
                 הושלם
@@ -760,7 +740,7 @@ function SubItem({ sub, subDone, stationColor, onToggle }) {
       </div>
 
       <motion.span
-        animate={{ color: subDone ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.85)' }}
+        animate={{ color: subDone ? 'rgba(255,255,255,0.62)' : 'rgba(255,255,255,0.85)' }}
         className="flex-1 font-medium text-sm"
       >
         {sub.label}
@@ -773,7 +753,7 @@ function SubItem({ sub, subDone, stationColor, onToggle }) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-            className="text-xs font-bold flex-shrink-0"
+            className="text-sm font-bold flex-shrink-0"
             style={{ color: stationColor }}
           >
             הושלם
@@ -783,7 +763,7 @@ function SubItem({ sub, subDone, stationColor, onToggle }) {
 
       {sub.unit && !subDone && (
         <span
-          className="text-xs px-2 py-0.5 rounded-lg font-medium flex-shrink-0"
+          className="text-sm px-2 py-0.5 rounded-lg font-medium flex-shrink-0"
           style={{ background: stationColor + '18', color: stationColor }}
         >
           {sub.unit}

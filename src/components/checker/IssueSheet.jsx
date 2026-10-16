@@ -78,7 +78,7 @@ export default function IssueSheet({ item, user, onSave, onClose }) {
         <div className="w-12 h-1 rounded-full mx-auto mb-6" style={{ background: 'rgba(255,255,255,0.15)' }} />
 
         <h3 className="text-white font-black text-lg mb-1">דיווח בעיה</h3>
-        <p className="text-sm mb-5" style={{ color: 'rgba(255,255,255,0.4)' }}>{item.name}</p>
+        <p className="text-sm mb-5" style={{ color: 'rgba(255,255,255,0.62)' }}>{item.name}</p>
 
         {/* Issue type */}
         <div className="flex gap-2 mb-5">
@@ -86,7 +86,7 @@ export default function IssueSheet({ item, user, onSave, onClose }) {
             <button
               key={t.id}
               onClick={() => setType(t.id)}
-              className="flex-1 rounded-2xl py-3 flex flex-col items-center gap-1 font-semibold text-xs transition-all"
+              className="flex-1 rounded-2xl py-3 flex flex-col items-center gap-1 font-semibold text-sm transition-all"
               style={{
                 background: type === t.id ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.05)',
                 border:     type === t.id ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.08)',

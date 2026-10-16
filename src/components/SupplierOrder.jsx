@@ -8,7 +8,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { SUPPLIERS } from '../data/suppliers';
 import { Card, Button, Input, Sheet } from './ui';
-import { ShoppingCart, ChevronRight, Plus, RotateCcw, Copy, FileDown, Clock, Trash2 } from 'lucide-react';
+import { ChevronRight, Plus, RotateCcw, Copy, FileDown, Clock, Trash2, Carrot, Fish, Package, Truck } from 'lucide-react';
 
 /* ─── Swipe-right-to-reveal delete (RTL) ─── */
 function SwipeableItemRow({ rowKey, swipedKey, setSwipedKey, onDeleteRequest, children }) {
@@ -313,11 +313,7 @@ export default function SupplierOrder() {
   if (!selectedSupplier) {
     return (
       <div className="p-5 md:p-6 space-y-4 max-w-2xl mx-auto" dir="rtl">
-        <div className="flex items-center gap-2.5 mb-2">
-          <ShoppingCart size={20} style={{ color: 'rgba(255,255,255,0.4)' }} strokeWidth={1.5} />
-          <h2 className="text-h1 text-text-primary">הזמנות ספקים</h2>
-        </div>
-        <p className="text-body text-text-secondary">בחר ספק להזמנה</p>
+        <p className="text-body text-text-secondary px-1">בחר ספק להזמנה</p>
 
         <div className="space-y-3">
           {SUPPLIERS.map(supplier => (
@@ -329,7 +325,7 @@ export default function SupplierOrder() {
             >
               <div className="flex items-center justify-between px-5 py-5">
                 <div className="flex items-center gap-4">
-                  <span className="text-4xl flex-shrink-0">{supplier.emoji}</span>
+                  <SupplierIcon supplier={supplier} />
                   <div>
                     <p className="text-h3 text-text-primary font-bold">{supplier.name}</p>
                     <p className="text-meta text-text-tertiary mt-0.5">{supplier.type}</p>
@@ -338,7 +334,7 @@ export default function SupplierOrder() {
                 <ChevronRight
                   size={18}
                   strokeWidth={1.5}
-                  style={{ color: 'rgba(255,255,255,0.2)', transform: 'rotate(180deg)' }}
+                  style={{ color: 'rgba(255,255,255,0.5)', transform: 'rotate(180deg)' }}
                 />
               </div>
             </Card>
@@ -367,7 +363,7 @@ export default function SupplierOrder() {
           </button>
           <div>
             <h2 className="text-h2 text-text-primary flex items-center gap-2">
-              <span>{selectedSupplier.emoji}</span>
+              <SupplierIcon supplier={selectedSupplier} size="sm" />
               {selectedSupplier.name}
             </h2>
             <p className="text-meta text-text-tertiary">
@@ -509,7 +505,7 @@ export default function SupplierOrder() {
         className="w-full py-4 rounded-3xl text-label font-semibold transition-all duration-150 active:scale-[0.98]"
         style={{
           border: '1px dashed rgba(255,255,255,0.18)',
-          color: 'rgba(255,255,255,0.45)',
+          color: 'rgba(255,255,255,0.62)',
         }}
       >
         <Plus size={16} className="inline ml-2" strokeWidth={2} />
@@ -630,7 +626,7 @@ export default function SupplierOrder() {
 
       {/* ── Bottom action bar ── */}
       <div
-        className="fixed bottom-0 inset-x-0 z-40 p-4"
+        className="fixed inset-x-0 z-20 p-4 bottom-[calc(76px+env(safe-area-inset-bottom))] md:bottom-0 md:right-72"
         style={{
           background: 'rgba(12,12,12,0.96)',
           backdropFilter: 'blur(24px)',
@@ -765,5 +761,22 @@ function ItemRow({ item, qty, unit, active, isLast, onMinus, onPlus, onToggleUni
         </button>
       </div>
     </div>
+  );
+}
+
+/* ─── Supplier icon tile (vector icon instead of emoji) ─── */
+const SUPPLIER_ICONS = {
+  aleh_aleh: { Icon: Carrot,  color: '#22C55E' },
+  dagim:     { Icon: Fish,    color: '#38BDF8' },
+  yavesh:    { Icon: Package, color: '#F59E0B' },
+};
+
+function SupplierIcon({ supplier, size = 'md' }) {
+  const { Icon, color } = SUPPLIER_ICONS[supplier.id] || { Icon: Truck, color: '#A78BFA' };
+  const box = size === 'sm' ? 'w-9 h-9 rounded-xl' : 'w-14 h-14 rounded-2xl';
+  return (
+    <span className={`${box} flex items-center justify-center flex-shrink-0`} style={{ background: color + '1F' }} aria-hidden="true">
+      <Icon size={size === 'sm' ? 18 : 26} strokeWidth={1.75} style={{ color }} />
+    </span>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { AlertTriangle, BarChart3, Settings2, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { RECIPES } from '../data/recipes';
 import { SHELF_LIFE, DEFAULT_SHELF_LIFE } from '../data/shelfLife';
@@ -170,16 +171,15 @@ export default function PrepTracker({ user, station, initialRecipe, onClearIniti
           className="absolute -top-8 -right-8 w-36 h-36 rounded-full opacity-20 pointer-events-none"
           style={{ background: heroColor, filter: 'blur(55px)' }}
         />
-        <p className="text-xs font-medium mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
+        <p className="text-sm font-medium mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>
           {new Date().toLocaleDateString('he-IL', { weekday: 'long', month: 'long', day: 'numeric' })}
         </p>
-        <h1 className="text-2xl font-black text-white mb-1">תפוגה ובזבוז</h1>
         <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
           {activeBatches.length === 0
             ? 'אין הכנות פעילות'
             : <><span style={{ color: heroColor, fontWeight: 700 }}>{activeBatches.length}</span> הכנות פעילות</>}
           {expiredCount > 0 && (
-            <span style={{ color: '#EF4444', fontWeight: 700 }}> · {expiredCount} פגו תוקף ⚠️</span>
+            <span className="inline-flex items-center gap-1" style={{ color: '#EF4444', fontWeight: 700 }}> · {expiredCount} פגו תוקף <AlertTriangle size={14} strokeWidth={2.25} aria-hidden="true" /></span>
           )}
           {urgentCount > 0 && expiredCount === 0 && (
             <span style={{ color: '#F59E0B', fontWeight: 700 }}> · {urgentCount} דורשות תשומת לב</span>
@@ -189,17 +189,20 @@ export default function PrepTracker({ user, station, initialRecipe, onClearIniti
         <div className="mt-3 flex gap-2 flex-wrap">
           <button
             onClick={() => setShowWaste(v => !v)}
-            className="text-xs font-semibold px-3 py-1.5 rounded-xl"
-            style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.5)' }}
+            aria-expanded={showWaste}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold px-3.5 min-h-[44px] rounded-xl"
+            style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.8)' }}
           >
-            📊 {showWaste ? 'הסתר סיכום' : 'סיכום בזבוז שבועי'}
+            <BarChart3 size={16} strokeWidth={2} aria-hidden="true" />
+            {showWaste ? 'הסתר סיכום' : 'סיכום בזבוז שבועי'}
           </button>
           <button
             onClick={() => setShowShelfEditor(true)}
-            className="text-xs font-semibold px-3 py-1.5 rounded-xl"
-            style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.5)' }}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold px-3.5 min-h-[44px] rounded-xl"
+            style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.8)' }}
           >
-            ⚙️ עריכת תוקפי ברירת מחדל
+            <Settings2 size={16} strokeWidth={2} aria-hidden="true" />
+            תוקפי ברירת מחדל
           </button>
         </div>
       </div>
@@ -215,7 +218,7 @@ export default function PrepTracker({ user, station, initialRecipe, onClearIniti
         >
           <p className="text-4xl mb-3">🟢</p>
           <p className="text-white font-bold">אין הכנות פעילות</p>
-          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
+          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.62)' }}>
             לחץ + כדי לסמן הכנה חדשה
           </p>
         </div>
@@ -238,10 +241,14 @@ export default function PrepTracker({ user, station, initialRecipe, onClearIniti
         <>
           <button
             onClick={() => setShowHistory(v => !v)}
-            className="w-full py-3 rounded-2xl text-sm font-semibold mb-3"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }}
+            aria-expanded={showHistory}
+            className="w-full min-h-[48px] rounded-2xl text-sm font-semibold mb-3"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.62)' }}
           >
-            {showHistory ? '▲ הסתר היסטוריה' : `▼ היסטוריה (${historyBatches.length})`}
+            <span className="inline-flex items-center justify-center gap-1.5">
+              {showHistory ? <ChevronUp size={16} strokeWidth={2} aria-hidden="true" /> : <ChevronDown size={16} strokeWidth={2} aria-hidden="true" />}
+              {showHistory ? 'הסתר היסטוריה' : `היסטוריה (${historyBatches.length})`}
+            </span>
           </button>
 
           {showHistory && (
@@ -256,18 +263,18 @@ export default function PrepTracker({ user, station, initialRecipe, onClearIniti
                     <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>
                       {batch.recipeName}
                     </p>
-                    <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>
                       {batch.batches} {batch.batchUnit} · {batch.preparedBy}
                     </p>
                   </div>
                   <span
-                    className="text-xs font-bold px-2.5 py-1 rounded-xl flex-shrink-0"
+                    className="text-sm font-bold px-2.5 py-1 rounded-xl flex-shrink-0"
                     style={{
                       background: batch.status === 'wasted' ? 'rgba(239,68,68,0.15)' : 'rgba(107,114,128,0.2)',
                       color:      batch.status === 'wasted' ? '#EF4444'               : '#9CA3AF',
                     }}
                   >
-                    {batch.status === 'wasted' ? '🗑 בוזבז' : '✓ נוצל'}
+                    {batch.status === 'wasted' ? 'בוזבז' : '✓ נוצל'}
                   </span>
                 </div>
               ))}
@@ -333,12 +340,12 @@ function BatchCard({ batch, onConsume, onDryKit, onLogWaste }) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
           <p className="text-white font-bold text-base leading-tight">{batch.recipeName}</p>
-          <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>
             {batch.batches} {batch.batchUnit} · ע"י {batch.preparedBy}
           </p>
         </div>
         <span
-          className="text-xs font-black px-3 py-1.5 rounded-xl flex-shrink-0 mr-3"
+          className="text-sm font-black px-3 py-1.5 rounded-xl flex-shrink-0 mr-3"
           style={{ background: cfg.color + '20', color: cfg.color, border: `1px solid ${cfg.color}35` }}
         >
           {cfg.label}
@@ -354,7 +361,7 @@ function BatchCard({ batch, onConsume, onDryKit, onLogWaste }) {
           />
         </div>
         <span
-          className="text-xs font-bold flex-shrink-0"
+          className="text-sm font-bold flex-shrink-0"
           style={{ color: cfg.color, minWidth: '90px', textAlign: 'left' }}
         >
           {timeStr}
@@ -366,7 +373,7 @@ function BatchCard({ batch, onConsume, onDryKit, onLogWaste }) {
         {showDryKit && (
           <button
             onClick={() => onDryKit(batch.id)}
-            className="flex-1 py-2.5 rounded-2xl text-xs font-bold"
+            className="flex-1 py-2.5 rounded-2xl text-sm font-bold"
             style={{ background: 'rgba(249,115,22,0.15)', color: '#F97316', border: '1px solid rgba(249,115,22,0.3)' }}
           >
             ✓ ערכת יבש מוכנה
@@ -375,7 +382,7 @@ function BatchCard({ batch, onConsume, onDryKit, onLogWaste }) {
         {status !== 'expired' && (
           <button
             onClick={() => onConsume(batch.id)}
-            className="flex-1 py-2.5 rounded-2xl text-xs font-bold"
+            className="flex-1 py-2.5 rounded-2xl text-sm font-bold"
             style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.55)' }}
           >
             ✓ נוצל
@@ -383,10 +390,11 @@ function BatchCard({ batch, onConsume, onDryKit, onLogWaste }) {
         )}
         <button
           onClick={() => onLogWaste(batch)}
-          className="flex-1 py-2.5 rounded-2xl text-xs font-bold"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 min-h-[48px] rounded-2xl text-base font-bold"
           style={{ background: 'rgba(239,68,68,0.12)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.25)' }}
         >
-          🗑 בזבוז
+          <Trash2 size={18} strokeWidth={2} aria-hidden="true" />
+          בזבוז
         </button>
       </div>
     </div>
@@ -466,11 +474,11 @@ function MarkReadySheet({ initialRecipe, getShelfLife, onSave, onCancel }) {
                     >
                       <div>
                         <p className="text-white font-semibold text-sm">{r.name}</p>
-                        <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                        <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>
                           {r.category} · {life.hours < 48
                             ? `${life.hours} שעות`
                             : `${Math.round(life.hours / 24)} ימים`} תוקף
-                          {life.hasDryKit && ' · ⚠️ ערכת יבש'}
+                          {life.hasDryKit && ' · ערכת יבש'}
                         </p>
                       </div>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5" strokeLinecap="round">
@@ -491,12 +499,12 @@ function MarkReadySheet({ initialRecipe, getShelfLife, onSave, onCancel }) {
               >
                 <div>
                   <p className="text-white font-bold">{recipe.name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>{recipe.category}</p>
+                  <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>{recipe.category}</p>
                 </div>
                 <button
                   onClick={() => { setRecipe(null); setBatchCount(1); }}
-                  className="text-xs px-3 py-1.5 rounded-xl"
-                  style={{ color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.08)' }}
+                  className="text-sm px-3 py-1.5 rounded-xl"
+                  style={{ color: 'rgba(255,255,255,0.62)', background: 'rgba(255,255,255,0.08)' }}
                 >שנה</button>
               </div>
 
@@ -514,7 +522,7 @@ function MarkReadySheet({ initialRecipe, getShelfLife, onSave, onCancel }) {
                   >−</button>
                   <div className="flex-1 text-center">
                     <span className="text-white font-black text-2xl">{batchCount}</span>
-                    <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{recipe.batchUnit}</p>
+                    <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>{recipe.batchUnit}</p>
                   </div>
                   <button
                     onClick={() => setBatchCount(n => parseFloat((n + 0.5).toFixed(1)))}
@@ -531,7 +539,7 @@ function MarkReadySheet({ initialRecipe, getShelfLife, onSave, onCancel }) {
                   style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)' }}
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold" style={{ color: 'rgba(255,255,255,0.4)' }}>תוקף</p>
+                    <p className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.62)' }}>תוקף</p>
                     <p className="text-sm font-black" style={{ color: '#10B981' }}>
                       {sl.hours < 48 ? `${sl.hours} שעות` : `${Math.round(sl.hours / 24)} ימים`}
                     </p>
@@ -540,8 +548,8 @@ function MarkReadySheet({ initialRecipe, getShelfLife, onSave, onCancel }) {
                     יפוג: {fmtDate(expiresAt)} בשעה {fmtTime(expiresAt)}
                   </p>
                   {dryKitAt && (
-                    <p className="text-xs pt-0.5" style={{ color: '#F97316' }}>
-                      ⚠️ הכנת ערכת יבש: {fmtDate(dryKitAt)} בשעה {fmtTime(dryKitAt)}
+                    <p className="text-sm pt-0.5" style={{ color: '#F97316' }}>
+                      הכנת ערכת יבש: {fmtDate(dryKitAt)} בשעה {fmtTime(dryKitAt)}
                     </p>
                   )}
                 </div>
@@ -604,7 +612,7 @@ function WasteLoggerSheet({ batch, onSave, onCancel }) {
             style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
           >
             <p className="text-white font-bold">{batch.recipeName}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>
               {batch.batches} {batch.batchUnit} · ע"י {batch.preparedBy}
             </p>
           </div>
@@ -630,7 +638,7 @@ function WasteLoggerSheet({ batch, onSave, onCancel }) {
 
           {/* Reason */}
           <div>
-            <p className="text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.06em' }}>
+            <p className="text-sm font-bold mb-2" style={{ color: 'rgba(255,255,255,0.62)', letterSpacing: '0.06em' }}>
               סיבה
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -638,7 +646,7 @@ function WasteLoggerSheet({ batch, onSave, onCancel }) {
                 <button
                   key={r.id}
                   onClick={() => setReason(r.id)}
-                  className="py-3 rounded-2xl text-xs font-bold flex flex-col items-center gap-1 transition-all"
+                  className="py-3 rounded-2xl text-sm font-bold flex flex-col items-center gap-1 transition-all"
                   style={{
                     background: reason === r.id ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)',
                     color:      reason === r.id ? '#EF4444'               : 'rgba(255,255,255,0.55)',
@@ -672,7 +680,7 @@ function WasteLoggerSheet({ batch, onSave, onCancel }) {
               opacity: canSave ? 1 : 0.4,
             }}
           >
-            🗑 אשר בזבוז
+            <span className="inline-flex items-center justify-center gap-1.5"><Trash2 size={18} strokeWidth={2} aria-hidden="true" />אשר בזבוז</span>
           </button>
         </div>
       </div>
@@ -695,7 +703,7 @@ function WasteBreakdown({ wasteLog }) {
       >
         <p className="text-2xl mb-2">✨</p>
         <p className="text-white font-bold text-sm">אפס בזבוז השבוע</p>
-        <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>כל ההכנות נוצלו</p>
+        <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.62)' }}>כל ההכנות נוצלו</p>
       </div>
     );
   }
@@ -721,7 +729,7 @@ function WasteBreakdown({ wasteLog }) {
       style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
     >
       <div className="flex items-center justify-between">
-        <p className="text-white font-bold">📊 בזבוז שבועי</p>
+        <p className="text-white font-bold inline-flex items-center gap-1.5"><BarChart3 size={16} strokeWidth={2} aria-hidden="true" />בזבוז שבועי</p>
         <p className="text-sm font-black" style={{ color: '#EF4444' }}>{recent.length} רשומות</p>
       </div>
 
@@ -730,8 +738,8 @@ function WasteBreakdown({ wasteLog }) {
         {byReason.map(r => (
           <div key={r.id}>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-white">{r.emoji} {r.label}</span>
-              <span className="text-xs font-bold" style={{ color: '#EF4444' }}>{r.count}×</span>
+              <span className="text-sm text-white">{r.emoji} {r.label}</span>
+              <span className="text-sm font-bold" style={{ color: '#EF4444' }}>{r.count}×</span>
             </div>
             <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
               <div
@@ -748,13 +756,13 @@ function WasteBreakdown({ wasteLog }) {
         <>
           <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)' }} />
           <div>
-            <p className="text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em' }}>
+            <p className="text-sm font-bold mb-2" style={{ color: 'rgba(255,255,255,0.62)', letterSpacing: '0.05em' }}>
               פריטים עם הכי הרבה בזבוז
             </p>
             {byItem.map((item, i) => (
               <div key={item.name} className="flex items-center justify-between py-1.5">
                 <span className="text-sm text-white">{i + 1}. {item.name}</span>
-                <span className="text-xs font-bold" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                <span className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.62)' }}>
                   {item.count}×
                 </span>
               </div>
@@ -829,7 +837,7 @@ function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
 
         {/* Header */}
         <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0">
-          <h3 className="text-white font-black text-lg">⚙️ תוקפי ברירת מחדל</h3>
+          <h3 className="text-white font-black text-lg">תוקפי ברירת מחדל</h3>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center text-sm"
@@ -837,7 +845,7 @@ function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
           >✕</button>
         </div>
 
-        <p className="px-5 pb-3 text-xs flex-shrink-0" style={{ color: 'rgba(255,255,255,0.35)' }}>
+        <p className="px-5 pb-3 text-sm flex-shrink-0" style={{ color: 'rgba(255,255,255,0.62)' }}>
           הגדר כמה זמן כל הכנה נשמרת. השינוי ישפיע על סימוני "מוכן" עתידיים.
         </p>
 
@@ -857,14 +865,14 @@ function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-semibold text-sm leading-tight">{recipe.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: isCustom ? '#10B981' : 'rgba(255,255,255,0.35)' }}>
+                    <p className="text-sm mt-0.5" style={{ color: isCustom ? '#10B981' : 'rgba(255,255,255,0.62)' }}>
                       {formatHours(effectiveH)}
-                      {isCustom && <span style={{ color: 'rgba(255,255,255,0.25)' }}> (ברירת מחדל: {formatHours(baseH)})</span>}
+                      {isCustom && <span style={{ color: 'rgba(255,255,255,0.5)' }}> (ברירת מחדל: {formatHours(baseH)})</span>}
                     </p>
                   </div>
                   <button
                     onClick={() => isEditing ? setEditingId(null) : openEdit(recipe)}
-                    className="flex-shrink-0 mr-3 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                    className="flex-shrink-0 mr-3 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all"
                     style={{
                       background: isEditing ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)',
                       color: 'rgba(255,255,255,0.55)',
@@ -878,7 +886,7 @@ function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
                   <div className="mt-3 space-y-2">
                     <div className="flex gap-2">
                       <div className="flex-1">
-                        <label className="text-xs mb-1 block" style={{ color: 'rgba(255,255,255,0.4)' }}>ימים</label>
+                        <label className="text-sm mb-1 block" style={{ color: 'rgba(255,255,255,0.62)' }}>ימים</label>
                         <input
                           type="number"
                           min="0"
@@ -890,7 +898,7 @@ function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="text-xs mb-1 block" style={{ color: 'rgba(255,255,255,0.4)' }}>שעות</label>
+                        <label className="text-sm mb-1 block" style={{ color: 'rgba(255,255,255,0.62)' }}>שעות</label>
                         <input
                           type="number"
                           min="0"

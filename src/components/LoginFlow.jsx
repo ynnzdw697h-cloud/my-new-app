@@ -62,7 +62,7 @@ export default function LoginFlow({ onLogin }) {
           <UtensilsCrossed size={36} style={{ color: 'rgba(255,255,255,0.7)' }} strokeWidth={1.25} />
         </div>
         <h1 className="text-4xl font-black text-white tracking-tight">וילה אכדיה</h1>
-        <p className="text-sm mt-2" style={{ color: 'rgba(255,255,255,0.35)' }}>{today}</p>
+        <p className="text-sm mt-2" style={{ color: 'rgba(255,255,255,0.62)' }}>{today}</p>
         <div
           className="h-0.5 w-16 mx-auto mt-4 rounded-full"
           style={{ background: 'linear-gradient(90deg, #3b82f6, #ef4444, #10b981)' }}
@@ -71,17 +71,17 @@ export default function LoginFlow({ onLogin }) {
 
       <AnimatePresence mode="wait">
         {step === 1 && (
-          <motion.div key="step1" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
+          <motion.div key="step1" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="w-full flex justify-center">
             <ChefStep onSelect={pickChef} />
           </motion.div>
         )}
         {step === 2 && (
-          <motion.div key="step2" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
+          <motion.div key="step2" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="w-full flex justify-center">
             <PinStep chef={selectedChef} onSuccess={onPinSuccess} onBack={() => setStep(1)} />
           </motion.div>
         )}
         {step === 3 && (
-          <motion.div key="step3" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
+          <motion.div key="step3" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="w-full flex justify-center">
             <StationStep user={selectedChef.displayName} onSelect={pickStation} onBack={() => setStep(2)} />
           </motion.div>
         )}
@@ -98,7 +98,7 @@ function ChefStep({ onSelect }) {
         מי אתה?
       </p>
       <div className="grid grid-cols-2 gap-3">
-        {CHEFS.map(chef => (
+        {CHEFS.filter(c => c.role !== 'checker').map(chef => (
           <button
             key={chef.id}
             onClick={() => onSelect(chef)}
@@ -116,6 +116,23 @@ function ChefStep({ onSelect }) {
           </button>
         ))}
       </div>
+
+      {CHEFS.some(c => c.role === 'checker') && (
+        <>
+          <p className="text-center text-sm font-semibold mt-7 mb-3 text-text-tertiary">קבלת סחורה</p>
+          {CHEFS.filter(c => c.role === 'checker').map(chef => (
+            <button
+              key={chef.id}
+              onClick={() => onSelect(chef)}
+              className="glow-btn w-full rounded-2xl px-4 min-h-[60px] flex items-center justify-center gap-2.5 text-white font-bold text-base"
+              style={{ background: 'var(--bg-card)', border: '1px solid rgba(16,185,129,0.3)' }}
+            >
+              <PackageCheck size={22} style={{ color: '#10B981' }} strokeWidth={1.75} aria-hidden="true" />
+              {chef.displayName}
+            </button>
+          ))}
+        </>
+      )}
     </div>
   );
 }
@@ -182,7 +199,7 @@ function PinStep({ chef, onSuccess, onBack }) {
         <button
           onClick={onBack}
           className="flex items-center gap-1 text-sm font-medium min-h-[44px] px-2"
-          style={{ color: 'rgba(255,255,255,0.4)' }}
+          style={{ color: 'rgba(255,255,255,0.62)' }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M9 18l6-6-6-6"/>
@@ -243,7 +260,7 @@ function PinStep({ chef, onSuccess, onBack }) {
                 className="rounded-2xl h-20 flex items-center justify-center text-lg active:scale-90 transition-transform font-black"
                 style={{
                   background: pin.length === 4 ? '#3B82F6' : 'rgba(255,255,255,0.06)',
-                  color: pin.length === 4 ? '#fff' : 'rgba(255,255,255,0.25)',
+                  color: pin.length === 4 ? '#fff' : 'rgba(255,255,255,0.5)',
                   boxShadow: pin.length === 4 ? '0 0 18px #3B82F688' : 'none',
                   transition: 'all 0.2s ease',
                 }}
@@ -286,7 +303,7 @@ function StationStep({ user, onSelect, onBack }) {
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm font-medium"
-          style={{ color: 'rgba(255,255,255,0.4)' }}
+          style={{ color: 'rgba(255,255,255,0.62)' }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M9 18l6-6-6-6"/>

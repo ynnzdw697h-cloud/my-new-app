@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import WeighingDemo from './demo/WeighingDemo';
 import FohDemo from './demo/FohDemo';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { Utensils } from 'lucide-react';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
 import { auth } from './firebase';
@@ -120,6 +120,7 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
           station={station}
           user={user}
           onLogout={onLogout}
+          role={role}
           isOpen={true}
           onClose={() => {}}
         />
@@ -251,6 +252,7 @@ function App() {
   if (!session) return <LoginFlow onLogin={handleLogin} />;
 
   return (
+    <MotionConfig reducedMotion="user">
     <TenantProvider tenantId={session.tenantId}>
       <AppShell
         user={session.user}
@@ -260,6 +262,7 @@ function App() {
         onLogout={handleLogout}
       />
     </TenantProvider>
+    </MotionConfig>
   );
 }
 

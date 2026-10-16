@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ClipboardList, BookOpen, ChevronLeft, Moon as MoonIcon, Camera, PackageCheck, ShoppingCart, Fish, BarChart3, Sparkles } from 'lucide-react';
+import { ClipboardList, BookOpen, CalendarDays, AlertCircle, Moon as MoonIcon, Camera, PackageCheck, ShoppingCart, Fish, BarChart3, Sparkles } from 'lucide-react';
 import { useRef, useEffect, useState, useCallback, memo } from 'react';
 import { STATIONS } from '../data/stations';
 import { usePrepState } from '../hooks/usePrepState';
@@ -254,7 +254,7 @@ function CropModal({ url, color, onConfirm, onCancel }) {
       dir="rtl"
     >
       <p className="text-white font-bold text-lg">מרכז את התמונה</p>
-      <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>גרור כדי למקם את הפנים</p>
+      <p className="text-sm" style={{ color: 'rgba(255,255,255,0.62)' }}>גרור כדי למקם את הפנים</p>
 
       <div
         onPointerDown={onPointerDown}
@@ -332,7 +332,7 @@ function HeroCard({ user, st, tod, palette, avatars, saveAvatar, done, total, pc
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
       >
-        <p className="text-xs font-medium mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>{today}</p>
+        <p className="text-sm font-medium mb-3" style={{ color: 'rgba(255,255,255,0.62)' }}>{today}</p>
         <div className="flex items-center gap-3 mb-1">
           <Avatar name={user} color={palette.primary} avatarData={avatars[user]} onUpload={data => saveAvatar(user, data)} />
           <div className="flex-1 min-w-0">
@@ -346,7 +346,7 @@ function HeroCard({ user, st, tod, palette, avatars, saveAvatar, done, total, pc
           <>
             <p className="mt-3 text-base font-semibold flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: st.color, display: 'inline-block', flexShrink: 0 }} />
-              {st.name} — {motivation(pct, total - done, streak)}
+              {motivation(pct, total - done, streak)}
               {pct === 100 && <Sparkles size={14} strokeWidth={1.5} style={{ color: palette.primary }} />}
             </p>
             <div className="mt-5">
@@ -432,7 +432,7 @@ export default function Dashboard({ station, user, prep, onNavigate, role }) {
 
         {/* Quick actions */}
         <div>
-          <p className="text-xs font-bold mb-3 px-1" style={{ color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em' }}>
+          <p className="text-sm font-bold mb-3 px-1" style={{ color: 'rgba(255,255,255,0.62)', letterSpacing: '0.08em' }}>
             פעולות ניהול
           </p>
           <div className="grid grid-cols-2 gap-3">
@@ -466,20 +466,12 @@ export default function Dashboard({ station, user, prep, onNavigate, role }) {
       {/* Urgent alert — visible only when there are pending tasks */}
       <UrgentAlertBanner pending={pending} />
 
-      {/* Cockpit nav cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <CockpitCard
-          Icon={ClipboardList}
-          label="משימות יומיות"
-          sub="נהל את משימות ההכנה של התחנה"
-          onClick={() => onNavigate('prep')}
-        />
-        <CockpitCard
-          Icon={BookOpen}
-          label="ספר מתכונים"
-          sub="עיין בכל המתכונים של התחנה"
-          onClick={() => onNavigate('recipes')}
-        />
+      {/* Quick shortcuts */}
+      <div className="grid grid-cols-2 gap-3">
+        <QuickAction Icon={ClipboardList} label="צ׳ק ליסט יומי"   sub={pct === 100 ? 'הושלם ✓' : `נותרו ${total - done} פריטים`} color={st.color} onClick={() => onNavigate('prep')} />
+        <QuickAction Icon={CalendarDays}  label="משימות שבועיות" sub="לפי ימים"        color="#8b5cf6" onClick={() => onNavigate('weekly')} />
+        <QuickAction Icon={AlertCircle}   label="חוסרים והערות"  sub="דיווח מהיר"      color="#f87171" onClick={() => onNavigate('shift')} />
+        <QuickAction Icon={BookOpen}      label="ספר מתכונים"    sub="מתכונים והכנות"  color="#f59e0b" onClick={() => onNavigate('recipes')} />
       </div>
     </div>
   );
@@ -519,13 +511,13 @@ function UrgentAlertBanner({ pending }) {
         />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#ef4444', marginBottom: 2 }}>
+        <p style={{ fontSize: '0.875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#ef4444', marginBottom: 2 }}>
           דרוש לסרוויס
         </p>
         <p style={{ fontSize: '0.88rem', fontWeight: 600, color: 'rgba(255,255,255,0.9)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {topTask.task}
           {topTask.estimatedTime && (
-            <span style={{ color: 'rgba(255,255,255,0.38)', fontWeight: 400 }}> — {topTask.estimatedTime}</span>
+            <span style={{ color: 'rgba(255,255,255,0.62)', fontWeight: 400 }}> — {topTask.estimatedTime}</span>
           )}
         </p>
       </div>
@@ -533,53 +525,6 @@ function UrgentAlertBanner({ pending }) {
   );
 }
 
-/* ─── Cockpit Nav Card ─── */
-const CockpitCard = memo(function CockpitCard({ Icon, label, sub, onClick }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <motion.button
-      onClick={() => { vibrate(); onClick(); }}
-      onHoverStart={() => setHovered(true)}
-      onHoverEnd={() => setHovered(false)}
-      whileTap={{ scale: 0.98 }}
-      animate={{ borderColor: hovered ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.05)' }}
-      transition={{ duration: 0.18 }}
-      style={{
-        position: 'relative',
-        minHeight: 116,
-        width: '100%',
-        borderRadius: 20,
-        padding: '22px 24px',
-        textAlign: 'right',
-        background: '#161616',
-        border: '1px solid rgba(255,255,255,0.05)',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 16,
-      }}
-    >
-      {/* Left — chevron */}
-      <ChevronLeft size={18} style={{ color: 'rgba(255,255,255,0.18)', flexShrink: 0 }} />
-
-      {/* Center — text (fills space, RTL so it's on the right visually) */}
-      <div style={{ flex: 1, textAlign: 'right' }}>
-        <p style={{ fontSize: '1.2rem', fontWeight: 700, color: '#f4f4f5', letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 5 }}>
-          {label}
-        </p>
-        <p style={{ fontSize: '0.75rem', fontWeight: 400, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.01em' }}>
-          {sub}
-        </p>
-      </div>
-
-      {/* Right — icon (top-right in RTL = visually top-left of the card) */}
-      <div style={{ flexShrink: 0, padding: 10, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', willChange: 'transform' }}>
-        <Icon size={20} style={{ color: '#60a5fa' }} strokeWidth={1.5} />
-      </div>
-    </motion.button>
-  );
-})
 
 /* ─── Sub-components ─── */
 function SectionCard({ title, Icon, children, onClick }) {
@@ -591,9 +536,9 @@ function SectionCard({ title, Icon, children, onClick }) {
       style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
     >
       <div className="flex items-center gap-2 mb-4">
-        {Icon && <Icon size={16} style={{ color: 'rgba(255,255,255,0.4)' }} strokeWidth={1.5} />}
+        {Icon && <Icon size={16} style={{ color: 'rgba(255,255,255,0.62)' }} strokeWidth={1.5} />}
         <span className="text-white font-bold text-base">{title}</span>
-        {onClick && <span className="mr-auto text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>הצג הכל ←</span>}
+        {onClick && <span className="mr-auto text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>הצג הכל ←</span>}
       </div>
       {children}
     </Wrapper>
@@ -610,8 +555,8 @@ const QuickAction = memo(function QuickAction({ Icon, label, sub, color, onClick
       <span className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-3" style={{ background: color + '20' }}>
         {Icon && <Icon size={22} style={{ color }} strokeWidth={1.5} />}
       </span>
-      <div className="text-white font-bold text-sm leading-tight">{label}</div>
-      <div className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{sub}</div>
+      <div className="text-white font-bold text-base leading-tight">{label}</div>
+      <div className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.62)' }}>{sub}</div>
     </button>
   );
 })
