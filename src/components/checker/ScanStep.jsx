@@ -100,7 +100,7 @@ export default function ScanStep({ user, onSaved, onCancel }) {
     >
       {/* Header */}
       <div className="flex items-center justify-between p-5 pt-12">
-        <button onClick={onCancel} className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.45)' }}>
+        <button onClick={onCancel} className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.62)' }}>
           ← ביטול
         </button>
         <h2 className="text-white font-black text-lg">סרוק חשבונית</h2>
@@ -188,7 +188,7 @@ export default function ScanStep({ user, onSaved, onCancel }) {
           <button
             onClick={() => setOcrResult({ supplierName: null, invoiceNumber: null, invoiceDate: null, items: [] })}
             className="w-full rounded-2xl py-3 font-semibold text-sm"
-            style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)' }}
+            style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.62)' }}
           >
             הזן ידנית ללא סריקה
           </button>

@@ -4,21 +4,21 @@ import { Timer, Fish, ShoppingCart, LogOut } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 
 /* ── Role → navigation profile mapping ── */
-function navForProfile(role) {
+export function navForProfile(role) {
   // Lead / admin: full access including station overview
   if (role === 'admin') {
     return {
       main: [
         { id: 'dashboard', label: 'בית',     Icon: HomeIcon },
-        { id: 'prep',      label: 'פריפ',    Icon: CheckIcon },
+        { id: 'prep',      label: 'צ׳ק ליסט', Icon: CheckIcon },
         { id: 'recipes',   label: 'מתכונים', Icon: BookIcon },
-        { id: 'shift',     label: 'הערות',   Icon: NoteIcon },
+        { id: 'shift',     label: 'חוסרים',  Icon: NoteIcon },
         { id: 'supplier',  label: 'ספקים',   Icon: TruckIcon },
       ],
       more: [
         { id: 'weekly',       label: 'משימות שבועיות',      Icon: CalIcon },
         { id: 'prep_tracker', label: 'תפוגה ובזבוז',         Icon: Timer },
-        { id: 'proteins',     label: 'חיות — ספירת סוף יום', Icon: Fish },
+        { id: 'proteins',     label: 'ספירת חיות', Icon: Fish },
         { id: 'checker_hub',  label: 'קבלת סחורה',           Icon: InboxIcon },
       ],
     };
@@ -39,14 +39,14 @@ function navForProfile(role) {
   return {
     main: [
       { id: 'dashboard', label: 'בית',     Icon: HomeIcon },
-      { id: 'prep',      label: 'פריפ',    Icon: CheckIcon },
+      { id: 'prep',      label: 'צ׳ק ליסט', Icon: CheckIcon },
       { id: 'recipes',   label: 'מתכונים', Icon: BookIcon },
       { id: 'weekly',    label: 'שבועי',   Icon: CalIcon },
-      { id: 'shift',     label: 'הערות',   Icon: NoteIcon },
+      { id: 'shift',     label: 'חוסרים',  Icon: NoteIcon },
     ],
     more: [
       { id: 'prep_tracker', label: 'תפוגה ובזבוז',          Icon: Timer },
-      { id: 'proteins',     label: 'חיות — ספירת סוף יום', Icon: Fish },
+      { id: 'proteins',     label: 'ספירת חיות', Icon: Fish },
       { id: 'supplier',     label: 'הזמנות ספקים',          Icon: ShoppingCart },
     ],
   };
@@ -158,8 +158,8 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
                   <Icon active={active} color={st.color} />
                 </div>
                 <span
-                  className="text-xs font-semibold transition-colors duration-200"
-                  style={{ color: active ? st.color : 'rgba(255,255,255,0.35)' }}
+                  className="text-sm font-semibold transition-colors duration-200"
+                  style={{ color: active ? st.color : 'rgba(255,255,255,0.62)' }}
                 >
                   {label}
                 </span>
@@ -179,7 +179,7 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
               <MoreIcon />
             </div>
             <span
-              className="text-xs font-semibold transition-colors duration-200"
+              className="text-sm font-semibold transition-colors duration-200"
               style={{ color: showMore ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.35)' }}
             >
               עוד

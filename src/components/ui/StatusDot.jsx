@@ -10,7 +10,7 @@ const STATUS_MAP = {
   warning: { color: '#F59E0B', label: 'מתקרב' },
   danger:  { color: '#F87171', label: 'פג' },
   info:    { color: '#60A5FA', label: 'מידע' },
-  neutral: { color: 'rgba(255,255,255,0.38)', label: '' },
+  neutral: { color: 'rgba(255,255,255,0.62)', label: '' },
 };
 
 export function StatusDot({ status = 'neutral', label, className = '' }) {

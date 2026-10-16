@@ -78,7 +78,7 @@ export default function ReviewStep({ ocrResult, supplierId, invoiceImageBase64, 
 
       {/* Header */}
       <div className="flex items-center justify-between p-5 pt-12">
-        <button onClick={onBack} className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.45)' }}>
+        <button onClick={onBack} className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.62)' }}>
           ← חזרה
         </button>
         <h2 className="text-white font-black text-lg">בדוק ואשר</h2>
@@ -96,7 +96,7 @@ export default function ReviewStep({ ocrResult, supplierId, invoiceImageBase64, 
 
         {/* Items */}
         <div>
-          <p className="text-sm font-bold mb-3 px-1" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.06em' }}>
+          <p className="text-sm font-bold mb-3 px-1" style={{ color: 'rgba(255,255,255,0.62)', letterSpacing: '0.06em' }}>
             פריטים ({items.length})
           </p>
           <div className="space-y-2">
@@ -123,7 +123,7 @@ export default function ReviewStep({ ocrResult, supplierId, invoiceImageBase64, 
                   <NumField label='כמות' value={it.orderedQty} onChange={v => updateItem(idx, 'orderedQty', v)} />
                   <NumField label='מחיר ₪' value={it.unitPrice} onChange={v => updateItem(idx, 'unitPrice', v)} step="0.1" />
                   <div className="rounded-xl px-2 py-1 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>סה״כ</p>
+                    <p className="text-sm" style={{ color: 'rgba(255,255,255,0.62)' }}>סה״כ</p>
                     <p className="text-sm font-bold text-white">₪{(it.orderedQty * it.unitPrice).toFixed(0)}</p>
                   </div>
                 </div>
@@ -171,7 +171,7 @@ export default function ReviewStep({ ocrResult, supplierId, invoiceImageBase64, 
 function Field({ label, value, onChange, placeholder, type = 'text' }) {
   return (
     <div>
-      <p className="text-xs font-semibold mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{label}</p>
+      <p className="text-sm font-semibold mb-1.5" style={{ color: 'rgba(255,255,255,0.62)' }}>{label}</p>
       <input
         type={type}
         value={value}
@@ -187,7 +187,7 @@ function Field({ label, value, onChange, placeholder, type = 'text' }) {
 function NumField({ label, value, onChange, step = '1' }) {
   return (
     <div className="rounded-xl px-2 py-1 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
-      <p className="text-xs mb-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{label}</p>
+      <p className="text-sm mb-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>{label}</p>
       <input
         type="number"
         value={value}

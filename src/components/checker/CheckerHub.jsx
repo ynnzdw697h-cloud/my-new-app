@@ -25,6 +25,13 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// '2026-04-10' → '10.4.26'
+function formatDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${Number(d)}.${Number(m)}.${y.slice(2)}`;
+}
+
 export default function CheckerHub({ user, onOpenDelivery }) {
   const tenantId                    = useTenantId();
   const [deliveries, setDeliveries] = useDeliveries();
@@ -75,20 +82,19 @@ export default function CheckerHub({ user, onOpenDelivery }) {
       >
         <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full opacity-20 pointer-events-none"
           style={{ background: '#10B981', filter: 'blur(55px)' }} />
-        <p className="text-xs font-medium mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
+        <p className="text-sm font-medium mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>
           {new Date().toLocaleDateString('he-IL', { weekday: 'long', month: 'long', day: 'numeric' })}
         </p>
-        <h1 className="text-2xl font-black text-white mb-1">קבלת סחורה</h1>
         <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
           היום קיבלת <span style={{ color: '#10B981', fontWeight: 700 }}>{todayList.length}</span> משלוחים
-          {totalVal > 0 && <> — <span style={{ color: '#10B981', fontWeight: 700 }}>₪{totalVal.toLocaleString('he-IL', { minimumFractionDigits: 0 })}</span> סה״כ</>}
+          {totalVal > 0 && <> — <span style={{ color: '#10B981', fontWeight: 700 }}>₪{totalVal.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> סה״כ</>}
         </p>
 
         {/* Status chips */}
         {todayList.length > 0 && (
           <div className="flex gap-2 mt-4 flex-wrap">
             {Object.entries(counts).filter(([, n]) => n > 0).map(([s, n]) => (
-              <span key={s} className="text-xs font-bold rounded-full px-3 py-1"
+              <span key={s} className="text-sm font-bold rounded-full px-3 py-1"
                 style={{ background: STATUS_COLOR[s] + '22', color: STATUS_COLOR[s], border: `1px solid ${STATUS_COLOR[s]}44` }}>
                 {STATUS_LABEL[s]} {n}
               </span>
@@ -126,20 +132,20 @@ export default function CheckerHub({ user, onOpenDelivery }) {
                     </div>
                     <div className="text-right">
                       <p className="text-white font-bold">{d.supplierName}</p>
-                      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                      <p className="text-sm" style={{ color: 'rgba(255,255,255,0.62)' }}>
                         {d.invoiceNumber ? `חשבונית ${d.invoiceNumber}` : 'ללא מספר'} · {d.itemCount} פריטים
-                        {!isToday && ` · ${d.deliveryDate}`}
+                        {!isToday && ` · ${formatDate(d.deliveryDate)}`}
                       </p>
                     </div>
                   </div>
                   <div className="text-left flex flex-col items-end gap-1">
-                    <span className="text-xs font-bold rounded-full px-3 py-1"
+                    <span className="text-sm font-bold rounded-full px-3 py-1"
                       style={{ background: STATUS_COLOR[d.status] + '22', color: STATUS_COLOR[d.status] }}>
                       {STATUS_LABEL[d.status]}
                     </span>
                     {d.invoiceTotal > 0 && (
                       <span className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                        ₪{d.invoiceTotal.toLocaleString('he-IL', { minimumFractionDigits: 0 })}
+                        ₪{d.invoiceTotal.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     )}
                   </div>

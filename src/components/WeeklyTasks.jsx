@@ -1,201 +1,463 @@
-import { useState } from 'react';
-import { CalendarDays, RotateCcw, Calendar } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CalendarDays, RotateCcw, Check, Plus, Pencil, Trash2, Undo2 } from 'lucide-react';
 import { WEEKLY_TASKS, DAYS, CATEGORIES } from '../data/weeklyTasks';
 import { STATIONS } from '../data/stations';
 import { useFirestoreSet } from '../hooks/useFirestoreSet';
-import { Card, Button, Chip, EmptyState } from './ui';
-import { useHaptic } from '../hooks/useHaptic';
+import { useFirestoreArray } from '../hooks/useFirestoreArray';
+import { useServiceDay, getWeekStart, getDayIndex } from '../hooks/usePrepState';
+import { Sheet, Button, Input, EmptyState } from './ui';
+import { StickyProgress, CheerToast } from './PrepCelebrations';
+
+const DAY_SHORT = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+const ALL = 'הכל';
+
+function vibrate(pattern) { window.navigator?.vibrate?.(pattern); }
 
 export default function WeeklyTasks({ station }) {
-  const [completedWeekly, setCompletedWeekly] = useFirestoreSet(`weekly_${station}`);
-  const [dayFilter, setDayFilter]             = useState('הכל');
-  const [catFilter, setCatFilter]             = useState('הכל');
-  const [stationFilter, setStationFilter]     = useState('הכל');
-  const vibrate = useHaptic();
+  const serviceDay = useServiceDay();
+  const weekStart  = getWeekStart(serviceDay);
+  const todayIdx   = getDayIndex(serviceDay);
 
-  const st = STATIONS[station];
+  // Keyed by week, so the list starts clean every Sunday automatically.
+  const [completed, setCompleted] = useFirestoreSet(`weekly_${station}_${weekStart}`);
+  const [dayIdx, setDayIdx]       = useState(todayIdx);
+  const [category, setCategory]   = useState(ALL);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [customTasks, setCustomTasks] = useFirestoreArray(`custom_weekly_${station}`);
+  const [hiddenIds, setHiddenIds]     = useFirestoreSet(`hidden_weekly_${station}`);
+  const [editing, setEditing]         = useState(false);
+  const [showAdd, setShowAdd]         = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null); // task
+  const [toast, setToast]         = useState(null);
+  const toastTimer                = useRef(null);
 
-  function toggleTask(id) {
-    vibrate();
-    setCompletedWeekly(prev => {
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  const st          = STATIONS[station];
+  const stationById = Object.fromEntries(Object.values(STATIONS).map(s => [s.id, s]));
+  const day         = DAYS[dayIdx];
+  const allTasks    = [...WEEKLY_TASKS.filter(t => !hiddenIds.has(t.id)), ...customTasks];
+
+  const weekDone  = allTasks.filter(t => completed.has(t.id)).length;
+  const weekTotal = allTasks.length;
+  const weekPct   = weekTotal ? Math.round((weekDone / weekTotal) * 100) : 0;
+
+  const dayTasks   = allTasks.filter(t => t.day === day);
+  const dayDone    = dayTasks.filter(t => completed.has(t.id)).length;
+  const categories = CATEGORIES.filter(c => c === ALL || dayTasks.some(t => t.category === c));
+  const activeCat  = categories.includes(category) ? category : ALL;
+  const groups     = categories
+    .filter(c => c !== ALL && (activeCat === ALL || activeCat === c))
+    .map(c => ({ name: c, tasks: dayTasks.filter(t => t.category === c) }));
+
+  const showToast = useCallback((text, color) => {
+    clearTimeout(toastTimer.current);
+    setToast({ id: Date.now(), text, color });
+    vibrate([20, 40, 20]);
+    toastTimer.current = setTimeout(() => setToast(null), 2200);
+  }, []);
+
+  function toggleTask(task) {
+    const wasDone = completed.has(task.id);
+    vibrate(15);
+    setCompleted(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      wasDone ? next.delete(task.id) : next.add(task.id);
       return next;
     });
+    if (wasDone) return;
+
+    // Celebrate the biggest thing this tap just finished.
+    const remaining = list => list.filter(t => t.id !== task.id && !completed.has(t.id)).length;
+    if (remaining(allTasks) === 0) return showToast('כל השבוע הושלם! 🏆', '#10B981');
+    if (remaining(dayTasks) === 0)     return showToast(`יום ${day} — סגור! ✅`, '#10B981');
+    if (remaining(dayTasks.filter(t => t.category === task.category)) === 0) {
+      showToast(`${task.category} — סגור! 💪`, st.color);
+    }
   }
 
-  const allDays     = ['הכל', ...DAYS];
-  const allStations = ['הכל', ...Object.values(STATIONS).map(s => s.name)];
-  const stationById = Object.fromEntries(Object.values(STATIONS).map(s => [s.id, s]));
+  function addTask({ task, day: taskDay, category: taskCategory, notes }) {
+    setCustomTasks(prev => [...prev, {
+      id: `wc_${Date.now()}`,
+      isCustom: true,
+      task,
+      category: taskCategory,
+      day: taskDay,
+      notes,
+      assignedTo: station,
+    }]);
+    setShowAdd(false);
+    setDayIdx(DAYS.indexOf(taskDay));
+    showToast('המשימה נוספה ✓', st.color);
+  }
 
-  const filtered = WEEKLY_TASKS.filter(t => {
-    const matchDay = dayFilter === 'הכל' || t.day === dayFilter;
-    const matchCat = catFilter === 'הכל' || t.category === catFilter;
-    const matchSt  = stationFilter === 'הכל' || stationById[t.assignedTo]?.name === stationFilter;
-    return matchDay && matchCat && matchSt;
-  });
+  function executeDelete() {
+    const task = confirmDelete;
+    if (!task) return;
+    if (task.isCustom) setCustomTasks(prev => prev.filter(t => t.id !== task.id));
+    else setHiddenIds(prev => new Set(prev).add(task.id));
+    setConfirmDelete(null);
+  }
 
-  const done = WEEKLY_TASKS.filter(t => completedWeekly.has(t.id)).length;
-  const pct  = WEEKLY_TASKS.length ? Math.round((done / WEEKLY_TASKS.length) * 100) : 0;
+  function selectDay(i) {
+    setDayIdx(i);
+    setCategory(ALL);
+  }
 
   return (
-    <div className="p-5 md:p-6 space-y-5" dir="rtl">
+    <div className="max-w-2xl mx-auto" dir="rtl">
 
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-h1 text-text-primary flex items-center gap-2 mb-1">
-            <CalendarDays size={20} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.4)' }} />
-            משימות שבועיות
+      <StickyProgress pct={weekPct} done={weekDone} total={weekTotal} color={st.color} />
+
+      <div className="p-4 md:p-6 space-y-5">
+
+        {/* ── Day strip ── */}
+        <div className="grid grid-cols-7 gap-1.5">
+          {DAYS.map((d, i) => {
+            const tasks    = allTasks.filter(t => t.day === d);
+            const left     = tasks.filter(t => !completed.has(t.id)).length;
+            const allDone  = tasks.length > 0 && left === 0;
+            const selected = i === dayIdx;
+            return (
+              <button
+                key={d}
+                onClick={() => selectDay(i)}
+                aria-label={`יום ${d}, נותרו ${left}`}
+                className="flex flex-col items-center justify-center gap-1 rounded-2xl min-h-[72px] pt-1 active:scale-95 transition-transform"
+                style={selected
+                  ? { background: st.color, boxShadow: `0 0 18px ${st.color}55` }
+                  : { background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+              >
+                <span className="text-sm font-bold" style={{ color: selected ? '#fff' : 'rgba(255,255,255,0.6)' }}>
+                  {DAY_SHORT[i]}
+                </span>
+                {allDone ? (
+                  <Check size={20} strokeWidth={3} style={{ color: selected ? '#fff' : '#34D399' }} />
+                ) : (
+                  <span className="text-lg font-black tabular-nums leading-none" style={{ color: selected ? '#fff' : 'rgba(255,255,255,0.9)' }}>
+                    {left}
+                  </span>
+                )}
+                {/* Today marker — always reserves its row so all days align */}
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: i === todayIdx ? (selected ? '#fff' : st.color) : 'transparent' }}
+                />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Day title ── */}
+        <div className="flex items-baseline justify-between px-1">
+          <h2 className="text-2xl font-black text-white">
+            יום {day}
+            {dayIdx === todayIdx && <span className="text-base font-bold mr-2" style={{ color: st.color }}>· היום</span>}
           </h2>
-          <p className="text-body text-text-tertiary">ניקוי ותחזוקה שוטפת</p>
+          <span className="text-base font-semibold tabular-nums text-text-secondary">
+            {dayDone}/{dayTasks.length} הושלמו
+          </span>
         </div>
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={RotateCcw}
-            onClick={() => { vibrate(20); setCompletedWeekly(new Set()); }}
-          >
-            איפוס
-          </Button>
-          <div className="text-left">
-            <div className="text-meta text-text-tertiary">הושלמו השבוע</div>
-            <div className="text-display font-black" style={{ color: st.color }}>{pct}%</div>
-          </div>
-        </div>
-      </div>
 
-      {/* Progress bar */}
-      <Card padded={false}>
-        <div className="px-5 py-4">
-          <div className="flex justify-between text-label mb-3">
-            <span className="text-text-primary font-bold">{done} הושלמו</span>
-            <span className="text-text-tertiary">{WEEKLY_TASKS.length - done} נותרו</span>
-          </div>
-          <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-            <div
-              className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${pct}%`, backgroundColor: st.color, boxShadow: `0 0 8px ${st.color}55` }}
-            />
-          </div>
-        </div>
-      </Card>
-
-      {/* Filters */}
-      <div className="space-y-3">
-        <FilterRow label="יום"      options={allDays}     value={dayFilter}     onChange={setDayFilter}     color={st.color} />
-        <FilterRow label="קטגוריה" options={CATEGORIES}  value={catFilter}     onChange={setCatFilter}     color={st.color} />
-        <FilterRow label="תחנה"    options={allStations} value={stationFilter} onChange={setStationFilter} color={st.color} />
-      </div>
-
-      {/* Task groups */}
-      {filtered.length === 0 ? (
-        <EmptyState
-          icon={CalendarDays}
-          title="לא נמצאו משימות"
-          description="שנה את הפילטרים לראות משימות"
-        />
-      ) : dayFilter === 'הכל' ? (
-        DAYS.map(day => {
-          const dayTasks = filtered.filter(t => t.day === day);
-          if (!dayTasks.length) return null;
-          return (
-            <DayGroup key={day} day={day} tasks={dayTasks}
-              completedWeekly={completedWeekly} onToggle={toggleTask} stationById={stationById} />
-          );
-        })
-      ) : (
-        <DayGroup day={dayFilter} tasks={filtered}
-          completedWeekly={completedWeekly} onToggle={toggleTask} stationById={stationById} />
-      )}
-    </div>
-  );
-}
-
-function FilterRow({ label, options, value, onChange, color }) {
-  return (
-    <div className="flex items-center gap-3 flex-wrap">
-      <span className="text-label text-text-tertiary w-16 flex-shrink-0">{label}:</span>
-      <div className="flex gap-2 flex-wrap">
-        {options.map(opt => (
+        {/* ── Add / edit ── */}
+        <div className="flex gap-2">
           <button
-            key={opt}
-            onClick={() => onChange(opt)}
-            className="px-3 h-8 rounded-xl text-label font-semibold transition-all duration-150 active:scale-95 press"
-            style={
-              value === opt
-                ? { background: color, color: '#0E0E0E' }
-                : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.55)', border: '1px solid rgba(255,255,255,0.08)' }
-            }
+            onClick={() => setShowAdd(true)}
+            className="flex-1 flex items-center justify-center gap-2 min-h-[48px] rounded-2xl text-base font-bold active:scale-[0.98] transition-transform"
+            style={{ background: st.color + '18', border: `1px solid ${st.color}40`, color: st.color }}
           >
-            {opt}
+            <Plus size={20} strokeWidth={2.5} aria-hidden="true" />
+            הוסף משימה
           </button>
-        ))}
+          <button
+            onClick={() => setEditing(v => !v)}
+            aria-pressed={editing}
+            className="flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-2xl text-base font-bold active:scale-[0.98] transition-transform"
+            style={editing
+              ? { background: 'rgba(255,255,255,0.92)', color: '#121212' }
+              : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            {editing ? <Check size={18} strokeWidth={2.5} aria-hidden="true" /> : <Pencil size={18} strokeWidth={2} aria-hidden="true" />}
+            {editing ? 'סיום' : 'עריכה'}
+          </button>
+        </div>
+
+        {/* ── Category chips (only when the day has more than one) ── */}
+        {categories.length > 2 && (
+          <div className="flex gap-2 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-1" style={{ scrollbarWidth: 'none' }}>
+            {categories.map(c => {
+              const active = c === activeCat;
+              const count  = c === ALL ? dayTasks.length : dayTasks.filter(t => t.category === c).length;
+              return (
+                <button
+                  key={c}
+                  onClick={() => setCategory(c)}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-4 min-h-[40px] rounded-xl text-sm font-bold active:scale-95 transition-transform"
+                  style={active
+                    ? { background: 'rgba(255,255,255,0.92)', color: '#121212' }
+                    : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  {c}
+                  <span className="tabular-nums" style={{ opacity: 0.55 }}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Task groups ── */}
+        {dayTasks.length === 0 ? (
+          <EmptyState icon={CalendarDays} title="אין משימות ביום הזה" description="אפשר לבחור יום אחר למעלה" />
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 md:items-start">
+            {groups.map(g => (
+              <TaskGroup
+                key={g.name}
+                name={g.name}
+                tasks={g.tasks}
+                completed={completed}
+                onToggle={toggleTask}
+                onDelete={setConfirmDelete}
+                editing={editing}
+                color={st.color}
+                station={station}
+                stationById={stationById}
+              />
+            ))}
+          </div>
+        )}
+
+        {editing && hiddenIds.size > 0 && (
+          <button
+            onClick={() => setHiddenIds(new Set())}
+            className="w-full flex items-center justify-center gap-2 min-h-[48px] rounded-2xl text-base font-semibold text-text-secondary"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.18)' }}
+          >
+            <Undo2 size={18} strokeWidth={2} aria-hidden="true" />
+            שחזר {hiddenIds.size} משימות קבועות שנמחקו
+          </button>
+        )}
+
+        {/* ── Reset (rarely needed — the list resets itself every Sunday) ── */}
+        <div className="flex justify-center pt-4 pb-2">
+          <button
+            onClick={() => setConfirmReset(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-text-tertiary min-h-[44px]"
+          >
+            <RotateCcw size={14} strokeWidth={1.75} />
+            איפוס שבוע
+          </button>
+        </div>
       </div>
+
+      <Sheet open={confirmReset} onClose={() => setConfirmReset(false)} title="לאפס את המשימות השבועיות?">
+        <p className="text-body text-text-secondary mb-2">
+          כל הסימונים של השבוע הזה יימחקו — לכל הצוות.
+        </p>
+        <p className="text-body text-text-tertiary mb-6">
+          לא צריך לאפס ידנית: הרשימה מתאפסת לבד בכל יום ראשון.
+        </p>
+        <div className="flex gap-3">
+          <Button variant="danger" fullWidth onClick={() => { setCompleted(new Set()); setConfirmReset(false); }}>כן, אפס</Button>
+          <Button variant="ghost" fullWidth onClick={() => setConfirmReset(false)}>ביטול</Button>
+        </div>
+      </Sheet>
+
+      <Sheet open={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="למחוק את המשימה?">
+        <p className="text-h3 text-text-primary font-bold mb-1">{confirmDelete?.task}</p>
+        <p className="text-body text-text-secondary mb-6">
+          {confirmDelete?.isCustom ? 'המשימה תימחק מהרשימה.' : 'זו משימה קבועה — אפשר לשחזר אותה במצב עריכה.'}
+        </p>
+        <div className="flex gap-3">
+          <Button variant="danger" fullWidth onClick={executeDelete}>כן, מחק</Button>
+          <Button variant="ghost" fullWidth onClick={() => setConfirmDelete(null)}>ביטול</Button>
+        </div>
+      </Sheet>
+
+      <AddWeeklySheet
+        open={showAdd}
+        defaultDay={day}
+        color={st.color}
+        onAdd={addTask}
+        onClose={() => setShowAdd(false)}
+      />
+
+      <CheerToast toast={toast} />
     </div>
   );
 }
 
-function DayGroup({ day, tasks, completedWeekly, onToggle, stationById }) {
-  if (!tasks.length) return null;
-  return (
-    <div className="space-y-2">
-      <h3 className="text-h3 text-text-primary flex items-center gap-2 px-1">
-        <Calendar size={15} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.3)' }} />
-        {day}
-        <span className="text-meta text-text-tertiary font-normal">({tasks.length})</span>
-      </h3>
-      <div className="space-y-2">
-        {tasks.map(task => {
-          const isDone      = completedWeekly.has(task.id);
-          const taskStation = stationById[task.assignedTo];
-          return (
-            <Card
-              key={task.id}
-              tappable
-              stationColor={taskStation?.color}
-              onClick={() => onToggle(task.id)}
-              className={isDone ? 'opacity-50' : ''}
-            >
-              <div className="flex items-start gap-4">
-                {/* Checkbox */}
-                <div
-                  className="w-7 h-7 rounded-full flex-shrink-0 border-2 flex items-center justify-center mt-0.5 transition-all duration-200"
-                  style={isDone
-                    ? { backgroundColor: taskStation?.color, borderColor: taskStation?.color }
-                    : { borderColor: 'rgba(255,255,255,0.25)' }
-                  }
-                >
-                  {isDone && (
-                    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                      <path d="M2.5 7L5.5 10L11.5 4" stroke="#0E0E0E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </div>
+/* ─── Add a weekly task: name, day, category, optional notes ─── */
+function AddWeeklySheet({ open, defaultDay, color, onAdd, onClose }) {
+  const [task, setTask]         = useState('');
+  const [day, setDay]           = useState(defaultDay);
+  const [category, setCategory] = useState('הכנות');
+  const [notes, setNotes]       = useState('');
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <p className={`text-body font-semibold ${isDone ? 'line-through text-text-tertiary' : 'text-text-primary'}`}>
-                    {task.task}
-                  </p>
-                  {task.notes && (
-                    <p className="text-meta text-text-tertiary mt-1">{task.notes}</p>
-                  )}
-                  <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                    {taskStation && (
-                      <Chip variant="station" stationColor={taskStation.color}>
-                        {taskStation.name}
-                      </Chip>
-                    )}
-                    <Chip>{task.category}</Chip>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          );
-        })}
+  useEffect(() => {
+    if (open) { setTask(''); setNotes(''); setDay(defaultDay); }
+  }, [open, defaultDay]);
+
+  const name = task.trim();
+
+  function submit() {
+    if (!name) return;
+    onAdd({ task: name, day, category, notes: notes.trim() });
+  }
+
+  const chip = (active) => active
+    ? { background: color, color: '#fff' }
+    : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.75)', border: '1px solid rgba(255,255,255,0.1)' };
+
+  return (
+    <Sheet open={open} onClose={onClose} title="משימה שבועית חדשה">
+      <div className="space-y-5 max-h-[70vh] overflow-y-auto -mx-1 px-1">
+        <Input
+          label="שם המשימה"
+          placeholder="לדוגמה: איולי צ׳יפוטלה"
+          value={task}
+          onChange={e => setTask(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && submit()}
+          autoFocus
+        />
+
+        <div>
+          <p className="text-label text-text-secondary px-1 mb-2">יום</p>
+          <div className="grid grid-cols-7 gap-1.5">
+            {DAYS.map((d, i) => (
+              <button
+                key={d}
+                onClick={() => setDay(d)}
+                aria-pressed={day === d}
+                aria-label={`יום ${d}`}
+                className="min-h-[48px] rounded-xl text-base font-bold transition-colors"
+                style={chip(day === d)}
+              >
+                {DAY_SHORT[i]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-label text-text-secondary px-1 mb-2">קטגוריה</p>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.filter(c => c !== ALL).map(c => (
+              <button
+                key={c}
+                onClick={() => setCategory(c)}
+                aria-pressed={category === c}
+                className="px-4 min-h-[44px] rounded-xl text-base font-bold transition-colors"
+                style={chip(category === c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <Input
+          label="הערות (לא חובה)"
+          placeholder="כמות, ספק, הוראה מיוחדת…"
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+        />
+
+        <Button fullWidth onClick={submit} disabled={!name} icon={Plus}>
+          הוסף משימה
+        </Button>
       </div>
-    </div>
+    </Sheet>
+  );
+}
+
+/* ─── One category as a compact grouped list; finished items sink to the bottom ─── */
+function TaskGroup({ name, tasks, completed, onToggle, onDelete, editing, color, station, stationById }) {
+  const done   = tasks.filter(t => completed.has(t.id)).length;
+  const sorted = [...tasks].sort((a, b) => completed.has(a.id) - completed.has(b.id));
+  const full   = done === tasks.length;
+
+  return (
+    <section
+      className="rounded-3xl overflow-hidden"
+      style={{ background: 'var(--bg-surface)', border: `1px solid ${full ? 'rgba(52,211,153,0.35)' : 'var(--border)'}` }}
+    >
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+        <h3 className="text-lg font-black text-white">{name}</h3>
+        <span
+          className="text-sm font-bold tabular-nums px-2.5 py-0.5 rounded-lg"
+          style={full
+            ? { background: 'rgba(52,211,153,0.15)', color: '#34D399' }
+            : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}
+        >
+          {full ? '✓ ' : ''}{done}/{tasks.length}
+        </span>
+      </div>
+
+      <ul>
+        <AnimatePresence initial={false}>
+          {sorted.map((task, i) => {
+            const isDone      = completed.has(task.id);
+            const taskStation = task.assignedTo !== station ? stationById[task.assignedTo] : null;
+            return (
+              <motion.li
+                key={task.id}
+                layout
+                transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                style={{ borderTop: i > 0 ? '1px solid var(--border-subtle)' : 'none' }}
+              >
+                <div className="flex items-center">
+                <button
+                  onClick={() => !editing && onToggle(task)}
+                  disabled={editing}
+                  className="flex-1 min-w-0 flex items-center gap-3 px-4 min-h-[56px] py-2 text-right active:bg-white/5 transition-colors"
+                >
+                  <motion.span
+                    animate={isDone
+                      ? { scale: [1, 1.25, 1], backgroundColor: color, borderColor: color }
+                      : { scale: 1, backgroundColor: 'rgba(0,0,0,0)', borderColor: 'rgba(255,255,255,0.3)' }}
+                    transition={{ duration: 0.3 }}
+                    className="w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                  >
+                    {isDone && <Check size={15} strokeWidth={3} color="#fff" />}
+                  </motion.span>
+                  <span className="flex-1 min-w-0">
+                    <span
+                      className={`block text-base font-semibold transition-colors ${isDone ? 'line-through' : ''}`}
+                      style={{ color: isDone ? 'rgba(255,255,255,0.62)' : '#fff' }}
+                    >
+                      {task.task}
+                    </span>
+                    {task.notes && <span className="block text-sm text-text-tertiary mt-0.5">{task.notes}</span>}
+                  </span>
+                  {taskStation && (
+                    <span className="text-sm font-bold px-2 py-1 rounded-lg flex-shrink-0" style={{ background: taskStation.color + '20', color: taskStation.color }}>
+                      {taskStation.name}
+                    </span>
+                  )}
+                </button>
+                <AnimatePresence initial={false}>
+                  {editing && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.6 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.6 }}
+                      onClick={() => onDelete(task)}
+                      aria-label={`מחק ${task.task}`}
+                      className="w-12 h-12 ml-2 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
+                      style={{ background: 'rgba(248,113,113,0.12)', color: '#F87171' }}
+                    >
+                      <Trash2 size={20} strokeWidth={2} />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+                </div>
+              </motion.li>
+            );
+          })}
+        </AnimatePresence>
+      </ul>
+    </section>
   );
 }

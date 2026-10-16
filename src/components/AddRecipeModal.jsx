@@ -188,7 +188,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
           padding: '12px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <button onClick={onClose} style={{ color: 'rgba(255,255,255,0.4)', padding: '8px', fontSize: 20, lineHeight: 1 }}>✕</button>
+          <button onClick={onClose} style={{ color: 'rgba(255,255,255,0.62)', padding: '8px', fontSize: 20, lineHeight: 1 }}>✕</button>
           <span style={{ color: 'white', fontWeight: 900, fontSize: 17 }}>
             {type === 'prep' ? '+ מתכון הכנה' : '+ מנה חדשה'}
           </span>
@@ -197,7 +197,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
             disabled={!canSave}
             style={{
               background: canSave ? '#10B981' : 'rgba(255,255,255,0.08)',
-              color: canSave ? 'white' : 'rgba(255,255,255,0.25)',
+              color: canSave ? 'white' : 'rgba(255,255,255,0.5)',
               border: 'none', borderRadius: 14, padding: '8px 18px',
               fontWeight: 800, fontSize: 14, transition: 'all 0.2s',
             }}
@@ -218,7 +218,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                 style={{
                   flex: 1, padding: '10px 8px', borderRadius: 12,
                   background: type === t.id ? '#10B981' : 'transparent',
-                  color: type === t.id ? 'white' : 'rgba(255,255,255,0.4)',
+                  color: type === t.id ? 'white' : 'rgba(255,255,255,0.62)',
                   fontWeight: 700, fontSize: 14, transition: 'all 0.2s',
                   boxShadow: type === t.id ? '0 4px 14px rgba(16,185,129,0.4)' : 'none',
                 }}
@@ -273,7 +273,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                     flex: 1, padding: '10px', borderRadius: 14,
                     background: station === s.id ? s.color + '22' : 'rgba(255,255,255,0.04)',
                     border: `1px solid ${station === s.id ? s.color : 'rgba(255,255,255,0.07)'}`,
-                    color: station === s.id ? s.color : 'rgba(255,255,255,0.4)',
+                    color: station === s.id ? s.color : 'rgba(255,255,255,0.62)',
                     fontWeight: 700, fontSize: 14,
                   }}
                 >{s.label}</button>
@@ -318,7 +318,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
             {/* Column headers */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 76px 80px 60px 28px', gap: 6, marginBottom: 4 }}>
               {['מרכיב', 'כמות', 'יחידה', '₪ עלות', ''].map((h, i) => (
-                <span key={i} style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: 600, paddingRight: 4 }}>{h}</span>
+                <span key={i} style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 600, paddingRight: 4 }}>{h}</span>
               ))}
             </div>
 
@@ -356,7 +356,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                 <button
                   onClick={() => removeIngredient(i)}
                   disabled={ingredients.length === 1}
-                  style={{ color: 'rgba(255,255,255,0.22)', fontSize: 18, paddingBottom: 2, opacity: ingredients.length === 1 ? 0.3 : 1 }}
+                  style={{ color: 'rgba(255,255,255,0.5)', fontSize: 18, paddingBottom: 2, opacity: ingredients.length === 1 ? 0.3 : 1 }}
                 >×</button>
               </div>
             ))}
@@ -369,7 +369,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                 borderRadius: 12, padding: '9px 14px',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}>
-                <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13 }}>
+                <span style={{ color: 'rgba(255,255,255,0.62)', fontSize: 13 }}>
                   עלות {type === 'prep' ? 'אצווה' : 'למנה'}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -386,7 +386,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                 </div>
               </div>
             )}
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 6 }}>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>
               עמודת ₪ — עלות כוללת של המרכיב (אופציונלי, לחישוב Food Cost)
             </p>
           </div>
@@ -419,7 +419,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                       margin: '3px', padding: '5px 11px', borderRadius: 10,
                       background: isActive ? 'rgba(239,68,68,0.13)' : 'rgba(255,255,255,0.04)',
                       border: `1px solid ${isActive ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.07)'}`,
-                      color: isActive ? '#EF4444' : 'rgba(255,255,255,0.25)',
+                      color: isActive ? '#EF4444' : 'rgba(255,255,255,0.5)',
                       fontSize: 12, fontWeight: isActive ? 700 : 400, transition: 'all 0.15s',
                     }}
                   >
@@ -429,7 +429,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                 );
               })}
             </div>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 8 }}>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 8 }}>
               לחץ לביטול/הוספה ידנית. זיהוי אוטומטי לפי שמות המרכיבים.
             </p>
           </div>
@@ -440,7 +440,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
               <Divider />
               <div style={{ marginBottom: 20 }}>
                 <FormLabel>תת-מתכונים מקושרים</FormLabel>
-                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 10, marginTop: 4 }}>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.62)', marginBottom: 10, marginTop: 4 }}>
                   למשל: רוטב, ציר, קרוטונים שמשולבים במנה זו
                 </p>
 
@@ -458,7 +458,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                       style={{ ...cellInput, width: 120, fontSize: 12 }}
                       dir="rtl"
                     />
-                    <button onClick={() => removeSubRecipe(i)} style={{ color: 'rgba(255,255,255,0.3)', fontSize: 18, padding: 4 }}>×</button>
+                    <button onClick={() => removeSubRecipe(i)} style={{ color: 'rgba(255,255,255,0.62)', fontSize: 18, padding: 4 }}>×</button>
                   </div>
                 ))}
 
@@ -492,7 +492,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
                           <span>{r.name}</span>
-                          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>{r.category}</span>
+                          <span style={{ color: 'rgba(255,255,255,0.62)', fontSize: 12 }}>{r.category}</span>
                         </button>
                       ))}
                     </div>
@@ -531,7 +531,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                 <button
                   onClick={() => removeStep(i)}
                   disabled={steps.length === 1}
-                  style={{ color: 'rgba(255,255,255,0.22)', fontSize: 18, padding: '8px 4px', opacity: steps.length === 1 ? 0.3 : 1 }}
+                  style={{ color: 'rgba(255,255,255,0.5)', fontSize: 18, padding: '8px 4px', opacity: steps.length === 1 ? 0.3 : 1 }}
                 >×</button>
               </div>
             ))}

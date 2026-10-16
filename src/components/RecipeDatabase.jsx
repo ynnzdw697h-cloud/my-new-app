@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { Clock } from 'lucide-react';
 import { RECIPES, CATEGORIES } from '../data/recipes';
 import { MAIN_DISHES, DISH_CATEGORIES } from '../data/mainDishes';
 import { STATIONS } from '../data/stations';
@@ -217,7 +218,6 @@ export default function RecipeDatabase({ station, onMarkReady }) {
   }
 
   const cats    = activeTab === 'dish' ? DISH_CATEGORIES : CATEGORIES;
-  const catMeta = activeTab === 'dish' ? DISH_CAT_META   : CAT_META;
 
   return (
     <div className="px-4 py-5 max-w-xl mx-auto" dir="rtl" style={{ position: 'relative' }}>
@@ -254,20 +254,19 @@ export default function RecipeDatabase({ station, onMarkReady }) {
         style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
       >
         {[
-          { id: 'dish', label: 'מנות ראשיות', emoji: '🍽️' },
-          { id: 'prep', label: 'הכנות',        emoji: '👨‍🍳' },
+          { id: 'dish', label: 'מנות' },
+          { id: 'prep', label: 'הכנות' },
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => switchTab(tab.id)}
-            className="flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition-all duration-200"
+            className="flex-1 min-h-[44px] rounded-xl text-base font-bold flex items-center justify-center gap-1.5 transition-all duration-200"
             style={{
               background:  activeTab === tab.id ? st.color : 'transparent',
-              color:       activeTab === tab.id ? '#fff'   : 'rgba(255,255,255,0.4)',
+              color:       activeTab === tab.id ? '#fff'   : 'rgba(255,255,255,0.62)',
               boxShadow:   activeTab === tab.id ? `0 4px 14px ${st.color}50` : 'none',
             }}
           >
-            <span>{tab.emoji}</span>
             {tab.label}
           </button>
         ))}
@@ -291,7 +290,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
           dir="rtl"
         />
         {search && (
-          <button onClick={() => setSearch('')} style={{ color: 'rgba(255,255,255,0.4)' }}>✕</button>
+          <button onClick={() => setSearch('')} style={{ color: 'rgba(255,255,255,0.62)' }}>✕</button>
         )}
       </div>
 
@@ -299,7 +298,6 @@ export default function RecipeDatabase({ station, onMarkReady }) {
       <div className="flex gap-2 overflow-x-auto pb-3 mb-5 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
         {cats.map(c => {
           const active = category === c;
-          const meta   = catMeta[c] || DEFAULT_META;
           return (
             <button
               key={c}
@@ -308,11 +306,10 @@ export default function RecipeDatabase({ station, onMarkReady }) {
               style={{
                 background: active ? st.color : 'var(--bg-card)',
                 border:     active ? `1px solid ${st.color}` : '1px solid var(--border)',
-                color:      active ? '#fff' : 'rgba(255,255,255,0.45)',
+                color:      active ? '#fff' : 'rgba(255,255,255,0.62)',
                 boxShadow:  active ? `0 4px 16px ${st.color}40` : 'none',
               }}
             >
-              {c !== 'הכל' && <span>{meta.emoji}</span>}
               {c}
             </button>
           );
@@ -320,7 +317,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
       </div>
 
       {/* ── Count ── */}
-      <p className="text-xs font-semibold mb-4 px-1" style={{ color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em' }}>
+      <p className="text-sm font-semibold mb-4 px-1" style={{ color: 'rgba(255,255,255,0.62)', letterSpacing: '0.06em' }}>
         {activeTab === 'dish' ? filteredDishes.length : filteredPrep.length} {activeTab === 'dish' ? 'מנות' : 'מתכונים'}
       </p>
 
@@ -353,14 +350,14 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                     </div>
                   )}
                   <div
-                    className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-xl text-xs font-bold"
+                    className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-xl text-sm font-bold"
                     style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(6px)' }}
                   >
                     {dish.category}
                   </div>
                   {fcp > 0 && (
                     <div
-                      className="absolute bottom-2 left-2 px-2 py-0.5 rounded-xl text-xs font-black"
+                      className="absolute bottom-2 left-2 px-2 py-0.5 rounded-xl text-sm font-black"
                       style={{ background: 'rgba(0,0,0,0.7)', color: foodCostColor(fcp), backdropFilter: 'blur(6px)' }}
                     >
                       {fcp.toFixed(0)}% FC
@@ -368,23 +365,25 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                   )}
                   {dish.isCustom && (
                     <div
-                      className="absolute top-2.5 left-2.5 px-1.5 py-0.5 rounded-lg text-xs font-bold"
+                      className="absolute top-2.5 left-2.5 px-1.5 py-0.5 rounded-lg text-sm font-bold"
                       style={{ background: 'rgba(16,185,129,0.7)', color: 'white', backdropFilter: 'blur(6px)' }}
                     >✎</div>
                   )}
                 </div>
                 <div className="p-3">
                   <h3 className="text-white font-bold text-sm leading-tight mb-1.5">{dish.name}</h3>
-                  <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                    <span className="text-xs">⏱ {dish.prepTimeMin} דק׳</span>
-                    {dish.sellingPrice > 0 && <span className="text-xs">· ₪{dish.sellingPrice}</span>}
+                  <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.62)' }}>
+                    {dish.prepTimeMin > 0 && (
+                      <span className="text-sm inline-flex items-center gap-1"><Clock size={13} strokeWidth={2} aria-hidden="true" />{dish.prepTimeMin} דק׳</span>
+                    )}
+                    {dish.sellingPrice > 0 && <span className="text-sm">{dish.prepTimeMin > 0 ? '· ' : ''}₪{dish.sellingPrice}</span>}
                   </div>
                 </div>
               </button>
             );
           })}
           {filteredDishes.length === 0 && (
-            <div className="col-span-2 text-center py-20" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            <div className="col-span-2 text-center py-20" style={{ color: 'rgba(255,255,255,0.5)' }}>
               <div className="text-5xl mb-4">🔍</div>
               <div className="font-medium">לא נמצאו מנות</div>
             </div>
@@ -419,23 +418,25 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                       </div>
                     )}
                     <div
-                      className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-xl text-xs font-bold"
+                      className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-xl text-sm font-bold"
                       style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(6px)' }}
                     >
                       {recipe.category}
                     </div>
                     {recipe.isCustom && (
                       <div
-                        className="absolute top-2.5 left-2.5 px-1.5 py-0.5 rounded-lg text-xs font-bold"
+                        className="absolute top-2.5 left-2.5 px-1.5 py-0.5 rounded-lg text-sm font-bold"
                         style={{ background: 'rgba(16,185,129,0.7)', color: 'white', backdropFilter: 'blur(6px)' }}
                       >✎</div>
                     )}
                   </div>
                   <div className="p-3">
                     <h3 className="text-white font-bold text-sm leading-tight mb-1.5">{recipe.name}</h3>
-                    <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                      <span className="text-xs">⏱ {recipe.prepTime}</span>
-                      <span className="text-xs">· {recipe.ingredients.length} מרכיבים</span>
+                    <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.62)' }}>
+                      {recipe.prepTime && (
+                        <span className="text-sm inline-flex items-center gap-1"><Clock size={13} strokeWidth={2} aria-hidden="true" />{recipe.prepTime}</span>
+                      )}
+                      <span className="text-sm">{recipe.prepTime ? '· ' : ''}{recipe.ingredients.length} מרכיבים</span>
                     </div>
                   </div>
                 </button>
@@ -443,7 +444,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
             })}
           </div>
           {filteredPrep.length === 0 && (
-            <div className="text-center py-20" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            <div className="text-center py-20" style={{ color: 'rgba(255,255,255,0.5)' }}>
               <div className="text-5xl mb-4">🔍</div>
               <div className="font-medium">לא נמצאו מתכונים</div>
             </div>
@@ -520,7 +521,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
         <button
           onClick={() => fileRef.current.click()}
           disabled={uploading}
-          className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold active:scale-90 transition-all"
+          className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-bold active:scale-90 transition-all"
           style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.85)' }}
         >
           {uploading ? <span>מעלה...</span> : (
@@ -539,7 +540,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
         {/* Upload error */}
         {uploadError && (
           <div
-            className="absolute top-16 left-4 right-4 rounded-2xl px-4 py-2 text-xs font-bold"
+            className="absolute top-16 left-4 right-4 rounded-2xl px-4 py-2 text-sm font-bold"
             style={{ background: 'rgba(220,38,38,0.9)', color: 'white', backdropFilter: 'blur(8px)' }}
           >
             שגיאה: {uploadError}
@@ -549,7 +550,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
         {/* Title overlay */}
         <div className="absolute bottom-0 inset-x-0 p-5">
           <span
-            className="text-xs font-bold px-2.5 py-1 rounded-xl mb-2 inline-block"
+            className="text-sm font-bold px-2.5 py-1 rounded-xl mb-2 inline-block"
             style={{ background: stationColor + '35', color: stationColor, border: `1px solid ${stationColor}40` }}
           >
             {dish.category}
@@ -563,7 +564,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
 
         {/* Info chips */}
         <div className="flex gap-2 flex-wrap">
-          <InfoChip icon="⏱" text={`${dish.prepTimeMin} דק׳`} />
+          {dish.prepTimeMin > 0 && <InfoChip icon={<Clock size={14} strokeWidth={2} />} text={`${dish.prepTimeMin} דק׳`} />}
           <InfoChip icon="🥘" text={`${dish.directIngredients.length + dish.subRecipes.length} רכיבים`} />
           {dish.sellingPrice > 0 && <InfoChip icon="₪" text={`${dish.sellingPrice}`} />}
         </div>
@@ -581,14 +582,14 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
             className="rounded-2xl px-4 py-3"
             style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}
           >
-            <p className="text-xs font-bold mb-2" style={{ color: 'rgba(245,158,11,0.8)' }}>⚠️ אלרגנים</p>
+            <p className="text-sm font-bold mb-2" style={{ color: 'rgba(245,158,11,0.8)' }}>⚠️ אלרגנים</p>
             <div className="flex gap-2 flex-wrap">
               {dish.allergens.map(a => {
                 const m = ALLERGEN_META[a] || { emoji: '⚠️' };
                 return (
                   <span
                     key={a}
-                    className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-xl"
+                    className="flex items-center gap-1 text-sm font-bold px-2.5 py-1 rounded-xl"
                     style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)' }}
                   >
                     {m.emoji} {a}
@@ -628,7 +629,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
             >−</button>
             <div className="flex-1 text-center">
               <div className="text-white font-black text-2xl">{portions}</div>
-              <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>מנות</div>
+              <div className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>מנות</div>
             </div>
             <button
               onClick={() => setPortions(p => p + 1)}
@@ -649,15 +650,15 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
             </p>
             <div className="grid grid-cols-3 gap-3 mb-3">
               <div className="text-center">
-                <div className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>עלות למנה</div>
+                <div className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>עלות למנה</div>
                 <div className="text-lg font-black text-white">₪{dish.costPerPortion.toFixed(2)}</div>
               </div>
               <div className="text-center">
-                <div className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>סה״כ ×{portions}</div>
+                <div className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>סה״כ ×{portions}</div>
                 <div className="text-lg font-black text-white">₪{totalCost.toFixed(2)}</div>
               </div>
               <div className="text-center">
-                <div className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Food Cost</div>
+                <div className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>Food Cost</div>
                 <div className="text-lg font-black" style={{ color: fcColor }}>{fcp.toFixed(0)}%</div>
               </div>
             </div>
@@ -676,7 +677,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
             <span>🥗</span>
             <span className="text-white font-bold">מרכיבים</span>
             {scale !== 1 && (
-              <span className="mr-auto text-xs font-bold px-2 py-1 rounded-xl" style={{ background: stationColor + '20', color: stationColor }}>
+              <span className="mr-auto text-sm font-bold px-2 py-1 rounded-xl" style={{ background: stationColor + '20', color: stationColor }}>
                 ×{fmt(scale)}
               </span>
             )}
@@ -702,7 +703,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
             {/* Sub-recipe links */}
             {dish.subRecipes.length > 0 && (
               <div className="py-3">
-                <p className="text-xs font-bold mb-2 pt-1" style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em' }}>
+                <p className="text-sm font-bold mb-2 pt-1" style={{ color: 'rgba(255,255,255,0.62)', letterSpacing: '0.06em' }}>
                   תת-מתכונים (הכנות)
                 </p>
                 <div className="space-y-2 pb-1">
@@ -717,12 +718,12 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
                       >
                         <div>
                           <p className="text-white font-bold text-sm">{sr.name}</p>
-                          <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                          <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>
                             {sr.portionDesc} · ×{fmt(sr.portionsUsed * scale)}
                           </p>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0 mr-2">
-                          <span className="text-xs font-semibold" style={{ color: stationColor }}>פתח</span>
+                          <span className="text-sm font-semibold" style={{ color: stationColor }}>פתח</span>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={stationColor} strokeWidth="2.5" strokeLinecap="round">
                             <path d="M15 18l-6-6 6-6"/>
                           </svg>
@@ -781,7 +782,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
             <div className="px-5 pb-5 pt-1 space-y-4" style={{ borderTop: '1px solid var(--border)' }}>
               {/* Selling points */}
               <div className="pt-3">
-                <p className="text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em' }}>נקודות מכירה</p>
+                <p className="text-sm font-bold mb-2" style={{ color: 'rgba(255,255,255,0.62)', letterSpacing: '0.06em' }}>נקודות מכירה</p>
                 <div className="space-y-2">
                   {dish.foh.sellingPoints.map((pt, i) => (
                     <div key={i} className="flex items-start gap-2">
@@ -794,19 +795,19 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
 
               {/* Pairing */}
               <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <p className="text-xs font-bold mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>🍷 זיווג</p>
+                <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>🍷 זיווג</p>
                 <p className="text-sm text-white">{dish.foh.pairing}</p>
               </div>
 
               {/* Serve temp + plating */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <p className="text-xs font-bold mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>🌡️ הגשה</p>
-                  <p className="text-xs text-white leading-relaxed">{dish.foh.serveTemp}</p>
+                  <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>🌡️ הגשה</p>
+                  <p className="text-sm text-white leading-relaxed">{dish.foh.serveTemp}</p>
                 </div>
                 <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <p className="text-xs font-bold mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>🍽️ פלייטינג</p>
-                  <p className="text-xs text-white leading-relaxed">{dish.foh.platingNote}</p>
+                  <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>🍽️ פלייטינג</p>
+                  <p className="text-sm text-white leading-relaxed">{dish.foh.platingNote}</p>
                 </div>
               </div>
             </div>
@@ -897,7 +898,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
         <button
           onClick={() => fileRef.current.click()}
           disabled={uploading}
-          className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold active:scale-90 transition-all"
+          className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-bold active:scale-90 transition-all"
           style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.85)' }}
         >
           {uploading ? (
@@ -918,7 +919,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
         {/* Upload error */}
         {uploadError && (
           <div
-            className="absolute top-16 left-4 right-4 rounded-2xl px-4 py-2 text-xs font-bold"
+            className="absolute top-16 left-4 right-4 rounded-2xl px-4 py-2 text-sm font-bold"
             style={{ background: 'rgba(220,38,38,0.9)', color: 'white', backdropFilter: 'blur(8px)' }}
           >
             שגיאה: {uploadError}
@@ -928,7 +929,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
         {/* Recipe name overlay */}
         <div className="absolute bottom-0 inset-x-0 p-5">
           <span
-            className="text-xs font-bold px-2.5 py-1 rounded-xl mb-2 inline-block"
+            className="text-sm font-bold px-2.5 py-1 rounded-xl mb-2 inline-block"
             style={{ background: stationColor + '35', color: stationColor, border: `1px solid ${stationColor}40` }}
           >
             {recipe.category}
@@ -942,7 +943,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
 
         {/* Info chips */}
         <div className="flex gap-2 flex-wrap">
-          <InfoChip icon="⏱" text={recipe.prepTime} />
+          {recipe.prepTime && <InfoChip icon={<Clock size={14} strokeWidth={2} />} text={recipe.prepTime} />}
           <InfoChip icon="🥘" text={`${recipe.ingredients.length} מרכיבים`} />
           <InfoChip icon="⚖️" text={`${recipe.batches} ${recipe.batchUnit}`} />
           {onMarkReady && (
@@ -1022,7 +1023,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
                 className="w-20 rounded-2xl text-white text-center py-2.5 text-lg font-black focus:outline-none"
                 style={{ background: 'rgba(255,255,255,0.08)', border: `1px solid ${stationColor}40`, caretColor: stationColor }}
               />
-              <div className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{recipe.batchUnit}</div>
+              <div className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.62)' }}>{recipe.batchUnit}</div>
             </div>
             <button
               onClick={() => onUpdateBatches(batches + recipe.batches * 0.5)}
@@ -1033,7 +1034,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
             {scaleFactor !== 1 && (
               <button
                 onClick={() => onUpdateBatches(recipe.batches)}
-                className="text-xs rounded-2xl px-3 py-2 font-semibold"
+                className="text-sm rounded-2xl px-3 py-2 font-semibold"
                 style={{ color: stationColor, background: stationColor + '18' }}
               >
                 ×{fmt(scaleFactor)} — איפוס
@@ -1052,7 +1053,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
             <span className="text-white font-bold">מרכיבים</span>
             {scaleFactor !== 1 && (
               <span
-                className="mr-auto text-xs font-bold px-2 py-1 rounded-xl"
+                className="mr-auto text-sm font-bold px-2 py-1 rounded-xl"
                 style={{ background: stationColor + '20', color: stationColor }}
               >
                 ×{fmt(scaleFactor)}
@@ -1065,7 +1066,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
               <div key={si}>
                 {sec.label && (
                   <div
-                    className="text-xs font-bold uppercase tracking-wider py-3 mt-1"
+                    className="text-sm font-bold uppercase tracking-wider py-3 mt-1"
                     style={{ color: stationColor }}
                   >
                     {sec.label}
@@ -1154,7 +1155,7 @@ function InfoChip({ icon, text }) {
       className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-sm font-medium"
       style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'rgba(255,255,255,0.6)' }}
     >
-      <span>{icon}</span>
+      <span aria-hidden="true" className="inline-flex">{icon}</span>
       <span>{text}</span>
     </div>
   );

@@ -47,7 +47,7 @@ module.exports = {
         text: {
           primary:   '#FFFFFF',
           secondary: 'rgba(255,255,255,0.62)',
-          tertiary:  'rgba(255,255,255,0.38)',
+          tertiary:  'rgba(255,255,255,0.55)',
           disabled:  'rgba(255,255,255,0.22)',
         },
 

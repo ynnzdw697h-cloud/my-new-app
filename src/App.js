@@ -1,14 +1,13 @@
-import { useState, useEffect, useTransition, useCallback, useSyncExternalStore } from 'react';
+import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import WeighingDemo from './demo/WeighingDemo';
 import FohDemo from './demo/FohDemo';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { Utensils } from 'lucide-react';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { TenantProvider } from './context/TenantContext';
 import { DEFAULT_TENANT_ID } from './data/tenants';
 import LoginFlow from './components/LoginFlow';
-import SplashScreen from './components/SplashScreen';
 import BottomNav from './components/BottomNav';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -21,7 +20,7 @@ import ProteinCount from './components/ProteinCount';
 import SupplierOrder from './components/SupplierOrder';
 import CheckerHub from './components/checker/CheckerHub';
 import CheckerDetail from './components/checker/CheckerDetail';
-import { useFirestoreSet } from './hooks/useFirestoreSet';
+import { usePrepState } from './hooks/usePrepState';
 import { STATIONS } from './data/stations';
 import { SESSION_KEY } from './data/chefs';
 
@@ -58,19 +57,7 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
   const [activeDeliveryId, setActiveDeliveryId] = useState(null);
   const [markReadyRecipe,  setMarkReadyRecipe]   = useState(null);
   const isTablet    = useIsTablet();
-  const stationKey  = station || 'init';
-  const [completedTasks, setCompletedTasks]     = useFirestoreSet(`prep_tasks_${stationKey}`);
-  const [, startTransition]                     = useTransition();
-
-  const toggleTask = useCallback((taskId) => {
-    startTransition(() => {
-      setCompletedTasks(prev => {
-        const next = new Set(prev);
-        next.has(taskId) ? next.delete(taskId) : next.add(taskId);
-        return next;
-      });
-    });
-  }, [setCompletedTasks]);
+  const prep        = usePrepState(station);
 
   const openDelivery = useCallback((id) => {
     setActiveDeliveryId(id);
@@ -94,15 +81,10 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
         transition={{ duration: 0.18, ease: 'easeInOut' }}
       >
         {view === 'dashboard' && (
-          <Dashboard station={station} user={user} completedTasks={completedTasks} onNavigate={navigate} role={role} />
+          <Dashboard station={station} user={user} prep={prep} onNavigate={navigate} role={role} />
         )}
         {view === 'prep' && (
-          <PrepChecklist
-            station={station}
-            completedTasks={completedTasks}
-            onToggle={toggleTask}
-            onReset={() => setCompletedTasks(new Set())}
-          />
+          <PrepChecklist station={station} prep={prep} />
         )}
         {view === 'recipes'        && (
           <RecipeDatabase
@@ -138,6 +120,7 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
           station={station}
           user={user}
           onLogout={onLogout}
+          role={role}
           isOpen={true}
           onClose={() => {}}
         />
@@ -193,7 +176,7 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
       </header>
 
       {/* ── Main content ── */}
-      <main className="flex-1 overflow-y-auto" style={{ paddingTop: '64px', paddingBottom: '96px' }}>
+      <main className="flex-1" style={{ paddingTop: '64px', paddingBottom: '96px' }}>
         {contentArea}
       </main>
 
@@ -212,7 +195,6 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
 function App() {
   const [session, setSession]     = useState(null); // { user, station, role, tenantId }
   const [authReady, setAuthReady] = useState(false);
-  const [splashDone, setSplashDone] = useState(false);
 
   // Restore session from localStorage on mount
   useEffect(() => {
@@ -267,14 +249,10 @@ function App() {
 
   if (!authReady) return null;
 
-  if (!session) {
-    if (!splashDone) {
-      return <SplashScreen onComplete={() => setSplashDone(true)} />;
-    }
-    return <LoginFlow onLogin={handleLogin} />;
-  }
+  if (!session) return <LoginFlow onLogin={handleLogin} />;
 
   return (
+    <MotionConfig reducedMotion="user">
     <TenantProvider tenantId={session.tenantId}>
       <AppShell
         user={session.user}
@@ -284,6 +262,7 @@ function App() {
         onLogout={handleLogout}
       />
     </TenantProvider>
+    </MotionConfig>
   );
 }
 

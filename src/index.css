@@ -28,7 +28,7 @@
   /* Text */
   --text:     #ffffff;
   --text-2:   rgba(255,255,255,0.62);
-  --text-3:   rgba(255,255,255,0.38);
+  --text-3:   rgba(255,255,255,0.55);
   --text-dis: rgba(255,255,255,0.22);
 
   /* Brand */
@@ -112,12 +112,28 @@ body::before {
   transition: box-shadow 0.28s ease, border-color 0.28s ease, background 0.28s ease !important;
   will-change: transform;
 }
-.glow-btn:hover {
-  box-shadow:
-    0 0 0 1px var(--gc, #D4ED31),
-    0 0 20px var(--gca, rgba(212,237,49,0.42)),
-    0 0 55px var(--gcb, rgba(212,237,49,0.14)) !important;
-  border-color: var(--gc, #D4ED31) !important;
+/* Hover glow only on real pointers — on touch screens :hover sticks after a tap */
+@media (hover: hover) and (pointer: fine) {
+  .glow-btn:hover {
+    box-shadow:
+      0 0 0 1px var(--gc, #D4ED31),
+      0 0 20px var(--gca, rgba(212,237,49,0.42)),
+      0 0 55px var(--gcb, rgba(212,237,49,0.14)) !important;
+    border-color: var(--gc, #D4ED31) !important;
+  }
+}
+/* Visible keyboard focus everywhere */
+:focus-visible {
+  outline: 2px solid #D4ED31;
+  outline-offset: 2px;
+}
+/* Respect reduced-motion for CSS animations too */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 .glow-btn:active {
   transform: scale(0.97);

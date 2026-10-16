@@ -1,18 +1,25 @@
-import { Home, ClipboardList, BookOpen, CalendarDays, FileText, Fish, ShoppingCart, LogOut, X } from 'lucide-react';
+import { Home, ClipboardList, BookOpen, CalendarDays, FileText, Fish, ShoppingCart, LogOut, X, Timer, PackageCheck, UtensilsCrossed } from 'lucide-react';
 import { STATIONS } from '../data/stations';
+import { navForProfile } from './BottomNav';
 
-const NAV_ITEMS = [
-  { id: 'dashboard',    label: 'בית',                 Icon: Home },
-  { id: 'prep',         label: "צ'ק ליסט יומי",       Icon: ClipboardList },
-  { id: 'recipes',      label: 'מתכונים',             Icon: BookOpen },
-  { id: 'weekly',       label: 'משימות שבועיות',      Icon: CalendarDays },
-  { id: 'shift',        label: 'חוסרים והערות',       Icon: FileText },
-  { id: 'proteins',     label: 'חיות — ספירת סוף יום', Icon: Fish },
-  { id: 'supplier',     label: 'הזמנות ספקים',        Icon: ShoppingCart },
-];
+// Full labels + icons for the tablet sidebar; which items appear (and their order)
+// comes from the same role profile as the mobile bottom nav.
+const NAV_META = {
+  dashboard:    { label: 'בית',              Icon: Home },
+  prep:         { label: "צ'ק ליסט יומי",    Icon: ClipboardList },
+  recipes:      { label: 'מתכונים',          Icon: BookOpen },
+  weekly:       { label: 'משימות שבועיות',   Icon: CalendarDays },
+  shift:        { label: 'חוסרים והערות',    Icon: FileText },
+  prep_tracker: { label: 'תפוגה ובזבוז',     Icon: Timer },
+  proteins:     { label: 'ספירת חיות',       Icon: Fish },
+  supplier:     { label: 'הזמנות ספקים',     Icon: ShoppingCart },
+  checker_hub:  { label: 'קבלת סחורה',       Icon: PackageCheck },
+};
 
-export default function Sidebar({ currentView, onNavigate, station, user, onLogout, isOpen, onClose }) {
+export default function Sidebar({ currentView, onNavigate, station, user, onLogout, role, isOpen, onClose }) {
   const st = STATIONS[station] || STATIONS['cold'];
+  const { main, more } = navForProfile(role);
+  const navItems = [...main, ...more].map(i => ({ id: i.id, ...NAV_META[i.id] }));
 
   return (
     <aside
@@ -39,7 +46,7 @@ export default function Sidebar({ currentView, onNavigate, station, user, onLogo
             className="w-10 h-10 rounded-2xl flex items-center justify-center"
             style={{ background: 'rgba(212,237,49,0.10)', border: '1px solid rgba(212,237,49,0.20)' }}
           >
-            <span style={{ fontSize: '20px' }}>🍽️</span>
+            <UtensilsCrossed size={20} strokeWidth={1.75} style={{ color: '#D4ED31' }} aria-hidden="true" />
           </div>
           <div>
             <div className="text-h3 text-text-primary font-black leading-tight">וילה אכדיה</div>
@@ -70,12 +77,12 @@ export default function Sidebar({ currentView, onNavigate, station, user, onLogo
             <span className="text-label text-text-secondary font-bold">{user?.[0]}</span>
           </div>
           <div className="min-w-0">
-            <div className="text-meta text-text-tertiary leading-none mb-0.5">טבח</div>
+            <div className="text-meta text-text-tertiary leading-none mb-0.5">{role === 'checker' ? 'משתמש' : 'טבח'}</div>
             <div className="text-label text-text-primary font-bold truncate">{user}</div>
           </div>
         </div>
 
-        <div
+        {role !== 'checker' && <div
           className="flex items-center gap-3 rounded-2xl px-3.5 py-3"
           style={{ background: st.color + '12', border: `1px solid ${st.color}30` }}
         >
@@ -87,12 +94,12 @@ export default function Sidebar({ currentView, onNavigate, station, user, onLogo
             <div className="text-meta leading-none mb-0.5" style={{ color: st.color + 'AA' }}>תחנה</div>
             <div className="text-label font-bold" style={{ color: st.color }}>{st.name}</div>
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* ── Navigation ── */}
       <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
-        {NAV_ITEMS.map(({ id, label, Icon }) => {
+        {navItems.map(({ id, label, Icon }) => {
           const active = currentView === id;
           return (
             <button
@@ -109,7 +116,7 @@ export default function Sidebar({ currentView, onNavigate, station, user, onLogo
               <Icon
                 size={18}
                 strokeWidth={1.5}
-                style={{ color: active ? st.color : 'rgba(255,255,255,0.45)', flexShrink: 0 }}
+                style={{ color: active ? st.color : 'rgba(255,255,255,0.62)', flexShrink: 0 }}
               />
               <span
                 className="text-body font-semibold"

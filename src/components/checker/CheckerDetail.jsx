@@ -142,19 +142,19 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
       <div className="mx-4 mt-4 rounded-3xl p-5"
         style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${statusColor}30` }}>
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-bold rounded-full px-3 py-1"
+          <span className="text-sm font-bold rounded-full px-3 py-1"
             style={{ background: statusColor + '22', color: statusColor }}>
             {STATUS_LABEL[delivery.status]}
           </span>
           <div className="text-right">
             <p className="text-white font-black text-lg">{delivery.supplierName}</p>
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.62)' }}>
               {delivery.invoiceNumber ? `חשבונית ${delivery.invoiceNumber}` : 'ללא מספר חשבונית'} · {delivery.invoiceDate}
             </p>
           </div>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          <span className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.62)' }}>
             {delivery.items.length} פריטים
           </span>
           <span className="text-xl font-black" style={{ color: statusColor }}>
@@ -181,7 +181,7 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
               <div className="flex items-start justify-between mb-3 gap-2">
                 <div className="text-right flex-1">
                   <p className="text-white font-bold">{item.name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>
                     הוזמן: {item.orderedQty} {item.unit} · ₪{item.unitPrice}/{item.unit}
                   </p>
                 </div>
@@ -193,7 +193,7 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
 
               {/* Received qty stepper */}
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.4)' }}>התקבל</p>
+                <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.62)' }}>התקבל</p>
                 <div className="flex items-center gap-3">
                   <motion.button
                     whileTap={{ scale: 0.88 }}
@@ -238,7 +238,7 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
                     className="rounded-xl p-3 mb-3"
                     style={{ background: 'rgba(239,68,68,0.12)' }}
                   >
-                    <p className="text-xs font-bold" style={{ color: '#EF4444' }}>
+                    <p className="text-sm font-bold" style={{ color: '#EF4444' }}>
                       🔴 {ISSUE_LABEL[item.issue.type] || 'בעיה'}
                       {item.issue.note ? ` — ${item.issue.note}` : ''}
                     </p>
