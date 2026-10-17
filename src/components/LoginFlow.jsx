@@ -173,13 +173,9 @@ function PinStep({ chef, onSuccess, onBack }) {
         setTimeout(() => { setPin(''); setError(false); }, 700);
       }
     } catch {
-      // Network error — fall back to client-side PIN check so the app still works
-      if (entered === chef.pin) {
-        onSuccess({ token: null, tenantId: 'villa-acadia', role: chef.role || 'chef', displayName: chef.displayName });
-      } else {
-        setError(true);
-        setTimeout(() => { setPin(''); setError(false); }, 700);
-      }
+      // Network error — PINs are only checked server-side, so just reject and let them retry
+      setError(true);
+      setTimeout(() => { setPin(''); setError(false); }, 700);
     } finally {
       setLoading(false);
     }
