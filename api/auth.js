@@ -18,19 +18,29 @@ if (!admin.apps.length) {
   });
 }
 
-// Chef registry — source of truth for PIN validation.
+// Chef registry. PINs are NOT stored here — the repo is public.
+// They come from the CHEF_PINS env var (set in Vercel), e.g. {"yamski":"4821","kaydi":"9307",...}
 // In a future version this can be fetched from Firestore per-tenant.
 const CHEFS = [
-  { id: 'yamski',       displayName: 'ימסקי',     pin: '1234', role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'kaydi',        displayName: 'קיידי',      pin: '1111', role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'shontz',       displayName: 'שונצה',      pin: '2222', role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'noam_s',       displayName: 'נועם הנמוך', pin: '3333', role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'noam_t',       displayName: 'נועם הגבוה', pin: '4444', role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'ortal',        displayName: 'אורטל',       pin: '5555', role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'or',           displayName: 'אור',         pin: '6666', role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'nitzan',       displayName: 'ניצן',        pin: '7777', role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'checker_main', displayName: 'קבלה',        pin: '0000', role: 'checker', tenantId: 'villa-acadia' },
+  { id: 'yamski',       displayName: 'ימסקי',     role: 'chef',    tenantId: 'villa-acadia' },
+  { id: 'kaydi',        displayName: 'קיידי',      role: 'chef',    tenantId: 'villa-acadia' },
+  { id: 'shontz',       displayName: 'שונצה',      role: 'chef',    tenantId: 'villa-acadia' },
+  { id: 'noam_s',       displayName: 'נועם הנמוך', role: 'chef',    tenantId: 'villa-acadia' },
+  { id: 'noam_t',       displayName: 'נועם הגבוה', role: 'chef',    tenantId: 'villa-acadia' },
+  { id: 'ortal',        displayName: 'אורטל',       role: 'chef',    tenantId: 'villa-acadia' },
+  { id: 'or',           displayName: 'אור',         role: 'chef',    tenantId: 'villa-acadia' },
+  { id: 'nitzan',       displayName: 'ניצן',        role: 'chef',    tenantId: 'villa-acadia' },
+  { id: 'checker_main', displayName: 'קבלה',        role: 'checker', tenantId: 'villa-acadia' },
 ];
+
+function loadPins() {
+  try {
+    return JSON.parse(process.env.CHEF_PINS || '{}');
+  } catch {
+    console.error('[Auth] CHEF_PINS is not valid JSON');
+    return {};
+  }
+}
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -44,8 +54,9 @@ module.exports = async function handler(req, res) {
   }
 
   const chef = CHEFS.find(c => c.id === chefId);
+  const expectedPin = chef && loadPins()[chef.id];
 
-  if (!chef || chef.pin !== pin) {
+  if (!chef || !expectedPin || String(expectedPin) !== String(pin)) {
     return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
   }
 
