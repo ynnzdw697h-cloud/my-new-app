@@ -3,6 +3,7 @@ import { AlertCircle, User, MessageSquare, Trash2, X, MoreHorizontal, ChevronDow
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { Card, Button, Input, EmptyState, Chip, Sheet } from './ui';
 import { StatusMark, UndoToast } from './PrepCelebrations';
+import { useFocusFlash } from '../hooks/useFocusFlash';
 
 const MISSING_KEY = 'missing_items';
 const NOTES_KEY   = 'shift_notes';
@@ -28,7 +29,7 @@ function historyLine(item) {
   return parts.join(' · ');
 }
 
-export default function ShiftNotes({ user }) {
+export default function ShiftNotes({ user, focusId, onFocused }) {
   const [missingItems, setMissingItems] = useFirestoreArray(MISSING_KEY);
   const [shiftNotes,   setShiftNotes]   = useFirestoreArray(NOTES_KEY);
 
@@ -41,6 +42,7 @@ export default function ShiftNotes({ user }) {
   const [toast,           setToast]           = useState(null);
   const toastTimer = useRef(null);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+  useFocusFlash(focusId, onFocused);
 
   const openItems    = missingItems.filter(i => missingStatus(i) !== 'arrived');
   const arrivedItems = missingItems.filter(i => missingStatus(i) === 'arrived');
@@ -102,7 +104,7 @@ export default function ShiftNotes({ user }) {
   const renderMissing = item => {
     const st = MISSING_STATUS[missingStatus(item)];
     return (
-      <div key={item.id} className="flex items-center gap-3 pr-5 pl-2 py-2 min-h-[72px]" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+      <div key={item.id} data-focus-id={item.id} className="flex items-center gap-3 pr-5 pl-2 py-2 min-h-[72px]" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <StatusMark status={st.mark} color="#10B981" size={26} />
         <div className="flex-1 min-w-0 py-1">
           <div className={`text-lg font-medium ${st.next ? 'text-text-primary' : 'text-text-secondary'}`}>{item.text}</div>

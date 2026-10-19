@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import WeighingDemo from './demo/WeighingDemo';
 import FohDemo from './demo/FohDemo';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Utensils } from 'lucide-react';
+import { Utensils, Search } from 'lucide-react';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { TenantProvider } from './context/TenantContext';
@@ -20,6 +20,7 @@ import ProteinCount from './components/ProteinCount';
 import SupplierOrder from './components/SupplierOrder';
 import CheckerHub from './components/checker/CheckerHub';
 import CheckerDetail from './components/checker/CheckerDetail';
+import GlobalSearch from './components/GlobalSearch';
 import { usePrepState } from './hooks/usePrepState';
 import { STATIONS } from './data/stations';
 import { SESSION_KEY } from './data/chefs';
@@ -56,6 +57,11 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
   const [view, setView]                         = useState(role === 'checker' ? 'checker_hub' : 'dashboard');
   const [activeDeliveryId, setActiveDeliveryId] = useState(null);
   const [markReadyRecipe,  setMarkReadyRecipe]   = useState(null);
+  const [searchOpen,       setSearchOpen]        = useState(false);
+  // What the search asked to open on the next screen
+  const [recipeTarget,     setRecipeTarget]      = useState(null); // { kind, item }
+  const [focusTaskId,      setFocusTaskId]       = useState(null);
+  const [focusMissingId,   setFocusMissingId]    = useState(null);
   const isTablet    = useIsTablet();
   const prep        = usePrepState(station);
 
@@ -68,8 +74,37 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
     setView(id);
   }, []);
 
+  const onSearchPick = useCallback((type, payload) => {
+    if (type === 'recipe')  { setRecipeTarget(payload);       setView('recipes'); }
+    if (type === 'task')    { setFocusTaskId(payload.id);     setView('prep'); }
+    if (type === 'missing') { setFocusMissingId(payload.id);  setView('shift'); }
+  }, []);
+  const closeSearch = useCallback(() => setSearchOpen(false), []);
+
   const st          = STATIONS[station];
   const isDashboard = view === 'dashboard';
+  const canSearch   = role !== 'checker';
+
+  const searchButton = canSearch && (
+    <button
+      onClick={() => setSearchOpen(true)}
+      aria-label="חיפוש"
+      className="w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center text-text-primary transition-colors duration-150 active:bg-white/10"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+    >
+      <Search size={22} strokeWidth={1.75} />
+    </button>
+  );
+
+  const searchOverlay = searchOpen && (
+    <GlobalSearch
+      prep={prep}
+      stationName={st.name}
+      stationColor={st.color}
+      onClose={closeSearch}
+      onPick={onSearchPick}
+    />
+  );
 
   const contentArea = (
     <AnimatePresence mode="wait">
@@ -84,12 +119,14 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
           <Dashboard station={station} user={user} prep={prep} onNavigate={navigate} role={role} />
         )}
         {view === 'prep' && (
-          <PrepChecklist station={station} prep={prep} />
+          <PrepChecklist station={station} prep={prep} focusTaskId={focusTaskId} onFocused={() => setFocusTaskId(null)} />
         )}
         {view === 'recipes'        && (
           <RecipeDatabase
             station={station}
             onMarkReady={r => { setMarkReadyRecipe(r); navigate('prep_tracker'); }}
+            openTarget={recipeTarget}
+            onOpenedTarget={() => setRecipeTarget(null)}
           />
         )}
         {view === 'prep_tracker'   && (
@@ -101,7 +138,7 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
           />
         )}
         {view === 'weekly'         && <WeeklyTasks station={station} />}
-        {view === 'shift'          && <ShiftNotes user={user} />}
+        {view === 'shift'          && <ShiftNotes user={user} focusId={focusMissingId} onFocused={() => setFocusMissingId(null)} />}
         {view === 'proteins'       && <ProteinCount />}
         {view === 'supplier'       && <SupplierOrder />}
         {view === 'checker_hub'    && <CheckerHub user={user} onOpenDelivery={openDelivery} />}
@@ -137,11 +174,13 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
           >
             {isDashboard && <Utensils size={16} style={{ color: 'rgba(255,255,255,0.4)', marginLeft: '8px' }} strokeWidth={1.5} />}
             <span className="text-h3 text-text-primary">{PAGE_TITLES[view]}</span>
+            <div className="mr-auto">{searchButton}</div>
           </header>
           <main className="flex-1 overflow-y-auto">
             {contentArea}
           </main>
         </div>
+        {searchOverlay}
       </div>
     );
   }
@@ -160,18 +199,21 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
           borderBottom: '1px solid var(--border)',
         }}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
           {isDashboard && <Utensils size={18} style={{ color: 'rgba(255,255,255,0.45)' }} strokeWidth={1.5} />}
-          <span className="text-h3 text-text-primary font-black tracking-tight">
+          <span className="text-h3 text-text-primary font-black tracking-tight truncate">
             {PAGE_TITLES[view]}
           </span>
         </div>
-        <div
-          className="flex items-center gap-2 rounded-2xl px-3 py-1.5"
-          style={{ background: st.color + '18', border: `1px solid ${st.color}35` }}
-        >
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: st.color, flexShrink: 0 }} />
-          <span className="text-label font-bold" style={{ color: st.color }}>{user}</span>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {searchButton}
+          <div
+            className="flex items-center gap-2 rounded-2xl px-3 py-1.5"
+            style={{ background: st.color + '18', border: `1px solid ${st.color}35` }}
+          >
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: st.color, flexShrink: 0 }} />
+            <span className="text-label font-bold" style={{ color: st.color }}>{user}</span>
+          </div>
         </div>
       </header>
 
@@ -179,6 +221,8 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
       <main className="flex-1" style={{ paddingTop: '64px', paddingBottom: '96px' }}>
         {contentArea}
       </main>
+
+      {searchOverlay}
 
       <BottomNav
         currentView={view}

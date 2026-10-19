@@ -13,6 +13,7 @@ import { doc, collection, onSnapshot, setDoc } from 'firebase/firestore';
 import { useTenantId } from '../context/TenantContext';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import RecipeWizard from './RecipeWizard';
+import { rememberRecent } from './GlobalSearch';
 
 // ─── Prep category metadata ───
 const CAT_META = {
@@ -102,7 +103,7 @@ function useRecipeImages() {
 /* ════════════════════════════════════════════════════
    Main export
 ════════════════════════════════════════════════════ */
-export default function RecipeDatabase({ station, onMarkReady }) {
+export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpenedTarget }) {
   const [activeTab, setActiveTab]           = useState('dish');
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [selectedDish, setSelectedDish]     = useState(null);
@@ -158,7 +159,29 @@ export default function RecipeDatabase({ station, onMarkReady }) {
   function openRecipe(recipe) {
     setSelectedRecipe(recipe);
     setBatches(recipe.batches);
+    rememberRecent('prep', recipe.id);
   }
+
+  function openDish(dish) {
+    setSelectedDish(dish);
+    rememberRecent('dish', dish.id);
+  }
+
+  // Opened from the global search: go straight to that recipe / dish
+  useEffect(() => {
+    if (!openTarget) return;
+    setDrillRecipe(null);
+    if (openTarget.kind === 'dish') {
+      setSelectedRecipe(null);
+      setActiveTab('dish');
+      openDish(openTarget.item);
+    } else {
+      setSelectedDish(null);
+      setActiveTab('prep');
+      openRecipe(openTarget.item);
+    }
+    onOpenedTarget?.();
+  }, [openTarget]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scaleFactor = selectedRecipe ? batches / selectedRecipe.batches : 1;
 
@@ -326,7 +349,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
             return (
               <button
                 key={dish.id}
-                onClick={() => setSelectedDish(dish)}
+                onClick={() => openDish(dish)}
                 className="glow-btn rounded-3xl overflow-hidden text-right"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
               >

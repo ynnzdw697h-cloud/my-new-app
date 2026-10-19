@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { STATIONS } from '../data/stations';
 import { Sheet, Button } from './ui';
 import { StickyProgress, SegmentedBar, StatusMark, UndoToast } from './PrepCelebrations';
+import { useFocusFlash } from '../hooks/useFocusFlash';
 
 const SHIFTS     = ['הכנות בוקר', 'הכנות צהריים'];
 const SHIFT_KEYS = { 'הכנות בוקר': 'בוקר', 'הכנות צהריים': 'צהריים' };
@@ -247,7 +248,7 @@ const TOAST_MS = 5000;
 
 function vibrate(pattern) { window.navigator?.vibrate?.(pattern); }
 
-export default function PrepChecklist({ station, prep }) {
+export default function PrepChecklist({ station, prep, focusTaskId, onFocused }) {
   const {
     completedSubs, setCustomTasks, hiddenIds, setHiddenIds,
     toggleSub, taskStatus, setTaskStatus, resetDay, progress, streak,
@@ -268,6 +269,17 @@ export default function PrepChecklist({ station, prep }) {
 
   const toastTimer = useRef(null);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  // Opened from the global search: unfold "הושלמו" if needed, then scroll to the task
+  useEffect(() => {
+    if (focusTaskId == null) return;
+    const task = progress.allTasks.find(t => t.id === focusTaskId);
+    if (task && progress.isTaskDone(task)) {
+      const label = SHIFTS.find(l => SHIFT_KEYS[l] === task.shift);
+      setOpenDone(o => ({ ...o, [label]: true }));
+    }
+  }, [focusTaskId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useFocusFlash(focusTaskId, onFocused);
 
   const showToast = useCallback((text, undo) => {
     clearTimeout(toastTimer.current);
@@ -567,6 +579,7 @@ const TaskRow = memo(function TaskRow({ task, status, completedSubs, stationColo
       exit={{ opacity: 0, x: -12 }}
       transition={{ duration: 0.18 }}
       style={{ borderBottom: '1px solid var(--border)' }}
+      data-focus-id={task.id}
     >
       <div className="flex items-stretch">
         <button
