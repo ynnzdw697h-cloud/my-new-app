@@ -57,7 +57,7 @@ button, a, [role="button"], input, select, textarea, label {
 /* ── Base ── */
 body {
   margin: 0;
-  font-family: 'Inter', 'Heebo', 'Arial Hebrew', Arial, sans-serif;
+  font-family: 'Heebo', 'Inter', 'Arial Hebrew', Arial, sans-serif;
   background-color: var(--bg);
   color: var(--text);
   direction: rtl;
@@ -72,7 +72,7 @@ body::before {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.038;
+  opacity: 0; /* noise texture disabled for a cleaner surface */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 250px 250px;
@@ -96,12 +96,12 @@ body::before {
 .card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 32px;
+  border-radius: 12px;
 }
 .card-2 {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: 32px;
+  border-radius: 12px;
 }
 
 /* ── Glow hover effect ──
@@ -115,10 +115,7 @@ body::before {
 /* Hover glow only on real pointers — on touch screens :hover sticks after a tap */
 @media (hover: hover) and (pointer: fine) {
   .glow-btn:hover {
-    box-shadow:
-      0 0 0 1px var(--gc, #D4ED31),
-      0 0 20px var(--gca, rgba(212,237,49,0.42)),
-      0 0 55px var(--gcb, rgba(212,237,49,0.14)) !important;
+    box-shadow: none !important;
     border-color: var(--gc, #D4ED31) !important;
   }
 }

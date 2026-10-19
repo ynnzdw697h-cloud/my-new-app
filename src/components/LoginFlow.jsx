@@ -63,10 +63,6 @@ export default function LoginFlow({ onLogin }) {
         </div>
         <h1 className="text-4xl font-black text-white tracking-tight">וילה אכדיה</h1>
         <p className="text-sm mt-2" style={{ color: 'rgba(255,255,255,0.62)' }}>{today}</p>
-        <div
-          className="h-0.5 w-16 mx-auto mt-4 rounded-full"
-          style={{ background: 'linear-gradient(90deg, #3b82f6, #ef4444, #10b981)' }}
-        />
       </div>
 
       <AnimatePresence mode="wait">
@@ -227,7 +223,7 @@ function PinStep({ chef, onSuccess, onBack }) {
               background: i < pin.length
                 ? (error ? '#ef4444' : '#3B82F6')
                 : 'rgba(255,255,255,0.15)',
-              boxShadow: i < pin.length && !error ? '0 0 10px #3B82F6aa' : 'none',
+              boxShadow: i < pin.length && !error ? 'none' : 'none',
             }}
           />
         ))}
@@ -257,7 +253,7 @@ function PinStep({ chef, onSuccess, onBack }) {
                 style={{
                   background: pin.length === 4 ? '#3B82F6' : 'rgba(255,255,255,0.06)',
                   color: pin.length === 4 ? '#fff' : 'rgba(255,255,255,0.5)',
-                  boxShadow: pin.length === 4 ? '0 0 18px #3B82F688' : 'none',
+                  boxShadow: pin.length === 4 ? 'none' : 'none',
                   transition: 'all 0.2s ease',
                 }}
               >
@@ -328,7 +324,7 @@ function StationStep({ user, onSelect, onBack }) {
             style={{
               background: 'var(--bg-card)',
               border: `1px solid ${station.color}30`,
-              boxShadow: `0 4px 20px ${station.color}12`,
+              boxShadow: 'none',
               '--gc':  station.color,
               '--gca': station.color + '55',
               '--gcb': station.color + '1a',

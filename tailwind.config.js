@@ -64,14 +64,20 @@ module.exports = {
       },
 
       borderRadius: {
-        // all radii bumped one step for premium feel
-        sm:      '10px',
-        DEFAULT: '14px',
-        md:      '16px',
-        lg:      '20px',
-        xl:      '24px',
-        '2xl':   '28px',
-        '3xl':   '32px',
+        // tight, restrained radii — reads as a professional tool
+        sm:      '4px',
+        DEFAULT: '6px',
+        md:      '8px',
+        lg:      '8px',
+        xl:      '10px',
+        '2xl':   '12px',
+        '3xl':   '14px',
+      },
+
+      fontWeight: {
+        // cap heavy weights so hierarchy comes from size, not boldness
+        extrabold: '700',
+        black:     '700',
       },
 
       fontSize: {
@@ -91,7 +97,7 @@ module.exports = {
       },
 
       backgroundImage: {
-        'accent-glow': 'radial-gradient(ellipse at 50% 0%, rgba(212,237,49,0.18) 0%, transparent 70%)',
+        'accent-glow': 'none',
       },
     },
   },

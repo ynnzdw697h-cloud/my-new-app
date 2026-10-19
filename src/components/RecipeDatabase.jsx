@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Clock } from 'lucide-react';
+import {
+  Clock, Soup, CookingPot, FlaskConical, Carrot, Croissant, Container, ChefHat, Wheat, Leaf, Salad,
+  UtensilsCrossed, CakeSlice, Search, X, AlertTriangle, Scale, Coins, ListOrdered, Target, Wine,
+  Thermometer, ChevronLeft, Layers, Check,
+} from 'lucide-react';
 import { RECIPES, CATEGORIES } from '../data/recipes';
 import { MAIN_DISHES, DISH_CATEGORIES } from '../data/mainDishes';
 import { STATIONS } from '../data/stations';
@@ -12,37 +16,26 @@ import RecipeWizard from './RecipeWizard';
 
 // ─── Prep category metadata ───
 const CAT_META = {
-  'ציר':     { emoji: '🫕', g: ['#0f2d4a', '#061525'] },
-  'רטבים':   { emoji: '🥣', g: ['#2d1b3d', '#150d20'] },
-  'מותססים': { emoji: '🧫', g: ['#0e2d1a', '#061508'] },
-  'כבושים':  { emoji: '🥒', g: ['#1e2d10', '#101808'] },
-  'בצקים':   { emoji: '🥖', g: ['#3d2010', '#200f06'] },
-  'ממרחים':  { emoji: '🫙', g: ['#2d1010', '#180606'] },
-  'הכנות':   { emoji: '👨‍🍳', g: ['#10182d', '#060c18'] },
-  'אורז':    { emoji: '🍚', g: ['#282610', '#141308'] },
-  'תוספות':  { emoji: '🌿', g: ['#0e2d18', '#06150c'] },
-  'סלטים':   { emoji: '🥗', g: ['#0a2d18', '#05140c'] },
+  'ציר':     { Icon: Soup, g: ['#0f2d4a', '#061525'] },
+  'רטבים':   { Icon: CookingPot, g: ['#2d1b3d', '#150d20'] },
+  'מותססים': { Icon: FlaskConical, g: ['#0e2d1a', '#061508'] },
+  'כבושים':  { Icon: Carrot, g: ['#1e2d10', '#101808'] },
+  'בצקים':   { Icon: Croissant, g: ['#3d2010', '#200f06'] },
+  'ממרחים':  { Icon: Container, g: ['#2d1010', '#180606'] },
+  'הכנות':   { Icon: ChefHat, g: ['#10182d', '#060c18'] },
+  'אורז':    { Icon: Wheat, g: ['#282610', '#141308'] },
+  'תוספות':  { Icon: Leaf, g: ['#0e2d18', '#06150c'] },
+  'סלטים':   { Icon: Salad, g: ['#0a2d18', '#05140c'] },
 };
 
 // ─── Dish category metadata ───
 const DISH_CAT_META = {
-  'סלטים':   { emoji: '🥗', g: ['#0a2d18', '#05140c'] },
-  'עיקריות': { emoji: '🍽️', g: ['#1a1020', '#0d0810'] },
-  'קינוחים': { emoji: '🍮', g: ['#2d1a08', '#160d04'] },
+  'סלטים':   { Icon: Salad, g: ['#0a2d18', '#05140c'] },
+  'עיקריות': { Icon: UtensilsCrossed, g: ['#1a1020', '#0d0810'] },
+  'קינוחים': { Icon: CakeSlice, g: ['#2d1a08', '#160d04'] },
 };
 
-const ALLERGEN_META = {
-  'דגים':   { emoji: '🐟' },
-  'ביצים':  { emoji: '🥚' },
-  'חלב':    { emoji: '🥛' },
-  'גלוטן':  { emoji: '🌾' },
-  'סויה':   { emoji: '🫘' },
-  'שומשום': { emoji: '🌱' },
-  'אגוזים': { emoji: '🥜' },
-  'סרטנים': { emoji: '🦐' },
-};
-
-const DEFAULT_META = { emoji: '🍽️', g: ['#1a1a28', '#0c0c18'] };
+const DEFAULT_META = { Icon: UtensilsCrossed, g: ['#1a1a28', '#0c0c18'] };
 
 function fmt(n) {
   if (n === 0) return '0';
@@ -213,6 +206,8 @@ export default function RecipeDatabase({ station, onMarkReady }) {
         imageUrl={images[String(selectedRecipe.id)] || null}
         onSaveImage={url => saveImage(selectedRecipe.id, url)}
         onMarkReady={onMarkReady}
+        allPrepRecipes={allRecipes}
+        onOpenSubRecipe={r => setDrillRecipe(r)}
       />
     );
   }
@@ -290,7 +285,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
           dir="rtl"
         />
         {search && (
-          <button onClick={() => setSearch('')} style={{ color: 'rgba(255,255,255,0.62)' }}>✕</button>
+          <button onClick={() => setSearch('')} style={{ color: 'rgba(255,255,255,0.62)' }}><X size={18} /></button>
         )}
       </div>
 
@@ -346,7 +341,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                     <img src={imgUrl} alt={dish.name} className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span style={{ fontSize: '2.5rem', opacity: 0.6 }}>{meta.emoji}</span>
+                      <meta.Icon size={36} strokeWidth={1.25} style={{ opacity: 0.5 }} />
                     </div>
                   )}
                   <div
@@ -384,7 +379,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
           })}
           {filteredDishes.length === 0 && (
             <div className="col-span-2 text-center py-20" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              <div className="text-5xl mb-4">🔍</div>
+              <Search size={40} strokeWidth={1.25} className="mx-auto mb-4" style={{ opacity: 0.4 }} />
               <div className="font-medium">לא נמצאו מנות</div>
             </div>
           )}
@@ -414,7 +409,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                       <img src={imgUrl} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span style={{ fontSize: '2.5rem', opacity: 0.6 }}>{meta.emoji}</span>
+                        <meta.Icon size={36} strokeWidth={1.25} style={{ opacity: 0.5 }} />
                       </div>
                     )}
                     <div
@@ -445,7 +440,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
           </div>
           {filteredPrep.length === 0 && (
             <div className="text-center py-20" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              <div className="text-5xl mb-4">🔍</div>
+              <Search size={40} strokeWidth={1.25} className="mx-auto mb-4" style={{ opacity: 0.4 }} />
               <div className="font-medium">לא נמצאו מתכונים</div>
             </div>
           )}
@@ -501,7 +496,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
           <img src={imageUrl} alt={dish.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <span style={{ fontSize: '5rem', opacity: 0.35 }}>{meta.emoji}</span>
+            <meta.Icon size={64} strokeWidth={1} style={{ opacity: 0.3 }} />
           </div>
         )}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.4) 100%)' }} />
@@ -565,7 +560,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
         {/* Info chips */}
         <div className="flex gap-2 flex-wrap">
           {dish.prepTimeMin > 0 && <InfoChip icon={<Clock size={14} strokeWidth={2} />} text={`${dish.prepTimeMin} דק׳`} />}
-          <InfoChip icon="🥘" text={`${dish.directIngredients.length + dish.subRecipes.length} רכיבים`} />
+          <InfoChip icon={<Layers size={14} />} text={`${dish.directIngredients.length + dish.subRecipes.length} רכיבים`} />
           {dish.sellingPrice > 0 && <InfoChip icon="₪" text={`${dish.sellingPrice}`} />}
         </div>
 
@@ -582,17 +577,16 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
             className="rounded-2xl px-4 py-3"
             style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}
           >
-            <p className="text-sm font-bold mb-2" style={{ color: 'rgba(245,158,11,0.8)' }}>⚠️ אלרגנים</p>
+            <p className="text-sm font-bold mb-2" style={{ color: 'rgba(245,158,11,0.8)' }}><AlertTriangle size={14} className="inline ml-1" /> אלרגנים</p>
             <div className="flex gap-2 flex-wrap">
               {dish.allergens.map(a => {
-                const m = ALLERGEN_META[a] || { emoji: '⚠️' };
                 return (
                   <span
                     key={a}
                     className="flex items-center gap-1 text-sm font-bold px-2.5 py-1 rounded-xl"
                     style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)' }}
                   >
-                    {m.emoji} {a}
+                    {a}
                   </span>
                 );
               })}
@@ -603,7 +597,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
         {/* Portions scaler */}
         <div className="rounded-3xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-white font-bold mb-3 flex items-center gap-2">
-            <span>⚖️</span> מנות
+            <Scale size={16} /> מנות
           </p>
           <div className="flex gap-2 mb-3">
             {QUICK_PORTIONS.map(n => (
@@ -646,7 +640,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
             style={{ background: 'var(--bg-card)', border: `1px solid ${fcColor}30` }}
           >
             <p className="text-white font-bold mb-3 flex items-center gap-2">
-              <span>💰</span> עלות מזון
+              <Coins size={16} /> עלות מזון
             </p>
             <div className="grid grid-cols-3 gap-3 mb-3">
               <div className="text-center">
@@ -674,7 +668,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
         {/* Ingredients */}
         <div className="rounded-3xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <span>🥗</span>
+            <Salad size={16} />
             <span className="text-white font-bold">מרכיבים</span>
             {scale !== 1 && (
               <span className="mr-auto text-sm font-bold px-2 py-1 rounded-xl" style={{ background: stationColor + '20', color: stationColor }}>
@@ -740,7 +734,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
         {/* Method */}
         <div className="rounded-3xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <span>👨‍🍳</span>
+            <ListOrdered size={16} />
             <span className="text-white font-bold">אופן הכנה</span>
           </div>
           <div className="px-5 py-4 space-y-5">
@@ -748,7 +742,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
               <div key={i} className="flex gap-4">
                 <div
                   className="w-8 h-8 rounded-2xl flex-shrink-0 flex items-center justify-center text-white text-sm font-black"
-                  style={{ background: stationColor, boxShadow: `0 4px 12px ${stationColor}50` }}
+                  style={{ background: stationColor, boxShadow: 'none' }}
                 >
                   {i + 1}
                 </div>
@@ -767,7 +761,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
             className="w-full px-5 py-4 flex items-center justify-between"
           >
             <div className="flex items-center gap-2">
-              <span>🎯</span>
+              <Target size={16} />
               <span className="text-white font-bold">מדריך FOH — מכירה והגשה</span>
             </div>
             <svg
@@ -795,18 +789,18 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
 
               {/* Pairing */}
               <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>🍷 זיווג</p>
+                <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}><Wine size={14} className="inline ml-1" /> זיווג</p>
                 <p className="text-sm text-white">{dish.foh.pairing}</p>
               </div>
 
               {/* Serve temp + plating */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>🌡️ הגשה</p>
+                  <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}><Thermometer size={14} className="inline ml-1" /> הגשה</p>
                   <p className="text-sm text-white leading-relaxed">{dish.foh.serveTemp}</p>
                 </div>
                 <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>🍽️ פלייטינג</p>
+                  <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}><UtensilsCrossed size={14} className="inline ml-1" /> פלייטינג</p>
                   <p className="text-sm text-white leading-relaxed">{dish.foh.platingNote}</p>
                 </div>
               </div>
@@ -822,7 +816,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
 /* ════════════════════════════════════════════════════
    Prep Recipe Detail (unchanged)
 ════════════════════════════════════════════════════ */
-function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, stationColor, imageUrl, onSaveImage, onMarkReady }) {
+function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, stationColor, imageUrl, onSaveImage, onMarkReady, allPrepRecipes = [], onOpenSubRecipe }) {
   const meta = CAT_META[recipe.category] || DEFAULT_META;
   const fileRef = useRef();
   const [uploading, setUploading] = useState(false);
@@ -874,7 +868,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
           <img src={imageUrl} alt={recipe.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <span style={{ fontSize: '5rem', opacity: 0.35 }}>{meta.emoji}</span>
+            <meta.Icon size={64} strokeWidth={1} style={{ opacity: 0.3 }} />
           </div>
         )}
 
@@ -944,15 +938,15 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
         {/* Info chips */}
         <div className="flex gap-2 flex-wrap">
           {recipe.prepTime && <InfoChip icon={<Clock size={14} strokeWidth={2} />} text={recipe.prepTime} />}
-          <InfoChip icon="🥘" text={`${recipe.ingredients.length} מרכיבים`} />
-          <InfoChip icon="⚖️" text={`${recipe.batches} ${recipe.batchUnit}`} />
+          <InfoChip icon={<Layers size={14} />} text={`${recipe.ingredients.length} מרכיבים`} />
+          <InfoChip icon={<Scale size={14} />} text={`${recipe.batches} ${recipe.batchUnit}`} />
           {onMarkReady && (
             <button
               onClick={() => onMarkReady(recipe)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-sm font-bold"
               style={{ background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}
             >
-              ✓ סמן מוכן
+              <Check size={16} className="inline ml-1" /> סמן מוכן
             </button>
           )}
         </div>
@@ -970,7 +964,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
             className="flex gap-3 rounded-2xl px-4 py-3 text-sm"
             style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#fbbf24' }}
           >
-            <span className="flex-shrink-0 mt-0.5">⚠️</span>
+            <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
             <span>{recipe.notes}</span>
           </div>
         )}
@@ -981,7 +975,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
         >
           <p className="text-white font-bold mb-3 flex items-center gap-2">
-            <span>⚖️</span> שינוי כמויות
+            <Scale size={16} /> שינוי כמויות
           </p>
 
           {/* Quick multipliers */}
@@ -1049,7 +1043,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
         >
           <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <span>🥗</span>
+            <Salad size={16} />
             <span className="text-white font-bold">מרכיבים</span>
             {scaleFactor !== 1 && (
               <span
@@ -1076,20 +1070,31 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
                   const isTaste = ing.unit === 'לפי טעם';
                   const scaled  = isTaste ? null : ing.amount * scaleFactor;
                   const isLast  = si === sections.length - 1 && i === sec.items.length - 1;
+                  // Ingredient that is itself a prep recipe → tap to open it
+                  const subRecipe = onOpenSubRecipe && allPrepRecipes.find(
+                    r => r.id !== recipe.id && r.name.trim() === ing.name.trim()
+                  );
+                  const Row = subRecipe ? 'button' : 'div';
                   return (
-                    <div
+                    <Row
                       key={i}
-                      className="flex items-center justify-between py-3.5"
+                      onClick={subRecipe ? () => onOpenSubRecipe(subRecipe) : undefined}
+                      className={`w-full flex items-center justify-between py-3.5 text-right${subRecipe ? ' active:scale-98 transition-all' : ''}`}
                       style={{ borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)' }}
                     >
-                      <span className="text-white font-medium text-sm">{ing.name}</span>
-                      <span
-                        className="text-sm font-bold px-3 py-1 rounded-xl flex-shrink-0 mr-3"
-                        style={{ background: stationColor + '18', color: stationColor }}
-                      >
-                        {isTaste ? 'לפי טעם' : `${fmt(scaled)} ${ing.unit}`}
+                      <span className="text-white text-base">
+                        {ing.name}
+                        {subRecipe && (
+                          <span className="mr-2 inline-flex items-center gap-0.5 text-xs font-semibold underline underline-offset-2" style={{ color: stationColor }}>מתכון<ChevronLeft size={14} /></span>
+                        )}
                       </span>
-                    </div>
+                      <span
+                        className="text-base font-semibold flex-shrink-0 mr-3 tabular-nums"
+                        style={{ color: isTaste ? 'var(--text-2)' : 'var(--text)' }}
+                      >
+                        {isTaste ? 'לפי טעם' : <>{fmt(scaled)} <span className="text-sm font-normal" style={{ color: 'var(--text-2)' }}>{ing.unit}</span></>}
+                      </span>
+                    </Row>
                   );
                 })}
               </div>
@@ -1103,7 +1108,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
         >
           <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <span>👨‍🍳</span>
+            <ListOrdered size={16} />
             <span className="text-white font-bold">אופן הכנה</span>
           </div>
           <div className="px-5 py-4 space-y-5">
@@ -1111,7 +1116,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
               <div key={i} className="flex gap-4">
                 <div
                   className="w-8 h-8 rounded-2xl flex-shrink-0 flex items-center justify-center text-white text-sm font-black"
-                  style={{ background: stationColor, boxShadow: `0 4px 12px ${stationColor}50` }}
+                  style={{ background: stationColor, boxShadow: 'none' }}
                 >
                   {i + 1}
                 </div>

@@ -164,7 +164,7 @@ export default function PrepTracker({ user, station, initialRecipe, onClearIniti
         style={{
           background: `linear-gradient(135deg, ${heroColor}18 0%, rgba(255,255,255,0.02) 70%, #16161e 100%)`,
           border: `1px solid ${heroColor}35`,
-          boxShadow: `0 8px 40px ${heroColor}18`,
+          boxShadow: 'none',
         }}
       >
         <div

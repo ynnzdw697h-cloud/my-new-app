@@ -83,7 +83,7 @@ export function CheerToast({ toast }) {
             className="rounded-2xl px-5 py-3.5 text-lg font-black text-white text-center"
             style={{
               background: toast.color,
-              boxShadow: `0 10px 40px ${toast.color}70`,
+              boxShadow: 'none',
             }}
           >
             {toast.text}
