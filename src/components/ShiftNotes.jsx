@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { AlertCircle, User, MessageSquare, Trash2, X, MoreHorizontal, ChevronDown, Check } from 'lucide-react';
+import { AlertCircle, MessageSquare, Trash2, X, MoreHorizontal, ChevronDown, Check } from 'lucide-react';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
-import { Card, Button, Input, EmptyState, Chip, Sheet } from './ui';
+import { Card, Button, Input, EmptyState, Sheet } from './ui';
 import { StatusMark, UndoToast } from './PrepCelebrations';
 import { useFocusFlash } from '../hooks/useFocusFlash';
 
@@ -91,8 +91,26 @@ export default function ShiftNotes({ user, focusId, onFocused }) {
     setNoteInput('');
   }
 
-  function deleteNote(id) {
-    setShiftNotes(prev => prev.filter(n => n.id !== id));
+  // Delete right away; Undo puts the note back where it was
+  function deleteNote(note) {
+    let index = -1;
+    setShiftNotes(prev => {
+      index = prev.findIndex(n => n.id === note.id);
+      return prev.filter(n => n.id !== note.id);
+    });
+    clearTimeout(toastTimer.current);
+    setToast({
+      id: Date.now(),
+      text: 'ההערה נמחקה',
+      undoable: true,
+      undo: () => setShiftNotes(prev => {
+        if (prev.some(n => n.id === note.id)) return prev;
+        const next = [...prev];
+        next.splice(index < 0 ? next.length : Math.min(index, next.length), 0, note);
+        return next;
+      }),
+    });
+    toastTimer.current = setTimeout(() => setToast(null), TOAST_MS);
   }
 
   function clearAll() {
@@ -253,77 +271,55 @@ export default function ShiftNotes({ user, focusId, onFocused }) {
         {/* Header */}
         <div className="px-5 py-4 flex items-center gap-2.5"
           style={{ borderBottom: '1px solid var(--border)' }}>
-          <MessageSquare size={18} strokeWidth={1.5} style={{ color: 'var(--info)' }} />
+          <MessageSquare size={18} strokeWidth={1.5} className="text-text-secondary" />
           <h3 className="text-h3 text-text-primary">הערות משמרת</h3>
           {shiftNotes.length > 0 && (
-            <Chip variant="info">{shiftNotes.length}</Chip>
+            <span className="text-base text-text-secondary tabular-nums">{shiftNotes.length === 1 ? 'הערה אחת' : `${shiftNotes.length} הערות`}</span>
           )}
         </div>
 
-        {/* Input */}
+        {/* Input — author and time are added automatically on send */}
         <div className="px-5 py-4 space-y-3" style={{ borderBottom: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-2 text-meta text-text-secondary">
-            <User size={13} strokeWidth={1.5} />
-            <span className="text-text-primary font-semibold text-label">{user}</span>
-            <span>·</span>
-            <span>{nowLabel()}</span>
-          </div>
           <textarea
             value={noteInput}
             onChange={e => setNoteInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && e.ctrlKey && addNote()}
-            placeholder="כתוב הערה לצוות הבא..."
+            placeholder="הערה לצוות הבא"
+            aria-label="הערה לצוות הבא"
             rows={3}
-            className="w-full px-4 py-3 rounded-2xl resize-none text-body text-text-primary
-                       placeholder:text-text-tertiary outline-none transition-all duration-200
-                       focus:shadow-[0_0_0_3px_rgba(96,165,250,0.18)]"
-            style={{
-              background: 'var(--bg-inset)',
-              border: '1px solid var(--border)',
-            }}
-            onFocus={e => e.target.style.borderColor = 'var(--info)'}
+            className="w-full px-4 py-3 rounded-2xl resize-none text-lg text-text-primary
+                       placeholder:text-text-tertiary outline-none transition-colors duration-150"
+            style={{ background: 'var(--bg-inset)', border: '1px solid var(--border)' }}
+            onFocus={e => e.target.style.borderColor = '#3B82F6'}
             onBlur={e => e.target.style.borderColor = 'var(--border)'}
           />
-          <div className="flex items-center justify-end">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={addNote}
-              disabled={!noteInput.trim()}
-            >
-              שלח הערה
-            </Button>
-          </div>
+          <Button variant="secondary" fullWidth onClick={addNote} disabled={!noteInput.trim()}>
+            שלח הערה
+          </Button>
         </div>
 
-        {/* Notes list */}
+        {/* Notes list, newest first */}
         <div>
           {shiftNotes.length === 0 ? (
-            <EmptyState
-              icon={MessageSquare}
-              compact
-              title="אין הערות עדיין"
-              description="הערות נשמרות לכל הצוות"
-            />
+            <p className="px-5 py-6 text-center text-base text-text-secondary">אין הערות למשמרת הבאה</p>
           ) : (
             [...shiftNotes].reverse().map((note, i) => (
               <div
                 key={note.id}
-                className="px-5 py-4 flex gap-3"
+                className="px-5 py-4 flex items-start gap-3"
                 style={{ borderBottom: i < shiftNotes.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className="text-label text-text-primary font-bold">{note.author}</span>
-                    <span className="text-meta text-text-tertiary">{note.time}</span>
+                  <div className="text-base text-text-secondary mb-1">
+                    <span className="text-text-primary font-semibold">{note.author}</span>
+                    <span className="tabular-nums"> · {note.time}</span>
                   </div>
-                  <p className="text-body text-text-secondary leading-relaxed whitespace-pre-wrap">{note.text}</p>
+                  <p className="text-lg text-text-primary leading-relaxed whitespace-pre-wrap">{note.text}</p>
                 </div>
                 <button
-                  onClick={() => deleteNote(note.id)}
+                  onClick={() => deleteNote(note)}
                   aria-label="מחק הערה"
-                  className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center
-                             transition-all duration-150 active:scale-90 press mt-0.5"
+                  className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-150 active:bg-white/10"
                   style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-3)' }}
                 >
                   <Trash2 size={18} strokeWidth={1.75} />
