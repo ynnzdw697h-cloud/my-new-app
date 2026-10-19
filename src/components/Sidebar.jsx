@@ -1,4 +1,4 @@
-import { Home, ClipboardList, BookOpen, CalendarDays, FileText, Fish, ShoppingCart, LogOut, X, Timer, PackageCheck, UtensilsCrossed } from 'lucide-react';
+import { Home, ClipboardList, BookOpen, CalendarDays, FileText, Fish, ShoppingCart, LogOut, X, Timer, PackageCheck, UtensilsCrossed, NotebookText, Megaphone } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 import { navForProfile } from './BottomNav';
 
@@ -10,6 +10,8 @@ const NAV_META = {
   recipes:      { label: 'מתכונים',          Icon: BookOpen },
   weekly:       { label: 'משימות שבועיות',   Icon: CalendarDays },
   shift:        { label: 'חוסרים והערות',    Icon: FileText },
+  shift_log:    { label: 'יומן משמרת',       Icon: NotebookText },
+  announcements:{ label: 'הודעות לצוות',     Icon: Megaphone },
   prep_tracker: { label: 'תפוגה ובזבוז',     Icon: Timer },
   proteins:     { label: 'ספירת חיות',       Icon: Fish },
   supplier:     { label: 'הזמנות ספקים',     Icon: ShoppingCart },

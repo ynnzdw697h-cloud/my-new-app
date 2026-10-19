@@ -5,6 +5,8 @@ import { STATIONS } from '../data/stations';
 import { Sheet, Button } from './ui';
 import { StickyProgress, SegmentedBar, StatusMark, UndoToast } from './PrepCelebrations';
 import { useFocusFlash } from '../hooks/useFocusFlash';
+import { useFirestoreArray } from '../hooks/useFirestoreArray';
+import { LOG_DOCS, nowLabel } from '../data/shifts';
 
 const SHIFTS     = ['הכנות בוקר', 'הכנות צהריים'];
 const SHIFT_KEYS = { 'הכנות בוקר': 'בוקר', 'הכנות צהריים': 'צהריים' };
@@ -16,6 +18,36 @@ const STATUS_OPTIONS = [
   { value: 'stuck',    label: 'חסר / תקוע' },
   { value: 'done',     label: 'מוכן' },
 ];
+
+const LRM = '\u200E';
+
+// '3' -> 3, '-18' / '−18' / '2,5' -> number, anything else -> null
+function parseNum(s) {
+  const t = String(s ?? '').trim().replace(',', '.').replace('\u2212', '-');
+  if (t === '' || t === '-') return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+function rangeText(min, max) {
+  if (min != null && max != null) return `${LRM}${min}–${max}°`;
+  if (max != null) return `${LRM}${max}° ומטה`;
+  return `${LRM}${min}° ומעלה`;
+}
+
+function minutesNow() {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+// "עד 11:30" for a task with dueTime; late once the clock passes it (the service day starts at 04:00)
+function dueInfo(task, isDone, nowMinutes) {
+  if (!task.dueTime) return null;
+  const [h, m] = task.dueTime.split(':').map(Number);
+  const due = h * 60 + m;
+  const late = !isDone && !(nowMinutes < 240 && due >= 240) && nowMinutes > due;
+  return { late, text: late ? `באיחור · עד ${task.dueTime}` : `עד ${task.dueTime}` };
+}
 
 /* ─── EditableRow: in edit mode, covers the card with a clear delete button ─── */
 function EditableRow({ editing, label, onDeleteRequest, children }) {
@@ -55,6 +87,15 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
   const [notes, setNotes]         = useState('');
   const [subItems, setSubItems]   = useState([]);
   const [subInput, setSubInput]   = useState('');
+  const [kind, setKind]           = useState('regular'); // 'regular' | 'temp'
+  const [minVal, setMinVal]       = useState('');
+  const [maxVal, setMaxVal]       = useState('');
+  const [dueTime, setDueTime]     = useState('');
+
+  const isTemp = kind === 'temp';
+  const tempMin = parseNum(minVal);
+  const tempMax = parseNum(maxVal);
+  const canSubmit = !!taskName.trim() && (!isTemp || tempMin != null || tempMax != null);
 
   function addSubItem() {
     const label = subInput.trim();
@@ -65,18 +106,20 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
 
   function handleSubmit() {
     const name = taskName.trim();
-    if (!name) return;
+    if (!canSubmit) return;
     const now = Date.now();
     onAdd({
       id: `custom_${now}`,
       isCustom: true,
       task: name,
-      category: 'מותאם אישית',
+      category: isTemp ? 'טמפרטורה' : 'מותאם אישית',
       categoryIcon: null,
       shift,
-      estimatedTime: targetQty ? `${targetQty}${targetUnit ? ' ' + targetUnit : ''}` : null,
+      estimatedTime: !isTemp && targetQty ? `${targetQty}${targetUnit ? ' ' + targetUnit : ''}` : null,
       details: notes.trim() || null,
-      subItems: subItems.length > 0 ? subItems : undefined,
+      subItems: !isTemp && subItems.length > 0 ? subItems : undefined,
+      dueTime: dueTime || null,
+      ...(isTemp ? { type: 'temp', min: tempMin, max: tempMax } : {}),
     });
   }
 
@@ -127,6 +170,28 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
           </div>
         </div>
 
+        {/* Type toggle */}
+        <div>
+          <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>סוג</p>
+          <div className="flex gap-2">
+            {[['regular', 'סימון רגיל'], ['temp', 'טמפרטורה']].map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => setKind(k)}
+                aria-pressed={kind === k}
+                className="flex-1 min-h-[48px] rounded-xl text-base font-semibold transition-colors duration-150"
+                style={{
+                  background: kind === k ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
+                  border: kind === k ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                  color: kind === k ? '#fff' : 'rgba(255,255,255,0.62)',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Task name */}
         <div>
           <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>שם ההכנה *</p>
@@ -141,7 +206,28 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
           />
         </div>
 
+        {/* Min / max temperature */}
+        {isTemp && (
+          <div className="flex gap-2">
+            {[['מינימום \u2066°C\u2069', minVal, setMinVal, '0'], ['מקסימום \u2066°C\u2069', maxVal, setMaxVal, '4']].map(([label, val, setVal, ph]) => (
+              <div key={label} className="flex-1">
+                <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>{label}</p>
+                <input
+                  type="text"
+                  value={val}
+                  onChange={e => setVal(e.target.value)}
+                  placeholder={ph}
+                  dir="ltr"
+                  className="w-full px-4 py-3 rounded-xl text-white text-lg min-h-[52px] focus:outline-none text-center"
+                  style={inputStyle}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Qty + unit */}
+        {!isTemp && (
         <div>
           <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>כמות ויחידות</p>
           <div className="flex gap-2">
@@ -163,6 +249,7 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
             />
           </div>
         </div>
+        )}
 
         {/* Notes */}
         <div>
@@ -177,7 +264,20 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
           />
         </div>
 
+        {/* Due time */}
+        <div>
+          <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>שעת יעד</p>
+          <input
+            type="time"
+            value={dueTime}
+            onChange={e => setDueTime(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl text-white text-lg min-h-[52px] focus:outline-none"
+            style={{ ...inputStyle, colorScheme: 'dark' }}
+          />
+        </div>
+
         {/* Sub-items builder */}
+        {!isTemp && (
         <div>
           <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>תת-הכנות — צ׳קליסט (אופציונלי)</p>
           {subItems.length > 0 && (
@@ -225,13 +325,14 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
             </button>
           </div>
         </div>
+        )}
 
         {/* Submit */}
         <button
           onClick={handleSubmit}
-          disabled={!taskName.trim()}
+          disabled={!canSubmit}
           className="w-full min-h-[56px] rounded-xl font-semibold text-white text-lg transition-colors duration-150 disabled:opacity-35"
-          style={{ background: taskName.trim() ? stationColor : 'rgba(255,255,255,0.08)' }}
+          style={{ background: canSubmit ? stationColor : 'rgba(255,255,255,0.08)' }}
         >
           <span className="inline-flex items-center gap-2"><Check size={18} strokeWidth={2} />הוסף הכנה</span>
         </button>
@@ -247,7 +348,7 @@ const TOAST_MS = 5000;
 
 function vibrate(pattern) { window.navigator?.vibrate?.(pattern); }
 
-export default function PrepChecklist({ station, prep, focusTaskId, onFocused }) {
+export default function PrepChecklist({ station, prep, focusTaskId, onFocused, user }) {
   const {
     completedSubs, setCustomTasks, hiddenIds, setHiddenIds,
     toggleSub, taskStatus, setTaskStatus, resetDay, progress, streak,
@@ -262,12 +363,21 @@ export default function PrepChecklist({ station, prep, focusTaskId, onFocused })
   const [toast, setToast]                 = useState(null); // { id, text, undoable, undo }
   const [finishedAt, setFinishedAt]       = useState(null);
 
+  const [temps, setTemps]                 = useFirestoreArray(LOG_DOCS.temps(station, prep.day));
+  const [nowMinutes, setNowMinutes]       = useState(minutesNow);
+
   const st = STATIONS[station];
   const { pct, done, total, shiftProgress } = progress;
   const shifts = SHIFTS.map(label => ({ label, ...shiftProgress(SHIFT_KEYS[label]) }));
 
   const toastTimer = useRef(null);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  // One clock for every row's due time
+  useEffect(() => {
+    const id = setInterval(() => setNowMinutes(minutesNow()), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   // Opened from the global search: unfold "הושלמו" if needed, then scroll to the task
   useEffect(() => {
@@ -339,6 +449,22 @@ export default function PrepChecklist({ station, prep, focusTaskId, onFocused })
     setStatusFor(null);
   }
 
+  // Temperature reading: keep only the latest per task; out of range is logged and marks the task stuck
+  const onTempCommit = useCallback((task, value) => {
+    if (value == null) {
+      setTemps(prev => prev.filter(r => r.taskId !== task.id));
+      setTaskStatus(task.id, 'todo');
+      return;
+    }
+    const min = task.min ?? null;
+    const max = task.max ?? null;
+    const outOfRange = (min != null && value < min) || (max != null && value > max);
+    const reading = { taskId: task.id, value, min, max, by: user || '', time: nowLabel(), outOfRange };
+    setTemps(prev => [...prev.filter(r => r.taskId !== task.id), reading]);
+    setTaskStatus(task.id, outOfRange ? 'stuck' : 'done');
+    vibrate(15);
+  }, [setTemps, setTaskStatus, user]);
+
   const requestDelete = useCallback((task) => {
     setConfirmDelete(task);
   }, []);
@@ -366,15 +492,28 @@ export default function PrepChecklist({ station, prep, focusTaskId, onFocused })
       label={task.task}
       onDeleteRequest={() => requestDelete(task)}
     >
-      <TaskRow
-        task={task}
-        status={taskStatus(task)}
-        completedSubs={completedSubs}
-        stationColor={st.color}
-        onTap={() => onTapTask(task)}
-        onOpenStatus={() => setStatusFor(task)}
-        onToggleSub={sub => onToggleSub(task, sub)}
-      />
+      {task.type === 'temp' ? (
+        <TempRow
+          task={task}
+          status={taskStatus(task)}
+          reading={temps.find(r => r.taskId === task.id)}
+          stationColor={st.color}
+          nowMinutes={nowMinutes}
+          onCommit={onTempCommit}
+          onOpenStatus={() => setStatusFor(task)}
+        />
+      ) : (
+        <TaskRow
+          task={task}
+          status={taskStatus(task)}
+          completedSubs={completedSubs}
+          stationColor={st.color}
+          nowMinutes={nowMinutes}
+          onTap={() => onTapTask(task)}
+          onOpenStatus={() => setStatusFor(task)}
+          onToggleSub={sub => onToggleSub(task, sub)}
+        />
+      )}
     </EditableRow>
   );
 
@@ -565,10 +704,11 @@ export default function PrepChecklist({ station, prep, focusTaskId, onFocused })
 ════════════════════════════════════════════ */
 const STATUS_HINT = { progress: 'בתהליך', stuck: 'חסר / תקוע' };
 
-const TaskRow = memo(function TaskRow({ task, status, completedSubs, stationColor, onTap, onOpenStatus, onToggleSub }) {
+const TaskRow = memo(function TaskRow({ task, status, completedSubs, stationColor, nowMinutes, onTap, onOpenStatus, onToggleSub }) {
   const hasSubItems = !!task.subItems;
   const isDone = status === 'done';
   const meta = [task.category, task.details, task.estimatedTime].filter(Boolean).join(' · ');
+  const due = dueInfo(task, isDone, nowMinutes);
 
   return (
     <motion.div
@@ -591,12 +731,17 @@ const TaskRow = memo(function TaskRow({ task, status, completedSubs, stationColo
             <span className={`block text-lg font-medium leading-snug ${isDone ? 'text-text-secondary' : 'text-text-primary'}`}>
               {task.task}
             </span>
-            {(STATUS_HINT[status] || meta) && (
+            {(STATUS_HINT[status] || meta || due) && (
               <span className="block text-sm text-text-secondary mt-0.5">
                 {STATUS_HINT[status] && (
                   <span style={{ color: status === 'stuck' ? '#F87171' : '#F59E0B' }}>{STATUS_HINT[status]}{meta ? ' · ' : ''}</span>
                 )}
                 {meta}
+                {due && (
+                  <span style={due.late ? { color: '#F97316' } : undefined}>
+                    {(STATUS_HINT[status] || meta) ? ' · ' : ''}{due.text}
+                  </span>
+                )}
               </span>
             )}
           </span>
@@ -629,6 +774,110 @@ const TaskRow = memo(function TaskRow({ task, status, completedSubs, stationColo
           })}
         </div>
       )}
+    </motion.div>
+  );
+});
+
+/* ════════════════════════════════════════════
+   TempRow — type the temperature; in range = done, out of range = stuck + logged
+════════════════════════════════════════════ */
+const TempRow = memo(function TempRow({ task, status, reading, stationColor, nowMinutes, onCommit, onOpenStatus }) {
+  const stored = reading ? String(reading.value) : '';
+  const [text, setText] = useState(stored);
+  useEffect(() => { setText(stored); }, [stored]);
+
+  const out = !!reading?.outOfRange;
+  const due = dueInfo(task, status === 'done', nowMinutes);
+  const range = rangeText(task.min ?? null, task.max ?? null);
+  // Phone number pads have no minus key; freezers need one
+  const canBeNegative = (task.min != null && task.min < 0) || (task.max != null && task.max <= 0);
+  const inputRef = useRef(null);
+  // Keep the input focused so the reading is saved on Enter / blur as usual
+  const flipSign = () => {
+    setText(t => (t.trim().startsWith('-') ? t.trim().slice(1) : `-${t.trim()}`));
+    inputRef.current?.focus();
+  };
+
+  function commit() {
+    if (text.trim() === '') {
+      if (reading) onCommit(task, null);
+      return;
+    }
+    const v = parseNum(text);
+    if (v == null) { setText(stored); return; }
+    if (reading && reading.value === v) { setText(stored); return; }
+    onCommit(task, v);
+  }
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, x: -12 }}
+      transition={{ duration: 0.18 }}
+      style={{ borderBottom: '1px solid var(--border)', ...(out ? { background: 'rgba(248,113,113,0.08)', boxShadow: 'inset 0 0 0 1px rgba(248,113,113,0.45)' } : {}) }}
+      data-focus-id={task.id}
+    >
+      <div className="flex items-stretch">
+        <div className="flex-1 flex items-center gap-4 pr-4 pl-2 py-3 min-h-[64px] min-w-0">
+          <StatusMark status={status} color={stationColor} />
+          <span className="flex-1 min-w-0">
+            <span className={`block text-lg font-medium leading-snug ${status === 'done' ? 'text-text-secondary' : 'text-text-primary'}`}>
+              {task.task}
+            </span>
+            <span className="block text-sm text-text-secondary mt-0.5">
+              {out ? (
+                <span style={{ color: '#F87171' }}>מחוץ לטווח (טווח {range}) · נרשם ביומן</span>
+              ) : reading ? (
+                `${LRM}${reading.value}° · ${reading.by ? reading.by + ' ' : ''}${reading.time}`
+              ) : (
+                `טווח ${range}`
+              )}
+              {due && (
+                <span style={due.late ? { color: '#F97316' } : undefined}> · {due.text}</span>
+              )}
+            </span>
+          </span>
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {canBeNegative && (
+            <button
+              onMouseDown={e => e.preventDefault()}
+              onClick={flipSign}
+              aria-label="מינוס"
+              className="w-12 h-[52px] rounded-xl text-xl text-text-primary"
+              style={{ border: '1px solid rgba(255,255,255,0.12)' }}
+            >
+              −
+            </button>
+          )}
+          <input
+            ref={inputRef}
+            type="text"
+            inputMode="decimal"
+            dir="ltr"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onBlur={commit}
+            onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
+            aria-label={`טמפרטורה: ${task.task}`}
+            className="w-24 h-[52px] rounded-xl text-white text-lg text-center tabular-nums focus:outline-none"
+            style={{
+              background: 'rgba(255,255,255,0.07)',
+              border: out ? '1px solid rgba(248,113,113,0.6)' : '1px solid rgba(255,255,255,0.12)',
+            }}
+          />
+          <span dir="ltr" className="text-base text-text-secondary">°C</span>
+        </div>
+        <button
+          onClick={onOpenStatus}
+          aria-label={`מצב: ${task.task}`}
+          className="w-14 flex items-center justify-center text-text-tertiary flex-shrink-0"
+        >
+          <MoreHorizontal size={20} strokeWidth={1.5} />
+        </button>
+      </div>
     </motion.div>
   );
 });

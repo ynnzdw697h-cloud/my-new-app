@@ -4,6 +4,8 @@ import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { Card, Button, Input, EmptyState, Sheet } from './ui';
 import { StatusMark, UndoToast } from './PrepCelebrations';
 import { useFocusFlash } from '../hooks/useFocusFlash';
+import { useServiceDay } from '../hooks/usePrepState';
+import { slotOf, addDays } from '../data/shifts';
 
 const MISSING_KEY = 'missing_items';
 const NOTES_KEY   = 'shift_notes';
@@ -16,6 +18,10 @@ export const MISSING_STATUS = {
   arrived:  { label: 'הגיע',  mark: 'done',     next: null },
 };
 export const missingStatus = item => item.status || 'reported';
+
+// Arrived shortages stay visible for today and yesterday; older ones live in the shift log.
+export const isRecentOrOpen = (item, today) =>
+  missingStatus(item) !== 'arrived' || slotOf(item.id).day >= addDays(today, -1);
 
 function nowLabel() {
   return new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
@@ -30,13 +36,13 @@ function historyLine(item) {
 }
 
 export default function ShiftNotes({ user, focusId, onFocused }) {
+  const today = useServiceDay();
   const [missingItems, setMissingItems] = useFirestoreArray(MISSING_KEY);
   const [shiftNotes,   setShiftNotes]   = useFirestoreArray(NOTES_KEY);
 
   const [missingInput,    setMissingInput]    = useState('');
   const [showMissingForm, setShowMissingForm] = useState(false);
   const [noteInput,       setNoteInput]       = useState('');
-  const [confirmClear,    setConfirmClear]    = useState(false);
   const [menuFor,         setMenuFor]         = useState(null); // item
   const [showArrived,     setShowArrived]     = useState(false);
   const [toast,           setToast]           = useState(null);
@@ -45,7 +51,9 @@ export default function ShiftNotes({ user, focusId, onFocused }) {
   useFocusFlash(focusId, onFocused);
 
   const openItems    = missingItems.filter(i => missingStatus(i) !== 'arrived');
-  const arrivedItems = missingItems.filter(i => missingStatus(i) === 'arrived');
+  const arrivedItems = missingItems.filter(i => missingStatus(i) === 'arrived' && isRecentOrOpen(i, today));
+  // Older notes are in the shift log, under their day
+  const todayNotes   = shiftNotes.filter(n => slotOf(n.id).day === today);
 
   function addMissingItem() {
     const text = missingInput.trim();
@@ -111,12 +119,6 @@ export default function ShiftNotes({ user, focusId, onFocused }) {
       }),
     });
     toastTimer.current = setTimeout(() => setToast(null), TOAST_MS);
-  }
-
-  function clearAll() {
-    setMissingItems([]);
-    setShiftNotes([]);
-    setConfirmClear(false);
   }
 
   const renderMissing = item => {
@@ -273,8 +275,8 @@ export default function ShiftNotes({ user, focusId, onFocused }) {
           style={{ borderBottom: '1px solid var(--border)' }}>
           <MessageSquare size={18} strokeWidth={1.5} className="text-text-secondary" />
           <h3 className="text-h3 text-text-primary">הערות משמרת</h3>
-          {shiftNotes.length > 0 && (
-            <span className="text-base text-text-secondary tabular-nums">{shiftNotes.length === 1 ? 'הערה אחת' : `${shiftNotes.length} הערות`}</span>
+          {todayNotes.length > 0 && (
+            <span className="text-base text-text-secondary tabular-nums">{todayNotes.length === 1 ? 'הערה אחת' : `${todayNotes.length} הערות`}</span>
           )}
         </div>
 
@@ -300,14 +302,14 @@ export default function ShiftNotes({ user, focusId, onFocused }) {
 
         {/* Notes list, newest first */}
         <div>
-          {shiftNotes.length === 0 ? (
+          {todayNotes.length === 0 ? (
             <p className="px-5 py-6 text-center text-base text-text-secondary">אין הערות למשמרת הבאה</p>
           ) : (
-            [...shiftNotes].reverse().map((note, i) => (
+            [...todayNotes].reverse().map((note, i) => (
               <div
                 key={note.id}
                 className="px-5 py-4 flex items-start gap-3"
-                style={{ borderBottom: i < shiftNotes.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}
+                style={{ borderBottom: i < todayNotes.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}
               >
                 <div className="flex-1 min-w-0">
                   <div className="text-base text-text-secondary mb-1">
@@ -329,34 +331,6 @@ export default function ShiftNotes({ user, focusId, onFocused }) {
           )}
         </div>
       </Card>
-
-      {/* ══ Clear all — subtle, behind a confirmation ══ */}
-      {(missingItems.length > 0 || shiftNotes.length > 0) && (
-        <div className="flex justify-center pt-2">
-          <button
-            onClick={() => setConfirmClear(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-text-tertiary min-h-[44px]"
-          >
-            <Trash2 size={14} strokeWidth={1.75} aria-hidden="true" />
-            נקה הכל בסוף יום
-          </button>
-        </div>
-      )}
-
-      {/* Confirm sheet */}
-      <Sheet
-        open={confirmClear}
-        onClose={() => setConfirmClear(false)}
-        title="למחוק את כל החוסרים וההערות?"
-      >
-        <p className="text-body text-text-secondary mb-6">
-          פעולה זו תמחק לצמיתות את כל הרשומות של המשמרת הנוכחית.
-        </p>
-        <div className="flex gap-3">
-          <Button variant="danger" fullWidth onClick={clearAll}>כן, נקה הכל</Button>
-          <Button variant="ghost" fullWidth onClick={() => setConfirmClear(false)}>ביטול</Button>
-        </div>
-      </Sheet>
 
     </div>
   );

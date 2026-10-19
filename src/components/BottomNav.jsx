@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Timer, Fish, ShoppingCart, LogOut } from 'lucide-react';
+import { Timer, Fish, ShoppingCart, LogOut, NotebookText, Megaphone } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 
 /* ── Role → navigation profile mapping ── */
@@ -16,6 +16,8 @@ export function navForProfile(role) {
         { id: 'supplier',  label: 'ספקים',   Icon: TruckIcon },
       ],
       more: [
+        { id: 'shift_log',     label: 'יומן משמרת',          Icon: NotebookText },
+        { id: 'announcements', label: 'הודעות לצוות',        Icon: Megaphone },
         { id: 'weekly',       label: 'משימות שבועיות',      Icon: CalIcon },
         { id: 'prep_tracker', label: 'תפוגה ובזבוז',         Icon: Timer },
         { id: 'proteins',     label: 'ספירת חיות', Icon: Fish },
@@ -45,6 +47,8 @@ export function navForProfile(role) {
       { id: 'shift',     label: 'חוסרים',  Icon: NoteIcon },
     ],
     more: [
+      { id: 'shift_log',     label: 'יומן משמרת',           Icon: NotebookText },
+      { id: 'announcements', label: 'הודעות לצוות',         Icon: Megaphone },
       { id: 'prep_tracker', label: 'תפוגה ובזבוז',          Icon: Timer },
       { id: 'proteins',     label: 'ספירת חיות', Icon: Fish },
       { id: 'supplier',     label: 'הזמנות ספקים',          Icon: ShoppingCart },

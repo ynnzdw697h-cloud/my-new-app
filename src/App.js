@@ -16,6 +16,8 @@ import RecipeDatabase from './components/RecipeDatabase';
 import PrepTracker from './components/PrepTracker';
 import WeeklyTasks from './components/WeeklyTasks';
 import ShiftNotes from './components/ShiftNotes';
+import ShiftLog from './components/ShiftLog';
+import Announcements from './components/Announcements';
 import ProteinCount from './components/ProteinCount';
 import SupplierOrder from './components/SupplierOrder';
 import CheckerHub from './components/checker/CheckerHub';
@@ -32,6 +34,8 @@ const PAGE_TITLES = {
   prep_tracker:   'תפוגה ובזבוז',
   weekly:         'משימות שבועיות',
   shift:          'חוסרים והערות',
+  shift_log:      'יומן משמרת',
+  announcements:  'הודעות לצוות',
   proteins:       'ספירת חיות',
   supplier:       'הזמנות ספקים',
   checker_hub:    'קבלת סחורה',
@@ -119,7 +123,7 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
           <Dashboard station={station} user={user} prep={prep} onNavigate={navigate} role={role} />
         )}
         {view === 'prep' && (
-          <PrepChecklist station={station} prep={prep} focusTaskId={focusTaskId} onFocused={() => setFocusTaskId(null)} />
+          <PrepChecklist station={station} prep={prep} user={user} focusTaskId={focusTaskId} onFocused={() => setFocusTaskId(null)} />
         )}
         {view === 'recipes'        && (
           <RecipeDatabase
@@ -139,6 +143,8 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
         )}
         {view === 'weekly'         && <WeeklyTasks station={station} />}
         {view === 'shift'          && <ShiftNotes user={user} focusId={focusMissingId} onFocused={() => setFocusMissingId(null)} />}
+        {view === 'shift_log'      && <ShiftLog user={user} />}
+        {view === 'announcements'  && <Announcements user={user} />}
         {view === 'proteins'       && <ProteinCount />}
         {view === 'supplier'       && <SupplierOrder />}
         {view === 'checker_hub'    && <CheckerHub user={user} onOpenDelivery={openDelivery} />}

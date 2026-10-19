@@ -1,11 +1,13 @@
 import { motion } from 'framer-motion';
-import { ClipboardList, BookOpen, CalendarDays, AlertCircle, Camera, PackageCheck, ShoppingCart, Fish, ChevronLeft } from 'lucide-react';
+import { ClipboardList, BookOpen, CalendarDays, AlertCircle, Camera, PackageCheck, ShoppingCart, Fish, ChevronLeft, NotebookText, Megaphone } from 'lucide-react';
 import { useRef, useEffect, useState, useCallback, memo } from 'react';
 import { STATIONS } from '../data/stations';
-import { usePrepState } from '../hooks/usePrepState';
+import { usePrepState, getServiceDay } from '../hooks/usePrepState';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { StreakBadge, SegmentedBar, StatusMark } from './PrepCelebrations';
-import { MISSING_STATUS, missingStatus } from './ShiftNotes';
+import { MISSING_STATUS, missingStatus, isRecentOrOpen } from './ShiftNotes';
+import HandoverCard from './HandoverCard';
+import AnnouncementBanner from './AnnouncementBanner';
 import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { useTenantId } from '../context/TenantContext';
@@ -350,7 +352,8 @@ function NextUp({ prep, onOpen }) {
 /* ─── Shortages this cook reported, so they see each one was handled ─── */
 function MyShortages({ user, onOpen }) {
   const [items] = useFirestoreArray('missing_items');
-  const mine = items.filter(i => i.author === user);
+  const today = getServiceDay();
+  const mine = items.filter(i => i.author === user && isRecentOrOpen(i, today));
   if (mine.length === 0) return null;
   const order = { arrived: 0, ordered: 1, reported: 2 };
   const sorted = [...mine].sort((a, b) => order[missingStatus(a)] - order[missingStatus(b)]).slice(0, 4);
@@ -416,6 +419,10 @@ export default function Dashboard({ station, user, prep, onNavigate, role }) {
     <div className="px-4 py-5 max-w-xl mx-auto space-y-6" dir="rtl">
       <Header user={user} color={st.color} avatars={avatars} saveAvatar={saveAvatar} streak={prep.streak.count} />
 
+      <AnnouncementBanner user={user} onOpen={() => onNavigate('announcements')} />
+
+      <HandoverCard user={user} />
+
       <NextUp prep={prep} onOpen={() => onNavigate('prep')} />
 
       <KitchenStatus myStation={station} prep={prep} onOpenMine={() => onNavigate('prep')} />
@@ -427,6 +434,8 @@ export default function Dashboard({ station, user, prep, onNavigate, role }) {
         <QuickAction Icon={CalendarDays}  label="משימות שבועיות" sub="לפי ימים"       onClick={() => onNavigate('weekly')} />
         <QuickAction Icon={AlertCircle}   label="חוסרים והערות"  sub="דיווח מהיר"     onClick={() => onNavigate('shift')} />
         <QuickAction Icon={BookOpen}      label="ספר מתכונים"    sub="מתכונים והכנות" onClick={() => onNavigate('recipes')} />
+        <QuickAction Icon={NotebookText}  label="יומן משמרת"     sub="תקלות, סיכום, מי קרא" onClick={() => onNavigate('shift_log')} />
+        <QuickAction Icon={Megaphone}     label="הודעות לצוות"   sub="מי ראה"         onClick={() => onNavigate('announcements')} />
       </div>
     </div>
   );
