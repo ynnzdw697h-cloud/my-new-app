@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertCircle, User, MessageSquare, Trash2 } from 'lucide-react';
+import { AlertCircle, User, MessageSquare, Trash2, X } from 'lucide-react';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { Card, Button, Input, EmptyState, Chip, Sheet } from './ui';
 
@@ -90,7 +90,7 @@ export default function ShiftNotes({ user }) {
             <Button variant="danger" onClick={addMissingItem}>הוסף</Button>
             <Button variant="ghost" size="sm"
               onClick={() => { setShowMissingForm(false); setMissingInput(''); }}
-              ariaLabel="סגור">✕</Button>
+              ariaLabel="סגור"><X size={20} strokeWidth={1.5} /></Button>
           </div>
         )}
 

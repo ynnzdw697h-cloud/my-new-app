@@ -1,4 +1,5 @@
 import { STATIONS } from '../data/stations';
+import { UtensilsCrossed } from 'lucide-react';
 
 export default function StationSelect({ onSelect }) {
   return (
@@ -10,7 +11,7 @@ export default function StationSelect({ onSelect }) {
           className="w-24 h-24 mx-auto mb-5 rounded-3xl flex items-center justify-center"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
-          <span style={{ fontSize: '48px', lineHeight: 1 }}>🍽️</span>
+          <UtensilsCrossed size={44} strokeWidth={1.25} style={{ color: 'rgba(255,255,255,0.8)' }} />
         </div>
         <h1 className="text-display text-text-primary mb-2 tracking-tight">
           מטבח מקצועי
@@ -55,7 +56,7 @@ export default function StationSelect({ onSelect }) {
                 >
                   <div
                     className="w-5 h-5 rounded-full"
-                    style={{ background: station.color, boxShadow: `0 0 16px ${station.color}80` }}
+                    style={{ background: station.color }}
                   />
                 </div>
                 <h3 className="text-h2 text-text-primary mb-3">{station.name}</h3>

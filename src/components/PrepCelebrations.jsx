@@ -51,7 +51,7 @@ export function StickyProgress({ pct, done, total, color, streak }) {
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
             style={{
               background: pct === 100 ? '#34D399' : `linear-gradient(270deg, ${color}, ${color}cc)`,
-              boxShadow: `0 0 10px ${pct === 100 ? '#34D399' : color}80`,
+              
             }}
           />
         </div>
@@ -149,7 +149,7 @@ export function CelebrationOverlay({ open, onClose, stationName, color, total, f
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.1 }}
               className="w-full max-w-sm rounded-3xl p-7 text-center"
-              style={{ background: '#1F1F24', border: '1px solid rgba(52,211,153,0.35)', boxShadow: '0 0 60px rgba(52,211,153,0.25)' }}
+              style={{ background: '#1F1F24', border: '1px solid rgba(52,211,153,0.35)' }}
               onClick={e => e.stopPropagation()}
             >
               <motion.div
@@ -157,7 +157,7 @@ export function CelebrationOverlay({ open, onClose, stationName, color, total, f
                 animate={{ rotate: 0, scale: 1 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 12, delay: 0.25 }}
                 className="w-24 h-24 rounded-full mx-auto mb-5 flex items-center justify-center"
-                style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.35), rgba(251,191,36,0.05))' }}
+                style={{ background: 'rgba(251,191,36,0.12)' }}
               >
                 <Trophy size={52} strokeWidth={1.5} style={{ color: '#FBBF24' }} />
               </motion.div>
@@ -199,7 +199,7 @@ export function CelebrationOverlay({ open, onClose, stationName, color, total, f
               <button
                 onClick={onClose}
                 className="w-full mt-6 py-4 rounded-2xl font-black text-lg text-white active:scale-95 transition-transform"
-                style={{ background: '#10B981', boxShadow: '0 0 24px rgba(16,185,129,0.45)' }}
+                style={{ background: '#10B981' }}
               >
                 יאללה, לסרוויס!
               </button>

@@ -4,6 +4,7 @@ import {
   Clock, Soup, CookingPot, FlaskConical, Carrot, Croissant, Container, ChefHat, Wheat, Leaf, Salad,
   UtensilsCrossed, CakeSlice, Search, X, AlertTriangle, Scale, Coins, ListOrdered, Target, Wine,
   Thermometer, ChevronLeft, Layers, Check,
+  Pencil,
 } from 'lucide-react';
 import { RECIPES, CATEGORIES } from '../data/recipes';
 import { MAIN_DISHES, DISH_CATEGORIES } from '../data/mainDishes';
@@ -233,7 +234,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
           position: 'fixed', bottom: 104, left: 20, zIndex: 40,
           width: 52, height: 52, borderRadius: '50%',
           background: '#10B981',
-          boxShadow: '0 4px 20px rgba(16,185,129,0.55)',
+          
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 26, color: 'white', fontWeight: 300,
           border: 'none',
@@ -259,7 +260,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
             style={{
               background:  activeTab === tab.id ? st.color : 'transparent',
               color:       activeTab === tab.id ? '#fff'   : 'rgba(255,255,255,0.62)',
-              boxShadow:   activeTab === tab.id ? `0 4px 14px ${st.color}50` : 'none',
+              boxShadow:   'none',
             }}
           >
             {tab.label}
@@ -302,7 +303,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                 background: active ? st.color : 'var(--bg-card)',
                 border:     active ? `1px solid ${st.color}` : '1px solid var(--border)',
                 color:      active ? '#fff' : 'rgba(255,255,255,0.62)',
-                boxShadow:  active ? `0 4px 16px ${st.color}40` : 'none',
+                boxShadow:  'none',
               }}
             >
               {c}
@@ -334,7 +335,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                   className="relative w-full"
                   style={{
                     paddingTop: '72%',
-                    background: imgUrl ? undefined : `linear-gradient(135deg, ${meta.g[0]}, ${meta.g[1]})`,
+                    background: imgUrl ? undefined : 'rgba(255,255,255,0.04)',
                   }}
                 >
                   {imgUrl ? (
@@ -362,7 +363,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                     <div
                       className="absolute top-2.5 left-2.5 px-1.5 py-0.5 rounded-lg text-sm font-bold"
                       style={{ background: 'rgba(16,185,129,0.7)', color: 'white', backdropFilter: 'blur(6px)' }}
-                    >✎</div>
+                    ><Pencil size={14} strokeWidth={1.5} /></div>
                   )}
                 </div>
                 <div className="p-3">
@@ -402,7 +403,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                     className="relative w-full"
                     style={{
                       paddingTop: '72%',
-                      background: imgUrl ? undefined : `linear-gradient(135deg, ${meta.g[0]}, ${meta.g[1]})`,
+                      background: imgUrl ? undefined : 'rgba(255,255,255,0.04)',
                     }}
                   >
                     {imgUrl ? (
@@ -422,7 +423,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                       <div
                         className="absolute top-2.5 left-2.5 px-1.5 py-0.5 rounded-lg text-sm font-bold"
                         style={{ background: 'rgba(16,185,129,0.7)', color: 'white', backdropFilter: 'blur(6px)' }}
-                      >✎</div>
+                      ><Pencil size={14} strokeWidth={1.5} /></div>
                     )}
                   </div>
                   <div className="p-3">
@@ -490,7 +491,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
       {/* ── Hero ── */}
       <div
         className="relative w-full"
-        style={{ height: '260px', background: imageUrl ? undefined : `linear-gradient(160deg, ${meta.g[0]}, ${meta.g[1]})` }}
+        style={{ height: '260px', background: imageUrl ? undefined : 'rgba(255,255,255,0.04)' }}
       >
         {imageUrl ? (
           <img src={imageUrl} alt={dish.name} className="w-full h-full object-cover" />
@@ -608,7 +609,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
                 style={{
                   background: portions === n ? stationColor : 'rgba(255,255,255,0.06)',
                   color:      portions === n ? '#fff' : 'rgba(255,255,255,0.5)',
-                  boxShadow:  portions === n ? `0 4px 14px ${stationColor}50` : 'none',
+                  boxShadow:  'none',
                 }}
               >
                 {n}
@@ -861,7 +862,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
         className="relative w-full"
         style={{
           height: '260px',
-          background: imageUrl ? undefined : `linear-gradient(160deg, ${meta.g[0]}, ${meta.g[1]})`,
+          background: imageUrl ? undefined : 'rgba(255,255,255,0.04)',
         }}
       >
         {imageUrl ? (
@@ -991,7 +992,7 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
                   style={{
                     background: active ? stationColor : 'rgba(255,255,255,0.06)',
                     color: active ? '#fff' : 'rgba(255,255,255,0.5)',
-                    boxShadow: active ? `0 4px 14px ${stationColor}50` : 'none',
+                    boxShadow: 'none',
                   }}
                 >
                   ×{m}

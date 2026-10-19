@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, memo } from 'react';
-import { Sun, Sparkles, Tag, Plus, RotateCcw, Clock, Pencil, Check, Trash2, Undo2 } from 'lucide-react';
+import { Sun, Sparkles, Tag, Plus, RotateCcw, Clock, Pencil, Check, Trash2, Undo2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STATIONS } from '../data/stations';
 import { Sheet, Button } from './ui';
@@ -19,7 +19,7 @@ function Particle({ angle, speed, color, size }) {
       style={{
         position: 'absolute', top: '50%', right: 0,
         width: size, height: size, borderRadius: '50%',
-        background: color, boxShadow: `0 0 5px ${color}`,
+        background: color,
         pointerEvents: 'none', zIndex: 30, transform: 'translateY(-50%)',
       }}
     />
@@ -54,7 +54,7 @@ function EditableRow({ editing, label, onDeleteRequest, children }) {
               onClick={onDeleteRequest}
               aria-label={`מחק ${label}`}
               className="w-14 h-14 rounded-2xl flex items-center justify-center active:scale-90 transition-transform"
-              style={{ background: '#DC2626', color: '#fff', boxShadow: '0 4px 16px rgba(220,38,38,0.4)' }}
+              style={{ background: '#DC2626', color: '#fff', }}
             >
               <Trash2 size={22} strokeWidth={2} />
             </button>
@@ -216,7 +216,7 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
                     className="text-lg transition-colors flex-shrink-0"
                     style={{ color: 'rgba(255,255,255,0.62)' }}
                   >
-                    ✕
+                    <X size={18} strokeWidth={1.5} />
                   </button>
                 </div>
               ))}
@@ -250,10 +250,10 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
           className="w-full py-4 rounded-2xl font-black text-white text-base transition-all disabled:opacity-35"
           style={{
             background: taskName.trim() ? stationColor : 'rgba(255,255,255,0.08)',
-            boxShadow: taskName.trim() ? `0 0 24px ${stationColor}45` : 'none',
+            
           }}
         >
-          ✓ הוסף הכנה
+          <span className="inline-flex items-center gap-2"><Check size={18} strokeWidth={2} />הוסף הכנה</span>
         </button>
       </motion.div>
     </>
@@ -264,9 +264,9 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
    Main PrepChecklist
 ════════════════════════════════════════════ */
 const MILESTONES = [
-  { at: 25, text: 'רבע מהפריפ בפנים 💪' },
-  { at: 50, text: 'חצי דרך! ממשיכים 🔥' },
-  { at: 75, text: 'עוד קצת ואתה שם 🚀' },
+  { at: 25, text: 'רבע מהפריפ בפנים' },
+  { at: 50, text: 'חצי דרך, ממשיכים' },
+  { at: 75, text: 'עוד קצת ואתה שם' },
 ];
 
 function vibrate(pattern) { window.navigator?.vibrate?.(pattern); }
@@ -318,12 +318,12 @@ export default function PrepChecklist({ station, prep }) {
       return;
     }
     const finishedShift = SHIFTS.find((_, i) => shiftPcts[i] === 100 && prev.shiftPcts[i] < 100);
-    if (finishedShift) return showToast(`${finishedShift} — סגור! ✅`, '#10B981');
+    if (finishedShift) return showToast(`${finishedShift} — סגור`, '#10B981');
 
     const milestone = [...MILESTONES].reverse().find(m => prev.pct < m.at && pct >= m.at);
     if (milestone) return showToast(milestone.text, st.color);
 
-    if (prev.done === 0 && done > 0) showToast('יאללה, יצאנו לדרך ⚡', st.color);
+    if (prev.done === 0 && done > 0) showToast('יאללה, יצאנו לדרך', st.color);
   }, [pct, done, shiftPctKey, showToast, st.color]);
 
   const onToggleTask = useCallback(id => { lastActionRef.current = Date.now(); toggleTask(id); }, [toggleTask]);
@@ -402,7 +402,7 @@ export default function PrepChecklist({ station, prep }) {
                     className="mr-auto text-sm font-bold px-3 py-1 rounded-xl"
                     style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}
                   >
-                    ✓ הושלם
+                    <span className="inline-flex items-center gap-1"><Check size={14} strokeWidth={2} />הושלם</span>
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -602,7 +602,7 @@ const TaskCard = memo(function TaskCard({ task, isDone, completedSubs, stationCo
             }
             transition={{ duration: 0.35, ease: 'backOut' }}
             className="w-8 h-8 rounded-2xl border-2 flex items-center justify-center mt-0.5"
-            style={{ boxShadow: isDone ? `0 0 16px ${stationColor}90` : 'none' }}
+            style={{ boxShadow: 'none' }}
           >
             <AnimatePresence>
               {isDone && (
@@ -717,7 +717,7 @@ function SubItem({ sub, subDone, stationColor, onToggle }) {
           }
           transition={{ duration: 0.3, ease: 'backOut' }}
           className="w-6 h-6 rounded-xl border-2 flex items-center justify-center"
-          style={{ boxShadow: subDone ? `0 0 10px ${stationColor}70` : 'none' }}
+          style={{ boxShadow: 'none' }}
         >
           <AnimatePresence>
             {subDone && (

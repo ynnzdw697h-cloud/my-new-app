@@ -70,10 +70,10 @@ export default function WeeklyTasks({ station }) {
 
     // Celebrate the biggest thing this tap just finished.
     const remaining = list => list.filter(t => t.id !== task.id && !completed.has(t.id)).length;
-    if (remaining(allTasks) === 0) return showToast('כל השבוע הושלם! 🏆', '#10B981');
-    if (remaining(dayTasks) === 0)     return showToast(`יום ${day} — סגור! ✅`, '#10B981');
+    if (remaining(allTasks) === 0) return showToast('כל השבוע הושלם!', '#10B981');
+    if (remaining(dayTasks) === 0)     return showToast(`יום ${day} — סגור`, '#10B981');
     if (remaining(dayTasks.filter(t => t.category === task.category)) === 0) {
-      showToast(`${task.category} — סגור! 💪`, st.color);
+      showToast(`${task.category} — סגור`, st.color);
     }
   }
 
@@ -89,7 +89,7 @@ export default function WeeklyTasks({ station }) {
     }]);
     setShowAdd(false);
     setDayIdx(DAYS.indexOf(taskDay));
-    showToast('המשימה נוספה ✓', st.color);
+    showToast('המשימה נוספה', st.color);
   }
 
   function executeDelete() {
@@ -126,7 +126,7 @@ export default function WeeklyTasks({ station }) {
                 aria-label={`יום ${d}, נותרו ${left}`}
                 className="flex flex-col items-center justify-center gap-1 rounded-2xl min-h-[72px] pt-1 active:scale-95 transition-transform"
                 style={selected
-                  ? { background: st.color, boxShadow: `0 0 18px ${st.color}55` }
+                  ? { background: st.color }
                   : { background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
               >
                 <span className="text-sm font-bold" style={{ color: selected ? '#fff' : 'rgba(255,255,255,0.6)' }}>
@@ -391,7 +391,7 @@ function TaskGroup({ name, tasks, completed, onToggle, onDelete, editing, color,
             ? { background: 'rgba(52,211,153,0.15)', color: '#34D399' }
             : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}
         >
-          {full ? '✓ ' : ''}{done}/{tasks.length}
+          {full && <Check size={12} strokeWidth={2} className="inline -mt-0.5 ml-0.5" />}{done}/{tasks.length}
         </span>
       </div>
 

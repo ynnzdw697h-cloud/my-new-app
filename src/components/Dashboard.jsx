@@ -64,7 +64,6 @@ function Sun() {
           marginTop: -26, marginLeft: -26,
           borderRadius: '50%',
           background: 'radial-gradient(circle, #FDE68A 30%, #F59E0B 100%)',
-          boxShadow: '0 0 28px rgba(251,191,36,0.7), 0 0 60px rgba(245,158,11,0.4)',
         }}
       />
     </motion.div>
@@ -172,7 +171,6 @@ function Avatar({ name, color, avatarData, onUpload }) {
             borderRadius: '50%',
             overflow: 'hidden',
             border: `2px solid ${color}55`,
-            boxShadow: `0 0 14px ${color}40`,
             cursor: 'pointer',
             background: color + '25',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -265,7 +263,6 @@ function CropModal({ url, color, onConfirm, onCancel }) {
           borderRadius: '50%',
           overflow: 'hidden',
           border: `3px solid ${color}`,
-          boxShadow: `0 0 40px ${color}55`,
           cursor: 'grab',
           touchAction: 'none',
           userSelect: 'none',
@@ -296,7 +293,7 @@ function CropModal({ url, color, onConfirm, onCancel }) {
           onClick={handleSave}
           disabled={saving}
           className="flex-1 rounded-2xl py-3.5 font-bold text-sm"
-          style={{ background: color, color: '#fff', opacity: saving ? 0.7 : 1, boxShadow: `0 0 20px ${color}60` }}
+          style={{ background: color, color: '#fff', opacity: saving ? 0.7 : 1 }}
         >
           {saving ? '...' : 'שמור'}
         </button>
@@ -318,7 +315,6 @@ function HeroCard({ user, st, tod, palette, avatars, saveAvatar, done, total, pc
       style={{
         background: `linear-gradient(135deg, ${palette.bg} 0%, rgba(255,255,255,0.02) 70%, #16161e 100%)`,
         border: `1px solid ${palette.primary}28`,
-        boxShadow: `0 8px 40px ${palette.glow}`,
       }}
     >
       <div style={{ position: 'absolute', top: isDay ? -30 : -20, left: isDay ? -30 : -20, opacity: 0.9, pointerEvents: 'none' }}>
@@ -360,7 +356,7 @@ function HeroCard({ user, st, tod, palette, avatars, saveAvatar, done, total, pc
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
                   transition={{ duration: 0.9, ease: 'easeOut', delay: 0.3 }}
-                  style={{ background: `linear-gradient(90deg, ${palette.primary}cc, ${palette.primary})`, boxShadow: `0 0 12px ${palette.primary}80` }}
+                  style={{ background: `linear-gradient(90deg, ${palette.primary}cc, ${palette.primary})` }}
                 />
               </div>
             </div>
@@ -374,7 +370,7 @@ function HeroCard({ user, st, tod, palette, avatars, saveAvatar, done, total, pc
 /* Encouraging one-liner that follows the station's progress */
 function motivation(pct, remaining, streak) {
   if (pct === 100) return 'הפריפ הושלם — אלופים!';
-  if (pct === 0)   return streak > 0 ? `רצף של ${streak} ימים — לא שוברים אותו היום 🔥` : 'יום חדש, דף חלק. יאללה מתחילים 💪';
+  if (pct === 0)   return streak > 0 ? `רצף של ${streak} ימים — לא שוברים אותו היום` : 'יום חדש, דף חלק. יאללה מתחילים';
   if (pct < 50)    return `התחלה טובה — נותרו ${remaining} פריטים`;
   if (pct < 85)    return `יותר מחצי! נותרו ${remaining} פריטים`;
   return `כמעט שם — רק ${remaining} פריטים`;
@@ -468,7 +464,7 @@ export default function Dashboard({ station, user, prep, onNavigate, role }) {
 
       {/* Quick shortcuts */}
       <div className="grid grid-cols-2 gap-3">
-        <QuickAction Icon={ClipboardList} label="צ׳ק ליסט יומי"   sub={pct === 100 ? 'הושלם ✓' : `נותרו ${total - done} פריטים`} color={st.color} onClick={() => onNavigate('prep')} />
+        <QuickAction Icon={ClipboardList} label="צ׳ק ליסט יומי"   sub={pct === 100 ? 'הושלם' : `נותרו ${total - done} פריטים`} color={st.color} onClick={() => onNavigate('prep')} />
         <QuickAction Icon={CalendarDays}  label="משימות שבועיות" sub="לפי ימים"        color="#8b5cf6" onClick={() => onNavigate('weekly')} />
         <QuickAction Icon={AlertCircle}   label="חוסרים והערות"  sub="דיווח מהיר"      color="#f87171" onClick={() => onNavigate('shift')} />
         <QuickAction Icon={BookOpen}      label="ספר מתכונים"    sub="מתכונים והכנות"  color="#f59e0b" onClick={() => onNavigate('recipes')} />
@@ -494,7 +490,6 @@ function UrgentAlertBanner({ pending }) {
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        boxShadow: '0 0 0 1px rgba(239,68,68,0.08), 0 4px 24px rgba(239,68,68,0.08)',
       }}
     >
       {/* Pulsing dot */}

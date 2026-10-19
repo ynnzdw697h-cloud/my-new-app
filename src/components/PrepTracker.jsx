@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AlertTriangle, BarChart3, Settings2, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
+import { AlertTriangle, BarChart3, Settings2, ChevronUp, ChevronDown, Trash2, Check, X, Clock, ThumbsDown, PackageX, Package, CircleX, CircleCheck, Sparkles } from 'lucide-react';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { RECIPES } from '../data/recipes';
 import { SHELF_LIFE, DEFAULT_SHELF_LIFE } from '../data/shelfLife';
@@ -44,11 +44,11 @@ const STATUS_CONFIG = {
 };
 
 const WASTE_REASONS = [
-  { id: 'expired',   label: 'פג תוקף',     emoji: '⏰' },
-  { id: 'quality',   label: 'איכות ירודה', emoji: '👎' },
-  { id: 'dropped',   label: 'נפל / נשבר',  emoji: '💥' },
-  { id: 'over_prep', label: 'הכנה עודפת',  emoji: '📦' },
-  { id: 'error',     label: 'שגיאת הכנה',  emoji: '❌' },
+  { id: 'expired',   label: 'פג תוקף',     Icon: Clock },
+  { id: 'quality',   label: 'איכות ירודה', Icon: ThumbsDown },
+  { id: 'dropped',   label: 'נפל / נשבר',  Icon: PackageX },
+  { id: 'over_prep', label: 'הכנה עודפת',  Icon: Package },
+  { id: 'error',     label: 'שגיאת הכנה',  Icon: CircleX },
 ];
 
 // ─── Main Component ──────────────────────────────────────────
@@ -216,7 +216,7 @@ export default function PrepTracker({ user, station, initialRecipe, onClearIniti
           className="rounded-3xl p-10 text-center mb-4"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
-          <p className="text-4xl mb-3">🟢</p>
+          <div className="flex justify-center mb-3"><CircleCheck size={36} strokeWidth={1.25} style={{ color: '#10B981' }} /></div>
           <p className="text-white font-bold">אין הכנות פעילות</p>
           <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.62)' }}>
             לחץ + כדי לסמן הכנה חדשה
@@ -274,7 +274,7 @@ export default function PrepTracker({ user, station, initialRecipe, onClearIniti
                       color:      batch.status === 'wasted' ? '#EF4444'               : '#9CA3AF',
                     }}
                   >
-                    {batch.status === 'wasted' ? 'בוזבז' : '✓ נוצל'}
+                    {batch.status === 'wasted' ? 'בוזבז' : 'נוצל'}
                   </span>
                 </div>
               ))}
@@ -287,7 +287,7 @@ export default function PrepTracker({ user, station, initialRecipe, onClearIniti
       <button
         onClick={() => { setPreselect(null); setShowMarkReady(true); }}
         className="fixed bottom-28 left-5 z-20 flex items-center gap-2 rounded-2xl px-5 py-3.5 font-bold text-white text-sm"
-        style={{ background: '#10B981', boxShadow: '0 4px 24px rgba(16,185,129,0.5)' }}
+        style={{ background: '#10B981' }}
       >
         <span className="text-lg">+</span>
         סמן הכנה מוכנה
@@ -376,7 +376,7 @@ function BatchCard({ batch, onConsume, onDryKit, onLogWaste }) {
             className="flex-1 py-2.5 rounded-2xl text-sm font-bold"
             style={{ background: 'rgba(249,115,22,0.15)', color: '#F97316', border: '1px solid rgba(249,115,22,0.3)' }}
           >
-            ✓ ערכת יבש מוכנה
+            <span className="inline-flex items-center gap-1"><Check size={14} strokeWidth={2} />ערכת יבש מוכנה</span>
           </button>
         )}
         {status !== 'expired' && (
@@ -385,7 +385,7 @@ function BatchCard({ batch, onConsume, onDryKit, onLogWaste }) {
             className="flex-1 py-2.5 rounded-2xl text-sm font-bold"
             style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.55)' }}
           >
-            ✓ נוצל
+            <span className="inline-flex items-center gap-1"><Check size={14} strokeWidth={2} />נוצל</span>
           </button>
         )}
         <button
@@ -445,7 +445,7 @@ function MarkReadySheet({ initialRecipe, getShelfLife, onSave, onCancel }) {
             onClick={onCancel}
             className="w-8 h-8 rounded-xl flex items-center justify-center text-sm"
             style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
-          >✕</button>
+          ><X size={20} strokeWidth={1.5} /></button>
         </div>
 
         <div className="px-5 pb-8 overflow-y-auto space-y-4 flex-1">
@@ -558,9 +558,9 @@ function MarkReadySheet({ initialRecipe, getShelfLife, onSave, onCancel }) {
               <button
                 onClick={() => onSave({ recipe, batchCount })}
                 className="w-full py-4 rounded-2xl text-white font-black text-base"
-                style={{ background: '#10B981', boxShadow: '0 4px 20px rgba(16,185,129,0.35)' }}
+                style={{ background: '#10B981' }}
               >
-                ✓ סמן מוכן
+                <span className="inline-flex items-center gap-2"><Check size={18} strokeWidth={2} />סמן מוכן</span>
               </button>
             </>
           )}
@@ -603,7 +603,7 @@ function WasteLoggerSheet({ batch, onSave, onCancel }) {
               onClick={onCancel}
               className="w-8 h-8 rounded-xl flex items-center justify-center text-sm"
               style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
-            >✕</button>
+            ><X size={20} strokeWidth={1.5} /></button>
           </div>
 
           {/* Batch info */}
@@ -653,7 +653,7 @@ function WasteLoggerSheet({ batch, onSave, onCancel }) {
                     border:     reason === r.id ? '1px solid rgba(239,68,68,0.4)' : '1px solid transparent',
                   }}
                 >
-                  <span className="text-base">{r.emoji}</span>
+                  <r.Icon size={18} strokeWidth={1.5} />
                   {r.label}
                 </button>
               ))}
@@ -676,7 +676,7 @@ function WasteLoggerSheet({ batch, onSave, onCancel }) {
             className="w-full py-4 rounded-2xl text-white font-black text-base transition-opacity"
             style={{
               background: '#EF4444',
-              boxShadow: canSave ? '0 4px 20px rgba(239,68,68,0.3)' : 'none',
+              
               opacity: canSave ? 1 : 0.4,
             }}
           >
@@ -701,7 +701,7 @@ function WasteBreakdown({ wasteLog }) {
         className="rounded-3xl p-5 mb-5 text-center"
         style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}
       >
-        <p className="text-2xl mb-2">✨</p>
+        <div className="flex justify-center mb-2"><Sparkles size={24} strokeWidth={1.25} style={{ color: '#34d399' }} /></div>
         <p className="text-white font-bold text-sm">אפס בזבוז השבוע</p>
         <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.62)' }}>כל ההכנות נוצלו</p>
       </div>
@@ -738,7 +738,7 @@ function WasteBreakdown({ wasteLog }) {
         {byReason.map(r => (
           <div key={r.id}>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-white">{r.emoji} {r.label}</span>
+              <span className="text-sm text-white inline-flex items-center gap-1.5"><r.Icon size={14} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.62)' }} />{r.label}</span>
               <span className="text-sm font-bold" style={{ color: '#EF4444' }}>{r.count}×</span>
             </div>
             <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
@@ -842,7 +842,7 @@ function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
             onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center text-sm"
             style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
-          >✕</button>
+          ><X size={20} strokeWidth={1.5} /></button>
         </div>
 
         <p className="px-5 pb-3 text-sm flex-shrink-0" style={{ color: 'rgba(255,255,255,0.62)' }}>
@@ -916,7 +916,7 @@ function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
                       className="w-full py-2.5 rounded-xl text-sm font-bold transition-opacity"
                       style={{ background: '#10B981', color: '#fff', opacity: ((parseInt(days,10)||0)*24+(parseInt(hours,10)||0)) > 0 ? 1 : 0.4 }}
                     >
-                      ✓ שמור
+                      <span className="inline-flex items-center gap-1"><Check size={14} strokeWidth={2} />שמור</span>
                     </button>
                   </div>
                 )}

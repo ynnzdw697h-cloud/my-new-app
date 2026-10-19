@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { X, AlertTriangle } from 'lucide-react';
 import { RECIPES } from '../data/recipes';
 import { CATEGORIES } from '../data/recipes';
 import { DISH_CATEGORIES } from '../data/mainDishes';
@@ -17,14 +18,14 @@ const ALLERGEN_KEYWORDS = {
 };
 
 const ALLERGEN_META = {
-  'דגים':   { emoji: '🐟' },
-  'ביצים':  { emoji: '🥚' },
-  'חלב':    { emoji: '🥛' },
-  'גלוטן':  { emoji: '🌾' },
-  'סויה':   { emoji: '🫘' },
-  'שומשום': { emoji: '🌱' },
-  'אגוזים': { emoji: '🥜' },
-  'סרטנים': { emoji: '🦐' },
+  'דגים':   {},
+  'ביצים':  {},
+  'חלב':    {},
+  'גלוטן':  {},
+  'סויה':   {},
+  'שומשום': {},
+  'אגוזים': {},
+  'סרטנים': {},
 };
 
 function detectAllergens(ingredients) {
@@ -188,7 +189,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
           padding: '12px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <button onClick={onClose} style={{ color: 'rgba(255,255,255,0.62)', padding: '8px', fontSize: 20, lineHeight: 1 }}>✕</button>
+          <button onClick={onClose} style={{ color: 'rgba(255,255,255,0.62)', padding: '8px', lineHeight: 1 }}><X size={20} strokeWidth={1.5} /></button>
           <span style={{ color: 'white', fontWeight: 900, fontSize: 17 }}>
             {type === 'prep' ? '+ מתכון הכנה' : '+ מנה חדשה'}
           </span>
@@ -209,8 +210,8 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
           {/* ── Type toggle ── */}
           <div style={{ display: 'flex', borderRadius: 16, padding: 4, marginBottom: 24, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
             {[
-              { id: 'prep', label: '👨‍🍳 הכנה', sub: 'מתכון בסיס' },
-              { id: 'dish', label: '🍽️ מנה', sub: 'מנה לתפריט' },
+              { id: 'prep', label: 'הכנה', sub: 'מתכון בסיס' },
+              { id: 'dish', label: 'מנה', sub: 'מנה לתפריט' },
             ].map(t => (
               <button
                 key={t.id}
@@ -220,7 +221,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                   background: type === t.id ? '#10B981' : 'transparent',
                   color: type === t.id ? 'white' : 'rgba(255,255,255,0.62)',
                   fontWeight: 700, fontSize: 14, transition: 'all 0.2s',
-                  boxShadow: type === t.id ? '0 4px 14px rgba(16,185,129,0.4)' : 'none',
+                  
                 }}
               >{t.label}</button>
             ))}
@@ -263,8 +264,8 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
             <FormLabel>פס עבודה</FormLabel>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               {[
-                { id: 'cold', label: '❄️ קר',  color: '#3B82F6' },
-                { id: 'hot',  label: '🔥 חם',  color: '#EF4444' },
+                { id: 'cold', label: 'קר',  color: '#3B82F6' },
+                { id: 'hot',  label: 'חם',  color: '#EF4444' },
               ].map(s => (
                 <button
                   key={s.id}
@@ -397,7 +398,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
             borderRadius: 16, padding: 14, marginBottom: 20,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <span style={{ fontSize: 15 }}>⚠️</span>
+              <AlertTriangle size={15} strokeWidth={1.5} />
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 700 }}>אלרגנים</span>
               {detectedAllergens.length > 0 && (
                 <span style={{ fontSize: 11, color: '#F59E0B', marginRight: 'auto' }}>
@@ -423,7 +424,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                       fontSize: 12, fontWeight: isActive ? 700 : 400, transition: 'all 0.15s',
                     }}
                   >
-                    {ALLERGEN_META[allergen].emoji} {allergen}
+                    {allergen}
                     {isDetected && <span style={{ fontSize: 9, opacity: 0.7, background: 'rgba(239,68,68,0.2)', borderRadius: 4, padding: '1px 4px' }}>auto</span>}
                   </button>
                 );
@@ -467,7 +468,7 @@ export default function AddRecipeModal({ onSave, onClose, existingPrepRecipes = 
                   <input
                     value={subSearch}
                     onChange={e => setSubSearch(e.target.value)}
-                    placeholder="🔍 חפש מתכון הכנה לקישור..."
+                    placeholder="חפש מתכון הכנה לקישור..."
                     style={{ ...inputStyle, width: '100%' }}
                     dir="rtl"
                   />

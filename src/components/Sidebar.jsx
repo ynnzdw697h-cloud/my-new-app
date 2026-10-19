@@ -88,7 +88,7 @@ export default function Sidebar({ currentView, onNavigate, station, user, onLogo
         >
           <div
             className="w-3 h-3 rounded-full flex-shrink-0"
-            style={{ background: st.color, boxShadow: `0 0 8px ${st.color}70` }}
+            style={{ background: st.color }}
           />
           <div>
             <div className="text-meta leading-none mb-0.5" style={{ color: st.color + 'AA' }}>תחנה</div>

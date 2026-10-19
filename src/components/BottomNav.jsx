@@ -152,7 +152,7 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
                   className="w-12 h-12 flex items-center justify-center rounded-2xl transition-all duration-200"
                   style={{
                     background: active ? st.color : 'transparent',
-                    boxShadow: active ? `0 0 0 1px ${st.color}, 0 0 18px ${st.color}70, 0 0 40px ${st.color}28` : 'none',
+                    boxShadow: 'none',
                   }}
                 >
                   <Icon active={active} color={st.color} />

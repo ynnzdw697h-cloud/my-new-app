@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { X, Check, Camera, ImagePlus, CookingPot, UtensilsCrossed } from 'lucide-react';
 
 const UNITS    = ['g', 'ml', 'kg', 'יח׳'];
 const PAD_KEYS = ['1','2','3','4','5','6','7','8','9','⌫','0','.'];
@@ -71,7 +72,7 @@ function TypeScreen({ onSelect, onClose }) {
           className="text-sm font-semibold min-h-[44px] px-1"
           style={{ color: 'rgba(255,255,255,0.62)', touchAction: 'manipulation' }}
         >
-          ✕
+          <X size={20} strokeWidth={1.5} />
         </button>
         <p className="text-white font-black text-lg">מתכון חדש</p>
         <div style={{ width: 32 }} />
@@ -95,8 +96,8 @@ function TypeScreen({ onSelect, onClose }) {
 
       <div className="flex flex-col gap-3 flex-1 justify-center">
         {[
-          { id: 'prep', title: 'מתכון הכנות', desc: 'בסיסים, רטבים, תוספות, ציר...', icon: '🥣' },
-          { id: 'dish', title: 'מנה מוגמרת',  desc: 'ראשונות, עיקריות, קינוחים...',  icon: '🍽' },
+          { id: 'prep', title: 'מתכון הכנות', desc: 'בסיסים, רטבים, תוספות, ציר...', Icon: CookingPot },
+          { id: 'dish', title: 'מנה מוגמרת',  desc: 'ראשונות, עיקריות, קינוחים...',  Icon: UtensilsCrossed },
         ].map(t => (
           <motion.button
             key={t.id}
@@ -111,7 +112,7 @@ function TypeScreen({ onSelect, onClose }) {
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            <span style={{ fontSize: '2.2rem' }}>{t.icon}</span>
+            <t.Icon size={36} strokeWidth={1.25} style={{ color: 'rgba(255,255,255,0.8)' }} />
             <div className="text-right flex-1">
               <p className="text-white font-black text-lg leading-tight">{t.title}</p>
               <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.62)' }}>{t.desc}</p>
@@ -174,7 +175,7 @@ function IngredientsScreen({ recipeType, recipeName, onNext, onBack }) {
               <button onClick={() => setList(prev => prev.filter((_, idx) => idx !== i))}
                 className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0"
                 style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444', minWidth: 28 }}>
-                ✕
+                <X size={20} strokeWidth={1.5} />
               </button>
               <div className="flex-1 text-right min-w-0">
                 <p className="text-white font-bold text-sm truncate">{item.name}</p>
@@ -231,7 +232,7 @@ function IngredientsScreen({ recipeType, recipeName, onNext, onBack }) {
             style={{
               background: list.length > 0 ? '#10B981' : 'rgba(255,255,255,0.05)',
               color:      list.length > 0 ? '#fff' : 'rgba(255,255,255,0.5)',
-              boxShadow:  list.length > 0 ? '0 0 20px rgba(16,185,129,0.3)' : 'none',
+              
               transition: 'all 0.2s ease',
             }}>
             המשך לשקילה {list.length > 0 ? `(${list.length})` : ''} →
@@ -400,13 +401,13 @@ function WeighingScreen({ ingredientList, onDone, onBack }) {
             style={{
               background: canNext ? '#10B981' : 'rgba(255,255,255,0.05)',
               color:      canNext ? '#fff' : 'rgba(255,255,255,0.5)',
-              boxShadow:  canNext ? '0 0 24px rgba(16,185,129,0.35)' : 'none',
+              
               border: '1px solid rgba(255,255,255,0.07)',
               transition: 'all 0.25s ease',
             }}>
             {isUnits && subStep === 'count'
               ? 'המשך לשקילה →'
-              : wIndex + 1 >= ingredientList.length ? 'סיים שקילה ✓' : 'המשך →'}
+              : wIndex + 1 >= ingredientList.length ? 'סיים שקילה' : 'המשך'}
           </motion.button>
         </div>
       </div>
@@ -453,7 +454,7 @@ function InstructionsScreen({ recipeName, onDone, onBack }) {
               <button onClick={() => setSteps(prev => prev.filter((_, idx) => idx !== i))}
                 className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0 mt-0.5"
                 style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444', minWidth: 28 }}>
-                ✕
+                <X size={20} strokeWidth={1.5} />
               </button>
               <p className="text-white text-sm leading-relaxed flex-1 text-right">{step}</p>
               <span className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0"
@@ -495,10 +496,10 @@ function InstructionsScreen({ recipeName, onDone, onBack }) {
             style={{
               background: steps.length > 0 ? '#10B981' : 'rgba(255,255,255,0.05)',
               color:      steps.length > 0 ? '#fff' : 'rgba(255,255,255,0.5)',
-              boxShadow:  steps.length > 0 ? '0 0 20px rgba(16,185,129,0.3)' : 'none',
+              
               transition: 'all 0.2s ease',
             }}>
-            סיים ✓
+            סיים
           </motion.button>
         </div>
       </div>
@@ -542,7 +543,7 @@ function SummaryScreen({ recipe, onSave, onClose }) {
           transition={{ type: 'spring', stiffness: 200, damping: 15 }}
           className="w-10 h-10 rounded-full flex items-center justify-center"
           style={{ background: 'rgba(16,185,129,0.2)', border: '1.5px solid #10B981', color: '#10B981', fontSize: '1rem', fontWeight: 900 }}>
-          ✓
+          <Check size={20} strokeWidth={2} />
         </motion.div>
         <p className="text-white font-black text-xl text-center">{name}</p>
         <p className="text-sm" style={{ color: 'rgba(255,255,255,0.62)' }}>
@@ -559,7 +560,7 @@ function SummaryScreen({ recipe, onSave, onClose }) {
               <img src={photoUrl} alt="מנה" className="w-full object-cover" style={{ maxHeight: 180 }} />
               <button onClick={() => setPhotoUrl(null)}
                 className="absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black"
-                style={{ background: 'rgba(0,0,0,0.6)', color: 'white' }}>✕</button>
+                style={{ background: 'rgba(0,0,0,0.6)', color: 'white' }}><X size={16} strokeWidth={1.5} /></button>
             </div>
           ) : (
             <div className="p-4">
@@ -568,12 +569,12 @@ function SummaryScreen({ recipe, onSave, onClose }) {
                 <motion.button whileTap={{ scale: 0.95 }} onClick={() => captureRef.current?.click()}
                   className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold"
                   style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
-                  <span>📷</span> צלם
+                  <Camera size={16} strokeWidth={1.5} /> צלם
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.95 }} onClick={() => uploadRef.current?.click()}
                   className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold"
                   style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
-                  <span>🖼</span> העלה
+                  <ImagePlus size={16} strokeWidth={1.5} /> העלה
                 </motion.button>
               </div>
             </div>
@@ -630,7 +631,7 @@ function SummaryScreen({ recipe, onSave, onClose }) {
           style={{
             background: saving ? 'rgba(16,185,129,0.3)' : '#10B981',
             color: '#fff',
-            boxShadow: saving ? 'none' : '0 0 20px rgba(16,185,129,0.35)',
+            
           }}>
           {saving ? '...' : 'שמור מתכון'}
         </motion.button>

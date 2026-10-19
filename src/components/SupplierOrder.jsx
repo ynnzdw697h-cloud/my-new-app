@@ -8,7 +8,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { SUPPLIERS } from '../data/suppliers';
 import { Card, Button, Input, Sheet } from './ui';
-import { ChevronRight, Plus, RotateCcw, Copy, FileDown, Clock, Trash2, Carrot, Fish, Package, Truck } from 'lucide-react';
+import { ChevronRight, Plus, RotateCcw, Copy, FileDown, Clock, Trash2, Carrot, Fish, Package, Truck, Apple, Leaf, Salad } from 'lucide-react';
 
 /* ─── Swipe-right-to-reveal delete (RTL) ─── */
 function SwipeableItemRow({ rowKey, swipedKey, setSwipedKey, onDeleteRequest, children }) {
@@ -49,10 +49,10 @@ const UNITS = ['יח׳', 'ק"ג'];
 
 const BASE_CATEGORIES = {
   aleh_aleh: [
-    { name: 'עגבניות ופירות', emoji: '🍅', items: ['ליים', 'תפוז', 'לימון', 'עגבניה אשכול', 'מגי', 'שרי תמר אדום', 'שרי עגול אדום', 'שרי צהוב', 'שרי מנומר', 'שושקה', 'תפוא באסטר', 'תפוא ראטה', 'אבוקדו', 'בננה', 'גרני סמית', 'אבטיח', 'מלון'] },
-    { name: 'ירקות', emoji: '🥦', items: ['זוקיני', 'גזר', 'כרוב לבן', 'בצל סגול', 'בצל לבן', 'כרישה', 'מלון', 'ארטישוק ירושלמי', 'גינגר', 'שאלוט מוארך', 'מלפון', 'מלפון ארומטו', 'מלפון בייבי', 'קישוא מיני', 'ברוקולי', 'שעועית ירוקה', 'חציל', 'סלק', 'צנונית', 'צנונית אבטיח', 'חזרת', 'שום קלוף', 'מנגולד', 'פטל', 'אוכמניות', 'תותים', 'פאקוס', 'תרד', 'סלרי'] },
-    { name: 'עלים ועשבי תיבול', emoji: '🌿', items: ['כוסברה', 'שמיר', 'זעתר', 'נענע', 'מרווה', 'עירית', 'סימין', 'בזיליקום', 'פסרוחזיליה', 'בצל ירוק', 'גרגיר', 'נקטרינה'] },
-    { name: 'חסות ועלים', emoji: '🥬', items: ['מיזונה', 'עלי חרדל', 'עלי שומר', 'לאליק', 'חסה קיסר', 'בייבי נאם', 'ריגלה', 'קייל', 'שומר בייבי', 'שעועית ירוקה ירוקה'] },
+    { name: 'עגבניות ופירות', Icon: Apple, items: ['ליים', 'תפוז', 'לימון', 'עגבניה אשכול', 'מגי', 'שרי תמר אדום', 'שרי עגול אדום', 'שרי צהוב', 'שרי מנומר', 'שושקה', 'תפוא באסטר', 'תפוא ראטה', 'אבוקדו', 'בננה', 'גרני סמית', 'אבטיח', 'מלון'] },
+    { name: 'ירקות', Icon: Carrot, items: ['זוקיני', 'גזר', 'כרוב לבן', 'בצל סגול', 'בצל לבן', 'כרישה', 'מלון', 'ארטישוק ירושלמי', 'גינגר', 'שאלוט מוארך', 'מלפון', 'מלפון ארומטו', 'מלפון בייבי', 'קישוא מיני', 'ברוקולי', 'שעועית ירוקה', 'חציל', 'סלק', 'צנונית', 'צנונית אבטיח', 'חזרת', 'שום קלוף', 'מנגולד', 'פטל', 'אוכמניות', 'תותים', 'פאקוס', 'תרד', 'סלרי'] },
+    { name: 'עלים ועשבי תיבול', Icon: Leaf, items: ['כוסברה', 'שמיר', 'זעתר', 'נענע', 'מרווה', 'עירית', 'סימין', 'בזיליקום', 'פסרוחזיליה', 'בצל ירוק', 'גרגיר', 'נקטרינה'] },
+    { name: 'חסות ועלים', Icon: Salad, items: ['מיזונה', 'עלי חרדל', 'עלי שומר', 'לאליק', 'חסה קיסר', 'בייבי נאם', 'ריגלה', 'קייל', 'שומר בייבי', 'שעועית ירוקה ירוקה'] },
   ],
   dagim:  [],
   yavesh: [],
@@ -157,7 +157,7 @@ export default function SupplierOrder() {
     for (const item of customRef.current) {
       if (hiddenRef.current.has(item.name)) continue;
       let cat = base.find(c => c.name === item.category);
-      if (!cat) { cat = { name: item.category, emoji: '➕', items: [] }; base.push(cat); }
+      if (!cat) { cat = { name: item.category, Icon: Plus, items: [] }; base.push(cat); }
       if (!cat.items.includes(item.name)) cat.items.push(item.name);
     }
     return base.filter(c => c.items.length > 0);
@@ -391,7 +391,7 @@ export default function SupplierOrder() {
               className="flex items-center gap-2.5 px-5 py-3.5"
               style={{ borderBottom: '1px solid var(--border)' }}
             >
-              <span className="text-lg">{cat.emoji}</span>
+              {cat.Icon && <cat.Icon size={18} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.62)', flexShrink: 0 }} />}
               <h3 className="text-h3 text-text-primary flex-1">{cat.name}</h3>
               {selectedInCat > 0 && (
                 <span className="text-label font-bold px-2.5 py-1 rounded-xl"
@@ -667,20 +667,20 @@ export default function SupplierOrder() {
         }}
       >
         <div style={{ textAlign: 'center', borderBottom: '2px solid #1e293b', paddingBottom: '20px', marginBottom: '28px' }}>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '4px' }}>🍽️ וילה אכדיה</div>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '4px' }}>וילה אכדיה</div>
           <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#334155' }}>
             הזמנה — {selectedSupplier.name}
           </div>
           <div style={{ fontSize: '14px', color: '#64748b', marginTop: '6px' }}>{todayLabel()}</div>
         </div>
 
-        {[...allCategories, ...(oneTimeItems.length > 0 ? [{ name: 'הזמנה חד פעמית', emoji: '⏱', items: oneTimeItems.map(i => i.name) }] : [])].map(cat => {
+        {[...allCategories, ...(oneTimeItems.length > 0 ? [{ name: 'הזמנה חד פעמית', Icon: Clock, items: oneTimeItems.map(i => i.name) }] : [])].map(cat => {
           const active = cat.items.filter(item => getQty(quantities, item) > 0);
           if (!active.length) return null;
           return (
             <div key={cat.name} style={{ marginBottom: '24px' }}>
               <div style={{ fontSize: '15px', fontWeight: 'bold', backgroundColor: '#f1f5f9', padding: '8px 14px', borderRadius: '6px', marginBottom: '8px', borderRight: '4px solid #0f172a' }}>
-                {cat.emoji} {cat.name}
+                {cat.name}
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
