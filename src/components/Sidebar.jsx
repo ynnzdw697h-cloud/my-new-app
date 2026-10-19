@@ -44,20 +44,20 @@ export default function Sidebar({ currentView, onNavigate, station, user, onLogo
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-2xl flex items-center justify-center"
-            style={{ background: 'rgba(212,237,49,0.10)', border: '1px solid rgba(212,237,49,0.20)' }}
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           >
-            <UtensilsCrossed size={20} strokeWidth={1.75} style={{ color: '#D4ED31' }} aria-hidden="true" />
+            <UtensilsCrossed size={20} strokeWidth={1.75} style={{ color: 'rgba(255,255,255,0.75)' }} aria-hidden="true" />
           </div>
           <div>
-            <div className="text-h3 text-text-primary font-black leading-tight">וילה אכדיה</div>
+            <div className="text-h3 text-text-primary font-bold leading-tight">וילה אכדיה</div>
             <div className="text-meta text-text-tertiary">מטבח</div>
           </div>
         </div>
         <button
           onClick={onClose}
           aria-label="סגור תפריט"
-          className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center
-                     transition-all duration-150 active:scale-90 press"
+          className="md:hidden w-12 h-12 rounded-xl flex items-center justify-center
+                     transition-colors duration-150 active:bg-white/10"
           style={{ background: 'rgba(255,255,255,0.06)' }}
         >
           <X size={17} strokeWidth={2} style={{ color: 'rgba(255,255,255,0.5)' }} />
@@ -105,13 +105,10 @@ export default function Sidebar({ currentView, onNavigate, station, user, onLogo
             <button
               key={id}
               onClick={() => onNavigate(id)}
-              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-right
-                         transition-all duration-150 active:scale-[0.98] press"
-              style={
-                active
-                  ? { background: st.color + '1A', border: `1px solid ${st.color}35` }
-                  : { background: 'transparent', border: '1px solid transparent' }
-              }
+              aria-current={active ? 'page' : undefined}
+              className="w-full flex items-center gap-3 px-4 min-h-[52px] rounded-xl text-right
+                         transition-colors duration-150 active:bg-white/10"
+              style={{ background: active ? 'rgba(255,255,255,0.07)' : 'transparent' }}
             >
               <Icon
                 size={18}
@@ -120,16 +117,10 @@ export default function Sidebar({ currentView, onNavigate, station, user, onLogo
               />
               <span
                 className="text-body font-semibold"
-                style={{ color: active ? st.color : 'rgba(255,255,255,0.65)' }}
+                style={{ color: active ? '#fff' : 'rgba(255,255,255,0.65)' }}
               >
                 {label}
               </span>
-              {active && (
-                <div
-                  className="mr-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ background: st.color }}
-                />
-              )}
             </button>
           );
         })}
@@ -140,9 +131,9 @@ export default function Sidebar({ currentView, onNavigate, station, user, onLogo
         <button
           onClick={onLogout}
           aria-label="התנתק"
-          className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-right
-                     transition-all duration-150 active:scale-[0.98] press"
-          style={{ background: 'transparent', border: '1px solid transparent' }}
+          className="w-full flex items-center gap-3 px-4 min-h-[52px] rounded-xl text-right
+                     transition-colors duration-150"
+          style={{ background: 'transparent' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.08)'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
         >

@@ -58,6 +58,8 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
 
   const { main: mainNav, more: moreNav } = navForProfile(role);
 
+  const inMore = moreNav.some(item => item.id === currentView);
+
   function go(id) {
     onNavigate(id);
     setShowMore(false);
@@ -91,19 +93,17 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
                 <button
                   key={item.id}
                   onClick={() => go(item.id)}
-                  className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-right transition-all active:scale-[0.97]"
-                  style={{
-                    background: currentView === item.id ? st.color + '22' : 'transparent',
-                    border: currentView === item.id ? `1px solid ${st.color}35` : '1px solid transparent',
-                  }}
+                  aria-current={currentView === item.id ? 'page' : undefined}
+                  className="w-full flex items-center gap-4 px-4 min-h-[64px] rounded-xl text-right transition-colors duration-150 active:bg-white/5"
+                  style={{ background: currentView === item.id ? 'rgba(255,255,255,0.06)' : 'transparent' }}
                 >
                   <span
                     className="w-11 h-11 flex items-center justify-center rounded-2xl flex-shrink-0"
                     style={{ background: 'rgba(255,255,255,0.06)' }}
                   >
-                    <item.Icon size={20} style={{ color: 'rgba(255,255,255,0.6)' }} strokeWidth={1.5} />
+                    <item.Icon size={20} style={{ color: currentView === item.id ? st.color : 'rgba(255,255,255,0.6)' }} strokeWidth={1.5} />
                   </span>
-                  <span className="text-white font-semibold text-base">{item.label}</span>
+                  <span className="text-lg font-medium" style={{ color: currentView === item.id ? st.color : '#fff' }}>{item.label}</span>
                 </button>
               ))}
 
@@ -111,7 +111,7 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
 
               <button
                 onClick={() => { setShowMore(false); onLogout(); }}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-right transition-all active:scale-[0.97]"
+                className="w-full flex items-center gap-4 px-4 min-h-[64px] rounded-xl text-right transition-colors duration-150 active:bg-white/5"
               >
                 <span
                   className="w-11 h-11 flex items-center justify-center rounded-2xl flex-shrink-0"
@@ -119,7 +119,7 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
                 >
                   <LogOut size={20} style={{ color: 'rgba(255,255,255,0.6)' }} strokeWidth={1.5} />
                 </span>
-                <span style={{ color: 'rgba(255,255,255,0.7)' }} className="font-medium text-base">
+                <span style={{ color: 'rgba(255,255,255,0.7)' }} className="font-medium text-lg">
                   התנתק
                 </span>
               </button>
@@ -146,19 +146,19 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
               <button
                 key={id}
                 onClick={() => go(id)}
-                className="flex flex-col items-center gap-1 flex-1 transition-all duration-200 active:scale-90 py-2"
+                aria-current={active ? 'page' : undefined}
+                className="relative flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors duration-150"
               >
-                <div
-                  className="w-12 h-12 flex items-center justify-center rounded-2xl transition-all duration-200"
-                  style={{
-                    background: active ? st.color : 'transparent',
-                    boxShadow: 'none',
-                  }}
-                >
+                {/* Active marker: a short line at the top of the tab */}
+                <span
+                  className="absolute top-0 h-[3px] w-8 rounded-b-full transition-opacity duration-150"
+                  style={{ background: st.color, opacity: active ? 1 : 0 }}
+                />
+                <div className="w-12 h-10 flex items-center justify-center">
                   <Icon active={active} color={st.color} />
                 </div>
                 <span
-                  className="text-sm font-semibold transition-colors duration-200"
+                  className="text-sm font-semibold transition-colors duration-150"
                   style={{ color: active ? st.color : 'rgba(255,255,255,0.62)' }}
                 >
                   {label}
@@ -170,17 +170,19 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
           {/* More — only shown when there are overflow items */}
           {moreNav.length > 0 && (<button
             onClick={() => setShowMore(v => !v)}
-            className="flex flex-col items-center gap-1 flex-1 transition-all duration-200 active:scale-90 py-2"
+            aria-expanded={showMore}
+            className="relative flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors duration-150"
           >
-            <div
-              className="w-12 h-12 flex items-center justify-center rounded-2xl transition-all duration-200"
-              style={{ background: showMore ? 'rgba(255,255,255,0.12)' : 'transparent' }}
-            >
-              <MoreIcon />
+            <span
+              className="absolute top-0 h-[3px] w-8 rounded-b-full transition-opacity duration-150"
+              style={{ background: st.color, opacity: inMore ? 1 : 0 }}
+            />
+            <div className="w-12 h-10 flex items-center justify-center">
+              <MoreIcon active={showMore || inMore} />
             </div>
             <span
-              className="text-sm font-semibold transition-colors duration-200"
-              style={{ color: showMore ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.35)' }}
+              className="text-sm font-semibold transition-colors duration-150"
+              style={{ color: inMore ? st.color : showMore ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.62)' }}
             >
               עוד
             </span>
@@ -193,8 +195,8 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
 
 /* ─── Icons ─── */
 
-function HomeIcon({ active }) {
-  const c = active ? '#fff' : 'rgba(255,255,255,0.5)';
+function HomeIcon({ active, color }) {
+  const c = active ? color : 'rgba(255,255,255,0.55)';
   return (
     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/>
@@ -203,8 +205,8 @@ function HomeIcon({ active }) {
   );
 }
 
-function CheckIcon({ active }) {
-  const c = active ? '#fff' : 'rgba(255,255,255,0.5)';
+function CheckIcon({ active, color }) {
+  const c = active ? color : 'rgba(255,255,255,0.55)';
   return (
     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 11l3 3L22 4"/>
@@ -213,8 +215,8 @@ function CheckIcon({ active }) {
   );
 }
 
-function BookIcon({ active }) {
-  const c = active ? '#fff' : 'rgba(255,255,255,0.5)';
+function BookIcon({ active, color }) {
+  const c = active ? color : 'rgba(255,255,255,0.55)';
   return (
     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
@@ -223,8 +225,8 @@ function BookIcon({ active }) {
   );
 }
 
-function CalIcon({ active }) {
-  const c = active ? '#fff' : 'rgba(255,255,255,0.5)';
+function CalIcon({ active, color }) {
+  const c = active ? color : 'rgba(255,255,255,0.55)';
   return (
     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -235,8 +237,8 @@ function CalIcon({ active }) {
   );
 }
 
-function NoteIcon({ active }) {
-  const c = active ? '#fff' : 'rgba(255,255,255,0.5)';
+function NoteIcon({ active, color }) {
+  const c = active ? color : 'rgba(255,255,255,0.55)';
   return (
     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -247,8 +249,8 @@ function NoteIcon({ active }) {
   );
 }
 
-function InboxIcon({ active }) {
-  const c = active ? '#fff' : 'rgba(255,255,255,0.5)';
+function InboxIcon({ active, color }) {
+  const c = active ? color : 'rgba(255,255,255,0.55)';
   return (
     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
@@ -257,8 +259,8 @@ function InboxIcon({ active }) {
   );
 }
 
-function TruckIcon({ active }) {
-  const c = active ? '#fff' : 'rgba(255,255,255,0.5)';
+function TruckIcon({ active, color }) {
+  const c = active ? color : 'rgba(255,255,255,0.55)';
   return (
     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="3" width="15" height="13"/>
@@ -269,9 +271,9 @@ function TruckIcon({ active }) {
   );
 }
 
-function MoreIcon() {
+function MoreIcon({ active }) {
   return (
-    <svg width="21" height="21" viewBox="0 0 24 24" fill="rgba(255,255,255,0.5)" stroke="none">
+    <svg width="21" height="21" viewBox="0 0 24 24" fill={active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.55)'} stroke="none">
       <circle cx="5"  cy="12" r="2"/>
       <circle cx="12" cy="12" r="2"/>
       <circle cx="19" cy="12" r="2"/>

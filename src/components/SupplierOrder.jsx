@@ -8,7 +8,8 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { SUPPLIERS } from '../data/suppliers';
 import { Card, Button, Input, Sheet } from './ui';
-import { ChevronRight, Plus, RotateCcw, Copy, FileDown, Clock, Trash2, Carrot, Fish, Package, Truck, Apple, Leaf, Salad } from 'lucide-react';
+import { UndoToast } from './PrepCelebrations';
+import { ChevronRight, Plus, RotateCcw, Copy, Check, FileDown, Clock, Trash2, Carrot, Fish, Package, Truck, Apple, Leaf, Salad } from 'lucide-react';
 
 /* ─── Swipe-right-to-reveal delete (RTL) ─── */
 function SwipeableItemRow({ rowKey, swipedKey, setSwipedKey, onDeleteRequest, children }) {
@@ -86,7 +87,9 @@ export default function SupplierOrder() {
   const [quantities,    setQuantities]    = useState({});
   const [customItems,   setCustomItems]   = useState([]);
   const [oneTimeItems,  setOneTimeItems]  = useState([]);
-  const [confirmReset,  setConfirmReset]  = useState(false);
+  const [toast,         setToast]         = useState(null); // { id, text, undoable, undo }
+  const toastTimer = useRef(null);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
   const [copyDone,      setCopyDone]      = useState(false);
   const [swipedKey,     setSwipedKey]     = useState(null);
   const [confirmDel,    setConfirmDel]    = useState(null); // { key, label, onConfirm }
@@ -182,10 +185,29 @@ export default function SupplierOrder() {
     persistQty({ ...qRef.current, [item]: { qty: getQty(qRef.current, item), unit: nextUnit } });
   }
 
+  // Reset right away; Undo restores the quantities and the one-time items
   function resetAll() {
+    const prevQty     = qRef.current;
+    const prevOneTime = oneTimeRef.current;
     persistQty({});
     setOneTimeItems([]); oneTimeRef.current = [];
-    setConfirmReset(false);
+    clearTimeout(toastTimer.current);
+    setToast({
+      id: Date.now(),
+      text: 'ההזמנה אופסה',
+      undoable: true,
+      undo: () => {
+        persistQty(prevQty);
+        setOneTimeItems(prevOneTime); oneTimeRef.current = prevOneTime;
+      },
+    });
+    toastTimer.current = setTimeout(() => setToast(null), 5000);
+  }
+
+  function handleUndo() {
+    toast?.undo?.();
+    clearTimeout(toastTimer.current);
+    setToast(null);
   }
 
   function openAddForm() {
@@ -354,12 +376,12 @@ export default function SupplierOrder() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => { setSelectedSupplier(null); setOneTimeItems([]); setShowAddForm(false); }}
-            className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90"
+            onClick={() => { setSelectedSupplier(null); setOneTimeItems([]); setShowAddForm(false); setToast(null); }}
+            className="w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-150 active:bg-white/10"
             style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
             aria-label="חזרה לרשימת ספקים"
           >
-            <ChevronRight size={18} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.55)' }} />
+            <ChevronRight size={20} strokeWidth={1.75} style={{ color: 'rgba(255,255,255,0.75)' }} />
           </button>
           <div>
             <h2 className="text-h2 text-text-primary flex items-center gap-2">
@@ -376,7 +398,8 @@ export default function SupplierOrder() {
           variant="ghost"
           size="sm"
           icon={RotateCcw}
-          onClick={() => setConfirmReset(true)}
+          onClick={resetAll}
+          disabled={totalItems === 0 && oneTimeItems.length === 0}
         >
           איפוס
         </Button>
@@ -394,10 +417,7 @@ export default function SupplierOrder() {
               {cat.Icon && <cat.Icon size={18} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.62)', flexShrink: 0 }} />}
               <h3 className="text-h3 text-text-primary flex-1">{cat.name}</h3>
               {selectedInCat > 0 && (
-                <span className="text-label font-bold px-2.5 py-1 rounded-xl"
-                  style={{ background: 'rgba(212,237,49,0.12)', color: '#d4ed31' }}>
-                  {selectedInCat}
-                </span>
+                <span className="text-base text-text-secondary tabular-nums">{selectedInCat} נבחרו</span>
               )}
             </div>
             <div>
@@ -450,14 +470,11 @@ export default function SupplierOrder() {
         <Card padded={false}>
           <div
             className="flex items-center gap-2.5 px-5 py-3.5"
-            style={{
-              borderBottom: '1px solid var(--border)',
-              background: 'rgba(251,191,36,0.06)',
-            }}
+            style={{ borderBottom: '1px solid var(--border)' }}
           >
-            <Clock size={16} strokeWidth={1.5} style={{ color: '#fbbf24' }} />
-            <h3 className="text-h3 flex-1" style={{ color: '#fbbf24' }}>הזמנה חד פעמית</h3>
-            <span className="text-meta text-text-tertiary">יימחקו לאחר שליחה</span>
+            <Clock size={18} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.62)' }} />
+            <h3 className="text-h3 text-text-primary flex-1">הזמנה חד פעמית</h3>
+            <span className="text-base text-text-secondary">יימחקו אחרי שליחה</span>
           </div>
           <div>
             {oneTimeItems.map((item, i) => {
@@ -502,13 +519,13 @@ export default function SupplierOrder() {
       {/* ── Add item button ── */}
       <button
         onClick={openAddForm}
-        className="w-full py-4 rounded-3xl text-label font-semibold transition-all duration-150 active:scale-[0.98]"
+        className="w-full min-h-[56px] rounded-xl text-base font-semibold transition-colors duration-150 active:bg-white/5"
         style={{
-          border: '1px dashed rgba(255,255,255,0.18)',
-          color: 'rgba(255,255,255,0.62)',
+          border: '1px dashed rgba(255,255,255,0.2)',
+          color: 'rgba(255,255,255,0.8)',
         }}
       >
-        <Plus size={16} className="inline ml-2" strokeWidth={2} />
+        <Plus size={18} className="inline ml-2" strokeWidth={2} />
         הוסף מוצר
       </button>
 
@@ -544,17 +561,18 @@ export default function SupplierOrder() {
           {/* Permanent toggle */}
           <button
             onClick={() => setAddPermanent(v => !v)}
-            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-150 text-right"
+            aria-pressed={addPermanent}
+            className="w-full flex items-center gap-3 px-4 min-h-[64px] rounded-xl transition-colors duration-150 text-right"
             style={{
-              background: addPermanent ? 'rgba(96,165,250,0.1)' : 'var(--bg-inset)',
-              border: `1px solid ${addPermanent ? 'rgba(96,165,250,0.4)' : 'var(--border)'}`,
+              background: addPermanent ? 'rgba(255,255,255,0.08)' : 'var(--bg-inset)',
+              border: `1px solid ${addPermanent ? 'rgba(255,255,255,0.3)' : 'var(--border)'}`,
             }}
           >
             <div
-              className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all duration-150"
+              className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-colors duration-150"
               style={{
-                background: addPermanent ? '#60a5fa' : 'transparent',
-                border: `2px solid ${addPermanent ? '#60a5fa' : 'rgba(255,255,255,0.3)'}`,
+                background: addPermanent ? '#fff' : 'transparent',
+                border: `2px solid ${addPermanent ? '#fff' : 'rgba(255,255,255,0.3)'}`,
               }}
             >
               {addPermanent && (
@@ -573,7 +591,7 @@ export default function SupplierOrder() {
 
           <div className="flex gap-3 pt-1">
             <Button
-              variant="primary"
+              variant="secondary"
               fullWidth
               onClick={addItem}
               disabled={!addName.trim()}
@@ -591,20 +609,7 @@ export default function SupplierOrder() {
         </div>
       </Sheet>
 
-      {/* ── Reset confirmation sheet ── */}
-      <Sheet
-        open={confirmReset}
-        onClose={() => setConfirmReset(false)}
-        title="לאפס את כל ההזמנה?"
-      >
-        <p className="text-body text-text-secondary mb-6">
-          כל הכמויות יתאפסו לאפס. לא ניתן לבטל פעולה זו.
-        </p>
-        <div className="flex gap-3">
-          <Button variant="danger" fullWidth onClick={resetAll}>כן, אפס הכל</Button>
-          <Button variant="ghost" fullWidth onClick={() => setConfirmReset(false)}>ביטול</Button>
-        </div>
-      </Sheet>
+      <UndoToast toast={toast} onUndo={handleUndo} position="bottom-[calc(170px+env(safe-area-inset-bottom))] md:bottom-28" />
 
       {/* ── Delete confirmation sheet ── */}
       <Sheet
@@ -638,15 +643,15 @@ export default function SupplierOrder() {
       >
         <div className="flex gap-3 max-w-lg mx-auto">
           <Button
-            variant={copyDone ? 'primary' : 'secondary'}
+            variant="secondary"
             fullWidth
-            icon={Copy}
+            icon={copyDone ? Check : Copy}
             onClick={copyOrder}
           >
-            {copyDone ? 'הועתק!' : 'העתק הזמנה'}
+            {copyDone ? 'הועתק' : 'העתק הזמנה'}
           </Button>
           <Button
-            variant="primary"
+            variant="secondary"
             fullWidth
             icon={FileDown}
             onClick={downloadPDF}
@@ -711,24 +716,25 @@ export default function SupplierOrder() {
 function ItemRow({ item, qty, unit, active, isLast, onMinus, onPlus, onToggleUnit }) {
   return (
     <div
-      className="flex items-center gap-2 px-4 py-3 transition-colors duration-150"
+      className="flex items-center gap-2 px-4 py-2 min-h-[64px] transition-colors duration-150"
       style={{
         borderBottom: isLast ? 'none' : '1px solid var(--border-subtle)',
         background: active ? 'rgba(255,255,255,0.03)' : 'transparent',
       }}
     >
-      <span className={`flex-1 text-body font-medium ${active ? 'text-text-primary' : 'text-text-tertiary'}`}>
+      <span className={`flex-1 min-w-0 text-lg font-medium ${active ? 'text-text-primary' : 'text-text-secondary'}`}>
         {item}
       </span>
 
       {/* Unit toggle */}
       <button
         onClick={onToggleUnit}
-        className="flex-shrink-0 w-12 h-9 rounded-xl text-meta font-bold transition-all duration-150 touch-manipulation select-none"
+        aria-label={`יחידה: ${unit}`}
+        className="flex-shrink-0 w-14 h-12 rounded-xl text-base font-semibold transition-colors duration-150 touch-manipulation select-none"
         style={{
-          background: unit === 'ק"ג' ? 'rgba(251,191,36,0.15)' : 'var(--bg-inset)',
-          border: `1px solid ${unit === 'ק"ג' ? 'rgba(251,191,36,0.4)' : 'var(--border)'}`,
-          color: unit === 'ק"ג' ? '#fbbf24' : 'var(--text-tertiary)',
+          background: unit === 'ק"ג' ? 'rgba(255,255,255,0.12)' : 'var(--bg-inset)',
+          border: `1px solid ${unit === 'ק"ג' ? 'rgba(255,255,255,0.3)' : 'var(--border)'}`,
+          color: unit === 'ק"ג' ? '#fff' : 'var(--text-2)',
         }}
       >
         {unit}
@@ -739,22 +745,24 @@ function ItemRow({ item, qty, unit, active, isLast, onMinus, onPlus, onToggleUni
         <button
           onClick={onMinus}
           disabled={qty === 0}
-          className="w-11 h-11 rounded-xl flex items-center justify-center font-black text-2xl
-                     text-text-primary transition-colors duration-100 disabled:opacity-25
-                     disabled:cursor-not-allowed select-none touch-manipulation active:scale-90"
+          aria-label={`הפחת ${item}`}
+          className="w-12 h-12 rounded-xl flex items-center justify-center font-medium text-2xl
+                     text-text-primary transition-colors duration-150 disabled:opacity-25
+                     disabled:cursor-not-allowed select-none touch-manipulation active:bg-white/10"
           style={{ background: 'var(--bg-inset)', border: '1px solid var(--border)' }}
         >
           −
         </button>
         <span
-          className={`w-8 text-center font-black text-xl tabular-nums select-none ${active ? 'text-text-primary' : 'text-text-tertiary'}`}
+          className={`w-9 text-center font-bold text-xl tabular-nums select-none ${active ? 'text-text-primary' : 'text-text-tertiary'}`}
         >
           {active ? qty : '·'}
         </span>
         <button
           onClick={onPlus}
-          className="w-11 h-11 rounded-xl flex items-center justify-center font-black text-2xl
-                     text-text-primary transition-colors duration-100 select-none touch-manipulation active:scale-90"
+          aria-label={`הוסף ${item}`}
+          className="w-12 h-12 rounded-xl flex items-center justify-center font-medium text-2xl
+                     text-text-primary transition-colors duration-150 select-none touch-manipulation active:bg-white/10"
           style={{ background: 'var(--bg-inset)', border: '1px solid var(--border)' }}
         >
           +
@@ -766,16 +774,18 @@ function ItemRow({ item, qty, unit, active, isLast, onMinus, onPlus, onToggleUni
 
 /* ─── Supplier icon tile (vector icon instead of emoji) ─── */
 const SUPPLIER_ICONS = {
-  aleh_aleh: { Icon: Carrot,  color: '#22C55E' },
-  dagim:     { Icon: Fish,    color: '#38BDF8' },
-  yavesh:    { Icon: Package, color: '#F59E0B' },
+  aleh_aleh: { Icon: Carrot },
+  dagim:     { Icon: Fish },
+  yavesh:    { Icon: Package },
 };
 
 function SupplierIcon({ supplier, size = 'md' }) {
-  const { Icon, color } = SUPPLIER_ICONS[supplier.id] || { Icon: Truck, color: '#A78BFA' };
+  // Neutral: color in this app is reserved for status and station
+  const { Icon } = SUPPLIER_ICONS[supplier.id] || { Icon: Truck };
+  const color = 'rgba(255,255,255,0.75)';
   const box = size === 'sm' ? 'w-9 h-9 rounded-xl' : 'w-14 h-14 rounded-2xl';
   return (
-    <span className={`${box} flex items-center justify-center flex-shrink-0`} style={{ background: color + '1F' }} aria-hidden="true">
+    <span className={`${box} flex items-center justify-center flex-shrink-0`} style={{ background: 'rgba(255,255,255,0.06)' }} aria-hidden="true">
       <Icon size={size === 'sm' ? 18 : 26} strokeWidth={1.75} style={{ color }} />
     </span>
   );

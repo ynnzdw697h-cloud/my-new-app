@@ -34,7 +34,7 @@ function EditableRow({ editing, label, onDeleteRequest, children }) {
             <button
               onClick={onDeleteRequest}
               aria-label={`מחק ${label}`}
-              className="w-14 h-14 rounded-2xl flex items-center justify-center active:scale-90 transition-transform"
+              className="w-14 h-14 rounded-xl flex items-center justify-center"
               style={{ background: '#DC2626', color: '#fff', }}
             >
               <Trash2 size={22} strokeWidth={2} />
@@ -96,28 +96,29 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
-        transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl p-6 space-y-5"
         style={{ background: '#1a1a23', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '92vh', overflowY: 'auto' }}
         dir="rtl"
         onClick={e => e.stopPropagation()}
       >
         <div className="w-10 h-1 rounded-full mx-auto mb-1" style={{ background: 'rgba(255,255,255,0.18)' }} />
-        <h2 className="text-white font-black text-xl text-center">הוספת הכנה</h2>
+        <h2 className="text-white font-bold text-xl text-center">הוספת הכנה</h2>
 
         {/* Shift toggle */}
         <div>
-          <p className="text-sm font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>משמרת</p>
+          <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>משמרת</p>
           <div className="flex gap-2">
             {['בוקר', 'צהריים'].map(s => (
               <button
                 key={s}
                 onClick={() => setShift(s)}
-                className="flex-1 py-2.5 rounded-2xl text-sm font-bold transition-all"
+                aria-pressed={shift === s}
+                className="flex-1 min-h-[48px] rounded-xl text-base font-semibold transition-colors duration-150"
                 style={{
-                  background: shift === s ? stationColor + '22' : 'rgba(255,255,255,0.05)',
-                  border: shift === s ? `1px solid ${stationColor}55` : '1px solid rgba(255,255,255,0.08)',
-                  color: shift === s ? stationColor : 'rgba(255,255,255,0.62)',
+                  background: shift === s ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
+                  border: shift === s ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                  color: shift === s ? '#fff' : 'rgba(255,255,255,0.62)',
                 }}
               >
                 {s === 'בוקר' ? 'הכנות בוקר' : 'הכנות צהריים'}
@@ -128,28 +129,28 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
 
         {/* Task name */}
         <div>
-          <p className="text-sm font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>שם ההכנה *</p>
+          <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>שם ההכנה *</p>
           <input
             autoFocus
             type="text"
             value={taskName}
             onChange={e => setTaskName(e.target.value)}
             placeholder="לדוגמה: סלט קצוץ"
-            className="w-full px-4 py-3 rounded-2xl text-white text-sm focus:outline-none"
+            className="w-full px-4 py-3 rounded-xl text-white text-lg min-h-[52px] focus:outline-none"
             style={{ ...inputStyle, '::placeholder': { color: 'rgba(255,255,255,0.5)' } }}
           />
         </div>
 
         {/* Qty + unit */}
         <div>
-          <p className="text-sm font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>כמות ויחידות</p>
+          <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>כמות ויחידות</p>
           <div className="flex gap-2">
             <input
               type="text"
               value={targetQty}
               onChange={e => setTargetQty(e.target.value)}
               placeholder="5"
-              className="w-20 px-4 py-3 rounded-2xl text-white text-sm focus:outline-none text-center"
+              className="w-20 px-4 py-3 rounded-xl text-white text-lg min-h-[52px] focus:outline-none text-center"
               style={inputStyle}
             />
             <input
@@ -157,7 +158,7 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
               value={targetUnit}
               onChange={e => setTargetUnit(e.target.value)}
               placeholder="קילו, יחידות, מגש..."
-              className="flex-1 px-4 py-3 rounded-2xl text-white text-sm focus:outline-none"
+              className="flex-1 px-4 py-3 rounded-xl text-white text-lg min-h-[52px] focus:outline-none"
               style={inputStyle}
             />
           </div>
@@ -165,36 +166,37 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
 
         {/* Notes */}
         <div>
-          <p className="text-sm font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>הערות</p>
+          <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>הערות</p>
           <textarea
             value={notes}
             onChange={e => setNotes(e.target.value)}
             placeholder="הוראות מיוחדות, טמפרטורה, ספק..."
             rows={2}
-            className="w-full px-4 py-3 rounded-2xl text-white text-sm focus:outline-none resize-none"
+            className="w-full px-4 py-3 rounded-xl text-white text-lg min-h-[52px] focus:outline-none resize-none"
             style={inputStyle}
           />
         </div>
 
         {/* Sub-items builder */}
         <div>
-          <p className="text-sm font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>תת-הכנות — צ׳קליסט (אופציונלי)</p>
+          <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>תת-הכנות — צ׳קליסט (אופציונלי)</p>
           {subItems.length > 0 && (
             <div className="mb-2 space-y-1.5">
               {subItems.map((sub, idx) => (
                 <div
                   key={sub.id}
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-2xl"
+                  className="flex items-center gap-3 px-4 min-h-[52px] rounded-xl"
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
                 >
                   <div
                     className="w-5 h-5 rounded-lg border-2 flex-shrink-0"
                     style={{ borderColor: 'rgba(255,255,255,0.2)' }}
                   />
-                  <span className="flex-1 text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>{sub.label}</span>
+                  <span className="flex-1 text-lg" style={{ color: 'rgba(255,255,255,0.85)' }}>{sub.label}</span>
                   <button
                     onClick={() => setSubItems(prev => prev.filter((_, i) => i !== idx))}
-                    className="text-lg transition-colors flex-shrink-0"
+                    aria-label={`הסר ${sub.label}`}
+                    className="w-12 h-12 -ml-3 flex items-center justify-center flex-shrink-0"
                     style={{ color: 'rgba(255,255,255,0.62)' }}
                   >
                     <X size={18} strokeWidth={1.5} />
@@ -210,14 +212,14 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
               onChange={e => setSubInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addSubItem()}
               placeholder="הוסף פריט לרשימה..."
-              className="flex-1 px-4 py-3 rounded-2xl text-white text-sm focus:outline-none"
+              className="flex-1 px-4 py-3 rounded-xl text-white text-lg min-h-[52px] focus:outline-none"
               style={inputStyle}
             />
             <button
               onClick={addSubItem}
               disabled={!subInput.trim()}
-              className="px-4 py-3 rounded-2xl text-sm font-bold transition-all disabled:opacity-35"
-              style={{ background: stationColor + '22', color: stationColor, border: `1px solid ${stationColor}35` }}
+              className="px-4 min-h-[52px] rounded-xl text-base font-semibold transition-colors duration-150 disabled:opacity-35"
+              style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.12)' }}
             >
               + הוסף
             </button>
@@ -228,11 +230,8 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
         <button
           onClick={handleSubmit}
           disabled={!taskName.trim()}
-          className="w-full py-4 rounded-2xl font-black text-white text-base transition-all disabled:opacity-35"
-          style={{
-            background: taskName.trim() ? stationColor : 'rgba(255,255,255,0.08)',
-            
-          }}
+          className="w-full min-h-[56px] rounded-xl font-semibold text-white text-lg transition-colors duration-150 disabled:opacity-35"
+          style={{ background: taskName.trim() ? stationColor : 'rgba(255,255,255,0.08)' }}
         >
           <span className="inline-flex items-center gap-2"><Check size={18} strokeWidth={2} />הוסף הכנה</span>
         </button>

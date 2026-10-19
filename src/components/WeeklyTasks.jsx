@@ -7,10 +7,11 @@ import { useFirestoreSet } from '../hooks/useFirestoreSet';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { useServiceDay, getWeekStart, getDayIndex } from '../hooks/usePrepState';
 import { Sheet, Button, Input, EmptyState } from './ui';
-import { StickyProgress, CheerToast } from './PrepCelebrations';
+import { StickyProgress, StatusMark, UndoToast } from './PrepCelebrations';
 
 const DAY_SHORT = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 const ALL = 'הכל';
+const TOAST_MS = 5000;
 
 function vibrate(pattern) { window.navigator?.vibrate?.(pattern); }
 
@@ -23,12 +24,10 @@ export default function WeeklyTasks({ station }) {
   const [completed, setCompleted] = useFirestoreSet(`weekly_${station}_${weekStart}`);
   const [dayIdx, setDayIdx]       = useState(todayIdx);
   const [category, setCategory]   = useState(ALL);
-  const [confirmReset, setConfirmReset] = useState(false);
   const [customTasks, setCustomTasks] = useFirestoreArray(`custom_weekly_${station}`);
   const [hiddenIds, setHiddenIds]     = useFirestoreSet(`hidden_weekly_${station}`);
   const [editing, setEditing]         = useState(false);
   const [showAdd, setShowAdd]         = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(null); // task
   const [toast, setToast]         = useState(null);
   const toastTimer                = useRef(null);
 
@@ -51,30 +50,40 @@ export default function WeeklyTasks({ station }) {
     .filter(c => c !== ALL && (activeCat === ALL || activeCat === c))
     .map(c => ({ name: c, tasks: dayTasks.filter(t => t.category === c) }));
 
-  const showToast = useCallback((text, color) => {
+  // Bottom toast; with `undo` it shows a "ביטול" button for 5 seconds
+  const showToast = useCallback((text, undo) => {
     clearTimeout(toastTimer.current);
-    setToast({ id: Date.now(), text, color });
-    vibrate([20, 40, 20]);
-    toastTimer.current = setTimeout(() => setToast(null), 2200);
+    setToast({ id: Date.now(), text, undoable: !!undo, undo });
+    toastTimer.current = setTimeout(() => setToast(null), TOAST_MS);
   }, []);
+
+  function handleUndo() {
+    toast?.undo?.();
+    clearTimeout(toastTimer.current);
+    setToast(null);
+  }
+
+  const setDone = (id, want) => setCompleted(prev => {
+    const next = new Set(prev);
+    want ? next.add(id) : next.delete(id);
+    return next;
+  });
 
   function toggleTask(task) {
     const wasDone = completed.has(task.id);
     vibrate(15);
-    setCompleted(prev => {
-      const next = new Set(prev);
-      wasDone ? next.delete(task.id) : next.add(task.id);
-      return next;
-    });
+    setDone(task.id, !wasDone);
     if (wasDone) return;
 
-    // Celebrate the biggest thing this tap just finished.
+    // Message states what's left, never a cheer
     const remaining = list => list.filter(t => t.id !== task.id && !completed.has(t.id)).length;
-    if (remaining(allTasks) === 0) return showToast('כל השבוע הושלם!', '#10B981');
-    if (remaining(dayTasks) === 0)     return showToast(`יום ${day} — סגור`, '#10B981');
-    if (remaining(dayTasks.filter(t => t.category === task.category)) === 0) {
-      showToast(`${task.category} — סגור`, st.color);
-    }
+    const leftWeek = remaining(allTasks);
+    const leftDay  = remaining(dayTasks);
+    const text = leftWeek === 0 ? `${task.task} ✓ · השבוע הושלם`
+      : leftDay === 0 ? `${task.task} ✓ · יום ${day} הושלם · נשארו ${leftWeek} השבוע`
+      : `${task.task} ✓ · נשארו ${leftDay} היום`;
+    if (leftDay === 0) vibrate([30, 50, 30]);
+    showToast(text, () => setDone(task.id, false));
   }
 
   function addTask({ task, day: taskDay, category: taskCategory, notes }) {
@@ -89,15 +98,34 @@ export default function WeeklyTasks({ station }) {
     }]);
     setShowAdd(false);
     setDayIdx(DAYS.indexOf(taskDay));
-    showToast('המשימה נוספה', st.color);
+    showToast('המשימה נוספה');
   }
 
-  function executeDelete() {
-    const task = confirmDelete;
-    if (!task) return;
-    if (task.isCustom) setCustomTasks(prev => prev.filter(t => t.id !== task.id));
-    else setHiddenIds(prev => new Set(prev).add(task.id));
-    setConfirmDelete(null);
+  // Delete right away, Undo brings it back (fixed tasks are only hidden)
+  function deleteTask(task) {
+    if (task.isCustom) {
+      const index = customTasks.findIndex(t => t.id === task.id);
+      setCustomTasks(prev => prev.filter(t => t.id !== task.id));
+      showToast(`${task.task} נמחקה`, () => setCustomTasks(prev => {
+        if (prev.some(t => t.id === task.id)) return prev;
+        const next = [...prev];
+        next.splice(Math.min(index, next.length), 0, task);
+        return next;
+      }));
+    } else {
+      setHiddenIds(prev => new Set(prev).add(task.id));
+      showToast(`${task.task} נמחקה`, () => setHiddenIds(prev => {
+        const next = new Set(prev);
+        next.delete(task.id);
+        return next;
+      }));
+    }
+  }
+
+  function resetWeek() {
+    const before = new Set(completed);
+    setCompleted(new Set());
+    showToast('הסימונים של השבוע אופסו', () => setCompleted(before));
   }
 
   function selectDay(i) {
@@ -124,25 +152,26 @@ export default function WeeklyTasks({ station }) {
                 key={d}
                 onClick={() => selectDay(i)}
                 aria-label={`יום ${d}, נותרו ${left}`}
-                className="flex flex-col items-center justify-center gap-1 rounded-2xl min-h-[72px] pt-1 active:scale-95 transition-transform"
+                aria-pressed={selected}
+                className="flex flex-col items-center justify-center gap-1 rounded-xl min-h-[72px] pt-1 transition-colors duration-150"
                 style={selected
-                  ? { background: st.color }
-                  : { background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+                  ? { background: 'rgba(255,255,255,0.10)', border: `2px solid ${st.color}` }
+                  : { background: 'var(--bg-surface)', border: '2px solid var(--border)' }}
               >
-                <span className="text-sm font-bold" style={{ color: selected ? '#fff' : 'rgba(255,255,255,0.6)' }}>
+                <span className="text-sm font-semibold" style={{ color: selected ? '#fff' : 'rgba(255,255,255,0.6)' }}>
                   {DAY_SHORT[i]}
                 </span>
                 {allDone ? (
-                  <Check size={20} strokeWidth={3} style={{ color: selected ? '#fff' : '#34D399' }} />
+                  <Check size={20} strokeWidth={2.5} style={{ color: '#10B981' }} />
                 ) : (
-                  <span className="text-lg font-black tabular-nums leading-none" style={{ color: selected ? '#fff' : 'rgba(255,255,255,0.9)' }}>
+                  <span className="text-lg font-bold tabular-nums leading-none text-text-primary">
                     {left}
                   </span>
                 )}
                 {/* Today marker — always reserves its row so all days align */}
                 <span
                   className="w-1.5 h-1.5 rounded-full"
-                  style={{ background: i === todayIdx ? (selected ? '#fff' : st.color) : 'transparent' }}
+                  style={{ background: i === todayIdx ? st.color : 'transparent' }}
                 />
               </button>
             );
@@ -151,9 +180,9 @@ export default function WeeklyTasks({ station }) {
 
         {/* ── Day title ── */}
         <div className="flex items-baseline justify-between px-1">
-          <h2 className="text-2xl font-black text-white">
+          <h2 className="text-2xl font-bold text-white">
             יום {day}
-            {dayIdx === todayIdx && <span className="text-base font-bold mr-2" style={{ color: st.color }}>· היום</span>}
+            {dayIdx === todayIdx && <span className="text-base font-medium mr-2 text-text-secondary">· היום</span>}
           </h2>
           <span className="text-base font-semibold tabular-nums text-text-secondary">
             {dayDone}/{dayTasks.length} הושלמו
@@ -164,19 +193,21 @@ export default function WeeklyTasks({ station }) {
         <div className="flex gap-2">
           <button
             onClick={() => setShowAdd(true)}
-            className="flex-1 flex items-center justify-center gap-2 min-h-[48px] rounded-2xl text-base font-bold active:scale-[0.98] transition-transform"
-            style={{ background: st.color + '18', border: `1px solid ${st.color}40`, color: st.color }}
+            className="flex-1 flex items-center justify-center gap-2 min-h-[48px] rounded-xl text-base font-semibold transition-colors duration-150 active:bg-white/10"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)' }}
           >
-            <Plus size={20} strokeWidth={2.5} aria-hidden="true" />
+            <Plus size={20} strokeWidth={2} aria-hidden="true" />
             הוסף משימה
           </button>
           <button
             onClick={() => setEditing(v => !v)}
             aria-pressed={editing}
-            className="flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-2xl text-base font-bold active:scale-[0.98] transition-transform"
-            style={editing
-              ? { background: 'rgba(255,255,255,0.92)', color: '#121212' }
-              : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.1)' }}
+            className="flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-xl text-base font-semibold transition-colors duration-150"
+            style={{
+              background: editing ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
+              color: 'rgba(255,255,255,0.85)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
           >
             {editing ? <Check size={18} strokeWidth={2.5} aria-hidden="true" /> : <Pencil size={18} strokeWidth={2} aria-hidden="true" />}
             {editing ? 'סיום' : 'עריכה'}
@@ -193,10 +224,11 @@ export default function WeeklyTasks({ station }) {
                 <button
                   key={c}
                   onClick={() => setCategory(c)}
-                  className="flex-shrink-0 flex items-center gap-1.5 px-4 min-h-[40px] rounded-xl text-sm font-bold active:scale-95 transition-transform"
+                  aria-pressed={active}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-4 min-h-[44px] rounded-xl text-base font-medium transition-colors duration-150"
                   style={active
-                    ? { background: 'rgba(255,255,255,0.92)', color: '#121212' }
-                    : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    ? { background: 'rgba(255,255,255,0.14)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)' }
+                    : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
                 >
                   {c}
                   <span className="tabular-nums" style={{ opacity: 0.55 }}>{count}</span>
@@ -218,7 +250,7 @@ export default function WeeklyTasks({ station }) {
                 tasks={g.tasks}
                 completed={completed}
                 onToggle={toggleTask}
-                onDelete={setConfirmDelete}
+                onDelete={deleteTask}
                 editing={editing}
                 color={st.color}
                 station={station}
@@ -242,38 +274,15 @@ export default function WeeklyTasks({ station }) {
         {/* ── Reset (rarely needed — the list resets itself every Sunday) ── */}
         <div className="flex justify-center pt-4 pb-2">
           <button
-            onClick={() => setConfirmReset(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-text-tertiary min-h-[44px]"
+            onClick={resetWeek}
+            disabled={weekDone === 0}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-base font-medium text-text-tertiary min-h-[48px] disabled:opacity-40"
           >
             <RotateCcw size={14} strokeWidth={1.75} />
             איפוס שבוע
           </button>
         </div>
       </div>
-
-      <Sheet open={confirmReset} onClose={() => setConfirmReset(false)} title="לאפס את המשימות השבועיות?">
-        <p className="text-body text-text-secondary mb-2">
-          כל הסימונים של השבוע הזה יימחקו — לכל הצוות.
-        </p>
-        <p className="text-body text-text-tertiary mb-6">
-          לא צריך לאפס ידנית: הרשימה מתאפסת לבד בכל יום ראשון.
-        </p>
-        <div className="flex gap-3">
-          <Button variant="danger" fullWidth onClick={() => { setCompleted(new Set()); setConfirmReset(false); }}>כן, אפס</Button>
-          <Button variant="ghost" fullWidth onClick={() => setConfirmReset(false)}>ביטול</Button>
-        </div>
-      </Sheet>
-
-      <Sheet open={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="למחוק את המשימה?">
-        <p className="text-h3 text-text-primary font-bold mb-1">{confirmDelete?.task}</p>
-        <p className="text-body text-text-secondary mb-6">
-          {confirmDelete?.isCustom ? 'המשימה תימחק מהרשימה.' : 'זו משימה קבועה — אפשר לשחזר אותה במצב עריכה.'}
-        </p>
-        <div className="flex gap-3">
-          <Button variant="danger" fullWidth onClick={executeDelete}>כן, מחק</Button>
-          <Button variant="ghost" fullWidth onClick={() => setConfirmDelete(null)}>ביטול</Button>
-        </div>
-      </Sheet>
 
       <AddWeeklySheet
         open={showAdd}
@@ -283,7 +292,7 @@ export default function WeeklyTasks({ station }) {
         onClose={() => setShowAdd(false)}
       />
 
-      <CheerToast toast={toast} />
+      <UndoToast toast={toast} onUndo={handleUndo} />
     </div>
   );
 }
@@ -364,7 +373,7 @@ function AddWeeklySheet({ open, defaultDay, color, onAdd, onClose }) {
           onChange={e => setNotes(e.target.value)}
         />
 
-        <Button fullWidth onClick={submit} disabled={!name} icon={Plus}>
+        <Button variant="secondary" fullWidth onClick={submit} disabled={!name} icon={Plus}>
           הוסף משימה
         </Button>
       </div>
@@ -380,18 +389,13 @@ function TaskGroup({ name, tasks, completed, onToggle, onDelete, editing, color,
 
   return (
     <section
-      className="rounded-3xl overflow-hidden"
-      style={{ background: 'var(--bg-surface)', border: `1px solid ${full ? 'rgba(52,211,153,0.35)' : 'var(--border)'}` }}
+      className="rounded-xl overflow-hidden"
+      style={{ background: 'var(--bg-card-solid)', border: `1px solid ${full ? 'rgba(16,185,129,0.35)' : 'var(--border)'}` }}
     >
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-        <h3 className="text-lg font-black text-white">{name}</h3>
-        <span
-          className="text-sm font-bold tabular-nums px-2.5 py-0.5 rounded-lg"
-          style={full
-            ? { background: 'rgba(52,211,153,0.15)', color: '#34D399' }
-            : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}
-        >
-          {full && <Check size={12} strokeWidth={2} className="inline -mt-0.5 ml-0.5" />}{done}/{tasks.length}
+        <h3 className="text-xl font-bold text-white">{name}</h3>
+        <span className="text-base tabular-nums text-text-secondary">
+          {full ? 'הושלם' : `${done}/${tasks.length}`}
         </span>
       </div>
 
@@ -404,32 +408,24 @@ function TaskGroup({ name, tasks, completed, onToggle, onDelete, editing, color,
               <motion.li
                 key={task.id}
                 layout
-                transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                transition={{ duration: 0.18 }}
                 style={{ borderTop: i > 0 ? '1px solid var(--border-subtle)' : 'none' }}
               >
                 <div className="flex items-center">
                 <button
                   onClick={() => !editing && onToggle(task)}
                   disabled={editing}
-                  className="flex-1 min-w-0 flex items-center gap-3 px-4 min-h-[56px] py-2 text-right active:bg-white/5 transition-colors"
+                  className="flex-1 min-w-0 flex items-center gap-4 px-4 min-h-[64px] py-2 text-right active:bg-white/5 transition-colors duration-150"
                 >
-                  <motion.span
-                    animate={isDone
-                      ? { scale: [1, 1.25, 1], backgroundColor: color, borderColor: color }
-                      : { scale: 1, backgroundColor: 'rgba(0,0,0,0)', borderColor: 'rgba(255,255,255,0.3)' }}
-                    transition={{ duration: 0.3 }}
-                    className="w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                  >
-                    {isDone && <Check size={15} strokeWidth={3} color="#fff" />}
-                  </motion.span>
+                  <StatusMark status={isDone ? 'done' : 'todo'} color={color} />
                   <span className="flex-1 min-w-0">
                     <span
-                      className={`block text-base font-semibold transition-colors ${isDone ? 'line-through' : ''}`}
+                      className="block text-lg font-medium leading-snug transition-colors duration-150"
                       style={{ color: isDone ? 'rgba(255,255,255,0.62)' : '#fff' }}
                     >
                       {task.task}
                     </span>
-                    {task.notes && <span className="block text-sm text-text-tertiary mt-0.5">{task.notes}</span>}
+                    {task.notes && <span className="block text-base text-text-secondary mt-0.5">{task.notes}</span>}
                   </span>
                   {taskStation && (
                     <span className="text-sm font-bold px-2 py-1 rounded-lg flex-shrink-0" style={{ background: taskStation.color + '20', color: taskStation.color }}>
@@ -445,7 +441,7 @@ function TaskGroup({ name, tasks, completed, onToggle, onDelete, editing, color,
                       exit={{ opacity: 0, scale: 0.6 }}
                       onClick={() => onDelete(task)}
                       aria-label={`מחק ${task.task}`}
-                      className="w-12 h-12 ml-2 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
+                      className="w-12 h-12 ml-2 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{ background: 'rgba(248,113,113,0.12)', color: '#F87171' }}
                     >
                       <Trash2 size={20} strokeWidth={2} />

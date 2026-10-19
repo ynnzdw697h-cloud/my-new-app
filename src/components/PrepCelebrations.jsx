@@ -87,7 +87,8 @@ export function StatusMark({ status, color, size = 30 }) {
 }
 
 /* ─── Bottom toast with an Undo button, closes itself after a few seconds ─── */
-export function UndoToast({ toast, onUndo }) {
+// `position` lets a screen with its own bottom bar lift the toast above it
+export function UndoToast({ toast, onUndo, position = 'bottom-28 md:bottom-8' }) {
   return (
     <AnimatePresence>
       {toast && (
@@ -97,7 +98,7 @@ export function UndoToast({ toast, onUndo }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 12 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="fixed z-40 inset-x-0 bottom-28 md:bottom-8 flex justify-center px-4"
+          className={`fixed z-40 inset-x-0 ${position} flex justify-center px-4`}
           dir="rtl"
           role="status"
         >

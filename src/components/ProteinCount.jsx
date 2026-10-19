@@ -3,10 +3,12 @@ import { Plus, Minus, RotateCcw, Trash2, Pencil, Check, X } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useTenantId } from '../context/TenantContext';
-import { Button, Input, Sheet } from './ui';
+import { Button, Input } from './ui';
+import { UndoToast } from './PrepCelebrations';
 import { useHaptic } from '../hooks/useHaptic';
 
-const DOC_ID = 'protein_count';
+const DOC_ID   = 'protein_count';
+const TOAST_MS = 5000;
 
 const FIXED_ITEMS = [
   { id: 'tartar_plate',    name: 'טרטר צלחת',    fixed: true },
@@ -32,11 +34,13 @@ export default function ProteinCount() {
   const [items, setItems]           = useState(readCache(lsKey) || buildDefaults());
   const [addInput, setAddInput]     = useState('');
   const [showAdd, setShowAdd]       = useState(false);
-  const [confirmReset, setConfirmReset]     = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [editing, setEditing]       = useState(false);
-  const itemsRef = useRef(items);
-  const vibrate  = useHaptic();
+  const [toast, setToast]           = useState(null); // { id, text, undoable, undo }
+  const itemsRef   = useRef(items);
+  const toastTimer = useRef(null);
+  const vibrate    = useHaptic();
+
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   useEffect(() => { itemsRef.current = items; }, [items]);
 
@@ -81,15 +85,39 @@ export default function ProteinCount() {
     setShowAdd(false);
   }
 
-  function deleteItem(id) {
-    persist(itemsRef.current.filter(i => i.id !== id));
-    setConfirmDeleteId(null);
+  // Reversible actions run immediately, with Undo for 5 seconds instead of a confirm dialog
+  function showUndo(text, undo) {
+    clearTimeout(toastTimer.current);
+    setToast({ id: Date.now(), text, undoable: true, undo });
+    toastTimer.current = setTimeout(() => setToast(null), TOAST_MS);
+  }
+
+  function handleUndo() {
+    toast?.undo?.();
+    clearTimeout(toastTimer.current);
+    setToast(null);
+  }
+
+  function deleteItem(item) {
+    const index = itemsRef.current.findIndex(i => i.id === item.id);
+    persist(itemsRef.current.filter(i => i.id !== item.id));
+    showUndo(`${item.name} נמחק`, () => {
+      if (itemsRef.current.some(i => i.id === item.id)) return;
+      const next = [...itemsRef.current];
+      next.splice(Math.min(index, next.length), 0, item);
+      persist(next);
+    });
   }
 
   function resetAll() {
+    const before = Object.fromEntries(itemsRef.current.map(i => [i.id, i.qty]));
     persist(itemsRef.current.map(i => ({ ...i, qty: 0 })));
-    setConfirmReset(false);
+    showUndo('כל הכמויות אופסו', () => {
+      persist(itemsRef.current.map(i => (i.id in before ? { ...i, qty: before[i.id] } : i)));
+    });
   }
+
+  const total = items.reduce((sum, i) => sum + i.qty, 0);
 
   return (
     <div className="p-5 md:p-6 space-y-5 max-w-lg mx-auto" dir="rtl">
@@ -100,10 +128,12 @@ export default function ProteinCount() {
           <button
             onClick={() => setEditing(v => !v)}
             aria-pressed={editing}
-            className="flex items-center gap-1.5 px-4 min-h-[44px] rounded-xl text-sm font-bold flex-shrink-0"
-            style={editing
-              ? { background: 'rgba(255,255,255,0.92)', color: '#121212' }
-              : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.1)' }}
+            className="flex items-center gap-1.5 px-4 min-h-[48px] rounded-xl text-base font-semibold flex-shrink-0 transition-colors duration-150"
+            style={{
+              background: editing ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
+              color: 'rgba(255,255,255,0.85)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
           >
             {editing ? <Check size={16} strokeWidth={2.5} aria-hidden="true" /> : <Pencil size={16} strokeWidth={2} aria-hidden="true" />}
             {editing ? 'סיום' : 'עריכה'}
@@ -111,21 +141,21 @@ export default function ProteinCount() {
         )}
       </div>
 
-      {/* Items */}
-      <div className="space-y-3">
-        {items.map(item => (
+      {/* Items — one list, like the checklist */}
+      <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
+        {items.map((item, i) => (
           <div
             key={item.id}
-            className="flex items-center gap-3 rounded-2xl pr-5 pl-3 py-3"
-            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+            className="flex items-center gap-3 pr-5 pl-3 py-2 min-h-[72px]"
+            style={{ borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none' }}
           >
-            <span className="flex-1 min-w-0 text-lg font-bold text-text-primary">{item.name}</span>
+            <span className={`flex-1 min-w-0 text-lg font-medium ${item.qty > 0 ? 'text-text-primary' : 'text-text-secondary'}`}>{item.name}</span>
 
             {editing && !item.fixed ? (
               <button
-                onClick={() => setConfirmDeleteId(item.id)}
+                onClick={() => deleteItem(item)}
                 aria-label={`מחק ${item.name}`}
-                className="w-12 h-12 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
+                className="w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-150"
                 style={{ background: 'rgba(248,113,113,0.12)', color: '#F87171' }}
               >
                 <Trash2 size={20} strokeWidth={2} />
@@ -136,24 +166,24 @@ export default function ProteinCount() {
                   onClick={() => changeQty(item.id, -1)}
                   disabled={item.qty === 0}
                   aria-label={`הפחת ${item.name}`}
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-text-primary
-                             transition-all duration-100 active:scale-90 press
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-text-primary
+                             transition-colors duration-150 active:bg-white/10
                              disabled:opacity-30 disabled:pointer-events-none"
                   style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
                 >
-                  <Minus size={22} strokeWidth={2.25} />
+                  <Minus size={22} strokeWidth={2} />
                 </button>
-                <span className="text-display font-black text-text-primary tabular-nums w-12 text-center" aria-live="polite">
+                <span className="text-2xl font-bold text-text-primary tabular-nums w-12 text-center" aria-live="polite">
                   {item.qty}
                 </span>
                 <button
                   onClick={() => changeQty(item.id, +1)}
                   aria-label={`הוסף ${item.name}`}
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-accent
-                             transition-all duration-100 active:scale-90 press"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-text-primary
+                             transition-colors duration-150 active:bg-white/10"
                   style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
                 >
-                  <Plus size={22} strokeWidth={2.25} />
+                  <Plus size={22} strokeWidth={2} />
                 </button>
               </div>
             )}
@@ -182,41 +212,19 @@ export default function ProteinCount() {
         </Button>
       )}
 
-      {/* Reset — subtle, behind a confirmation */}
+      {/* Reset — subtle; Undo brings the numbers back */}
       <div className="flex justify-center pt-4">
         <button
-          onClick={() => setConfirmReset(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-text-tertiary min-h-[44px]"
+          onClick={resetAll}
+          disabled={total === 0}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-base font-medium text-text-tertiary min-h-[48px] disabled:opacity-40"
         >
           <RotateCcw size={14} strokeWidth={1.75} aria-hidden="true" />
           איפוס כל הכמויות
         </button>
       </div>
 
-      {/* Delete confirm sheet */}
-      <Sheet
-        open={!!confirmDeleteId}
-        onClose={() => setConfirmDeleteId(null)}
-        title="למחוק פריט זה?"
-      >
-        <div className="flex gap-3">
-          <Button variant="danger" fullWidth onClick={() => deleteItem(confirmDeleteId)}>כן, מחק</Button>
-          <Button variant="ghost" fullWidth onClick={() => setConfirmDeleteId(null)}>ביטול</Button>
-        </div>
-      </Sheet>
-
-      {/* Reset confirm sheet */}
-      <Sheet
-        open={confirmReset}
-        onClose={() => setConfirmReset(false)}
-        title="לאפס את כל הכמויות?"
-      >
-        <p className="text-body text-text-secondary mb-6">כל הכמויות יחזרו לאפס.</p>
-        <div className="flex gap-3">
-          <Button variant="danger" fullWidth onClick={resetAll}>כן, אפס</Button>
-          <Button variant="ghost" fullWidth onClick={() => setConfirmReset(false)}>ביטול</Button>
-        </div>
-      </Sheet>
+      <UndoToast toast={toast} onUndo={handleUndo} />
 
     </div>
   );

@@ -52,17 +52,13 @@ export default function LoginFlow({ onLogin }) {
       {/* Logo */}
       <div className="text-center mb-10">
         <div
-          className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-5"
-          style={{
-            background: 'linear-gradient(135deg, #1e293b, #0f172a)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-          }}
+          className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5"
+          style={{ background: 'var(--bg-card)', border: '1px solid rgba(255,255,255,0.1)' }}
         >
           <UtensilsCrossed size={36} style={{ color: 'rgba(255,255,255,0.7)' }} strokeWidth={1.25} />
         </div>
-        <h1 className="text-4xl font-black text-white tracking-tight">וילה אכדיה</h1>
-        <p className="text-sm mt-2" style={{ color: 'rgba(255,255,255,0.62)' }}>{today}</p>
+        <h1 className="text-4xl font-bold text-white tracking-tight">וילה אכדיה</h1>
+        <p className="text-base mt-2" style={{ color: 'rgba(255,255,255,0.62)' }}>{today}</p>
       </div>
 
       <AnimatePresence mode="wait">
@@ -98,12 +94,8 @@ function ChefStep({ onSelect }) {
           <button
             key={chef.id}
             onClick={() => onSelect(chef)}
-            className="glow-btn rounded-2xl px-4 py-5 text-white font-bold text-base text-center"
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-            }}
+            className="rounded-xl px-4 py-5 min-h-[88px] text-white font-semibold text-lg text-center transition-colors duration-150 active:bg-white/10"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
           >
             <div className="flex items-center justify-center mb-1.5">
               <ChefHat size={22} style={{ color: 'rgba(255,255,255,0.5)' }} strokeWidth={1.5} />
@@ -120,7 +112,7 @@ function ChefStep({ onSelect }) {
             <button
               key={chef.id}
               onClick={() => onSelect(chef)}
-              className="glow-btn w-full rounded-2xl px-4 min-h-[60px] flex items-center justify-center gap-2.5 text-white font-bold text-base"
+              className="w-full rounded-xl px-4 min-h-[64px] flex items-center justify-center gap-2.5 text-white font-semibold text-lg transition-colors duration-150 active:bg-white/10"
               style={{ background: 'var(--bg-card)', border: '1px solid rgba(16,185,129,0.3)' }}
             >
               <PackageCheck size={22} style={{ color: '#10B981' }} strokeWidth={1.75} aria-hidden="true" />
@@ -237,7 +229,8 @@ function PinStep({ chef, onSuccess, onBack }) {
               <button
                 key={i}
                 onClick={del}
-                className="rounded-2xl h-20 flex items-center justify-center text-2xl active:scale-90 transition-transform"
+                aria-label="מחק ספרה"
+                className="rounded-xl h-20 flex items-center justify-center text-2xl transition-colors duration-150 active:bg-white/10"
                 style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}
               >
                 ⌫
@@ -249,12 +242,12 @@ function PinStep({ chef, onSuccess, onBack }) {
               <button
                 key={i}
                 onClick={() => pin.length === 4 && !loading && validate(pin)}
-                className="rounded-2xl h-20 flex items-center justify-center text-lg active:scale-90 transition-transform font-black"
+                aria-label="אישור"
+                className="rounded-xl h-20 flex items-center justify-center text-2xl font-bold"
                 style={{
                   background: pin.length === 4 ? '#3B82F6' : 'rgba(255,255,255,0.06)',
                   color: pin.length === 4 ? '#fff' : 'rgba(255,255,255,0.5)',
-                  boxShadow: pin.length === 4 ? 'none' : 'none',
-                  transition: 'all 0.2s ease',
+                  transition: 'background-color 0.15s, color 0.15s',
                 }}
               >
                 ✓
@@ -265,7 +258,7 @@ function PinStep({ chef, onSuccess, onBack }) {
             <button
               key={i}
               onClick={() => press(key)}
-              className="rounded-2xl h-20 flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform"
+              className="rounded-xl h-20 flex items-center justify-center text-2xl font-semibold transition-colors duration-150 active:bg-white/10"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white' }}
             >
               {key}
@@ -294,10 +287,10 @@ function StationStep({ user, onSelect, onBack }) {
       <div className="flex items-center justify-between mb-8">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm font-medium"
-          style={{ color: 'rgba(255,255,255,0.62)' }}
+          className="flex items-center gap-1.5 min-h-[48px] px-1 text-base font-medium"
+          style={{ color: 'rgba(255,255,255,0.7)' }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M9 18l6-6-6-6"/>
           </svg>
           חזרה
@@ -320,28 +313,17 @@ function StationStep({ user, onSelect, onBack }) {
           <button
             key={station.id}
             onClick={() => onSelect(station.id)}
-            className="glow-btn w-full group relative rounded-3xl p-6 flex items-center gap-5 overflow-hidden"
-            style={{
-              background: 'var(--bg-card)',
-              border: `1px solid ${station.color}30`,
-              boxShadow: 'none',
-              '--gc':  station.color,
-              '--gca': station.color + '55',
-              '--gcb': station.color + '1a',
-            }}
+            className="w-full rounded-xl p-5 min-h-[96px] flex items-center gap-5 transition-colors duration-150 active:bg-white/10"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
           >
-            <div className="absolute inset-0 opacity-0 group-active:opacity-10 transition-opacity" style={{ background: station.color }} />
             <span
-              className="relative z-10 w-16 h-16 flex items-center justify-center rounded-2xl flex-shrink-0"
+              className="w-16 h-16 flex items-center justify-center rounded-xl flex-shrink-0"
               style={{ background: station.color + '18', border: `1px solid ${station.color}30`, color: station.color }}
             >
               {STATION_ICONS[station.id] || <PackageCheck size={36} strokeWidth={1.25} />}
             </span>
-            <div className="relative z-10 text-right">
-              <div className="text-white font-black text-xl">{station.name}</div>
-              <div className="h-1 w-8 rounded-full mt-2" style={{ background: station.color }} />
-            </div>
-            <svg className="mr-auto relative z-10 opacity-30" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+            <div className="text-right text-white font-semibold text-xl">{station.name}</div>
+            <svg className="mr-auto opacity-30" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
               <path d="M15 18l-6-6 6-6"/>
             </svg>
           </button>
