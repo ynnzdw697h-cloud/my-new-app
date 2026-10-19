@@ -4,7 +4,6 @@ import {
   Clock, Soup, CookingPot, FlaskConical, Carrot, Croissant, Container, ChefHat, Wheat, Leaf, Salad,
   UtensilsCrossed, CakeSlice, Search, X, AlertTriangle, Scale, Coins, ListOrdered, Target, Wine,
   Thermometer, ChevronLeft, Layers, Check,
-  Pencil,
 } from 'lucide-react';
 import { RECIPES, CATEGORIES } from '../data/recipes';
 import { MAIN_DISHES, DISH_CATEGORIES } from '../data/mainDishes';
@@ -17,26 +16,26 @@ import RecipeWizard from './RecipeWizard';
 
 // ─── Prep category metadata ───
 const CAT_META = {
-  'ציר':     { Icon: Soup, g: ['#0f2d4a', '#061525'] },
-  'רטבים':   { Icon: CookingPot, g: ['#2d1b3d', '#150d20'] },
-  'מותססים': { Icon: FlaskConical, g: ['#0e2d1a', '#061508'] },
-  'כבושים':  { Icon: Carrot, g: ['#1e2d10', '#101808'] },
-  'בצקים':   { Icon: Croissant, g: ['#3d2010', '#200f06'] },
-  'ממרחים':  { Icon: Container, g: ['#2d1010', '#180606'] },
-  'הכנות':   { Icon: ChefHat, g: ['#10182d', '#060c18'] },
-  'אורז':    { Icon: Wheat, g: ['#282610', '#141308'] },
-  'תוספות':  { Icon: Leaf, g: ['#0e2d18', '#06150c'] },
-  'סלטים':   { Icon: Salad, g: ['#0a2d18', '#05140c'] },
+  'ציר':     { Icon: Soup },
+  'רטבים':   { Icon: CookingPot },
+  'מותססים': { Icon: FlaskConical },
+  'כבושים':  { Icon: Carrot },
+  'בצקים':   { Icon: Croissant },
+  'ממרחים':  { Icon: Container },
+  'הכנות':   { Icon: ChefHat },
+  'אורז':    { Icon: Wheat },
+  'תוספות':  { Icon: Leaf },
+  'סלטים':   { Icon: Salad },
 };
 
 // ─── Dish category metadata ───
 const DISH_CAT_META = {
-  'סלטים':   { Icon: Salad, g: ['#0a2d18', '#05140c'] },
-  'עיקריות': { Icon: UtensilsCrossed, g: ['#1a1020', '#0d0810'] },
-  'קינוחים': { Icon: CakeSlice, g: ['#2d1a08', '#160d04'] },
+  'סלטים':   { Icon: Salad },
+  'עיקריות': { Icon: UtensilsCrossed },
+  'קינוחים': { Icon: CakeSlice },
 };
 
-const DEFAULT_META = { Icon: UtensilsCrossed, g: ['#1a1a28', '#0c0c18'] };
+const DEFAULT_META = { Icon: UtensilsCrossed };
 
 function fmt(n) {
   if (n === 0) return '0';
@@ -329,7 +328,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                 key={dish.id}
                 onClick={() => setSelectedDish(dish)}
                 className="glow-btn rounded-3xl overflow-hidden text-right"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
               >
                 <div
                   className="relative w-full"
@@ -358,12 +357,6 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                     >
                       {fcp.toFixed(0)}% FC
                     </div>
-                  )}
-                  {dish.isCustom && (
-                    <div
-                      className="absolute top-2.5 left-2.5 px-1.5 py-0.5 rounded-lg text-sm font-bold"
-                      style={{ background: 'rgba(16,185,129,0.7)', color: 'white', backdropFilter: 'blur(6px)' }}
-                    ><Pencil size={14} strokeWidth={1.5} /></div>
                   )}
                 </div>
                 <div className="p-3">
@@ -397,7 +390,7 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                   key={recipe.id}
                   onClick={() => openRecipe(recipe)}
                   className="glow-btn rounded-3xl overflow-hidden text-right"
-                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
                 >
                   <div
                     className="relative w-full"
@@ -419,12 +412,6 @@ export default function RecipeDatabase({ station, onMarkReady }) {
                     >
                       {recipe.category}
                     </div>
-                    {recipe.isCustom && (
-                      <div
-                        className="absolute top-2.5 left-2.5 px-1.5 py-0.5 rounded-lg text-sm font-bold"
-                        style={{ background: 'rgba(16,185,129,0.7)', color: 'white', backdropFilter: 'blur(6px)' }}
-                      ><Pencil size={14} strokeWidth={1.5} /></div>
-                    )}
                   </div>
                   <div className="p-3">
                     <h3 className="text-white font-bold text-sm leading-tight mb-1.5">{recipe.name}</h3>
@@ -500,7 +487,7 @@ function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onS
             <meta.Icon size={64} strokeWidth={1} style={{ opacity: 0.3 }} />
           </div>
         )}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.4) 100%)' }} />
+        {imageUrl && <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.4) 100%)' }} />}
 
         {/* Back */}
         <button
@@ -873,10 +860,12 @@ function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, s
           </div>
         )}
 
-        <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.4) 100%)' }}
-        />
+        {imageUrl && (
+          <div
+            className="absolute inset-0"
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.4) 100%)' }}
+          />
+        )}
 
         {/* Back button */}
         <button
