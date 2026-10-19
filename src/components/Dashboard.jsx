@@ -3,7 +3,9 @@ import { ClipboardList, BookOpen, CalendarDays, AlertCircle, Camera, PackageChec
 import { useRef, useEffect, useState, useCallback, memo } from 'react';
 import { STATIONS } from '../data/stations';
 import { usePrepState } from '../hooks/usePrepState';
-import { StreakBadge, SegmentedBar } from './PrepCelebrations';
+import { useFirestoreArray } from '../hooks/useFirestoreArray';
+import { StreakBadge, SegmentedBar, StatusMark } from './PrepCelebrations';
+import { MISSING_STATUS, missingStatus } from './ShiftNotes';
 import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { useTenantId } from '../context/TenantContext';
@@ -345,6 +347,40 @@ function NextUp({ prep, onOpen }) {
   );
 }
 
+/* ─── Shortages this cook reported, so they see each one was handled ─── */
+function MyShortages({ user, onOpen }) {
+  const [items] = useFirestoreArray('missing_items');
+  const mine = items.filter(i => i.author === user);
+  if (mine.length === 0) return null;
+  const order = { arrived: 0, ordered: 1, reported: 2 };
+  const sorted = [...mine].sort((a, b) => order[missingStatus(a)] - order[missingStatus(b)]).slice(0, 4);
+
+  return (
+    <section className="space-y-2">
+      <h2 className="text-sm font-medium text-text-secondary px-1">החוסרים שדיווחת</h2>
+      <button
+        onClick={() => { vibrate(); onOpen(); }}
+        className="w-full text-right rounded-xl overflow-hidden block"
+        style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}
+      >
+        {sorted.map(item => {
+          const status = missingStatus(item);
+          const last = (item.history || []).slice(-1)[0];
+          return (
+            <div key={item.id} className="flex items-center gap-3 px-4 min-h-[56px]" style={{ borderBottom: '1px solid var(--border)' }}>
+              <StatusMark status={MISSING_STATUS[status].mark} color="#10B981" size={22} />
+              <span className="flex-1 min-w-0 text-base text-text-primary truncate">{item.text}</span>
+              <span className="text-sm text-text-secondary flex-shrink-0">
+                {MISSING_STATUS[status].label}{last ? ` · ${last.by}` : ''}
+              </span>
+            </div>
+          );
+        })}
+      </button>
+    </section>
+  );
+}
+
 /* ════════════════════════════════════════════
    Main Dashboard
 ════════════════════════════════════════════ */
@@ -383,6 +419,8 @@ export default function Dashboard({ station, user, prep, onNavigate, role }) {
       <NextUp prep={prep} onOpen={() => onNavigate('prep')} />
 
       <KitchenStatus myStation={station} prep={prep} onOpenMine={() => onNavigate('prep')} />
+
+      <MyShortages user={user} onOpen={() => onNavigate('shift')} />
 
       <div className="grid grid-cols-2 gap-3">
         <QuickAction Icon={ClipboardList} label="צ׳ק ליסט יומי"   sub={pct === 100 ? 'הושלם' : `נשארו ${total - done}`} onClick={() => onNavigate('prep')} />
