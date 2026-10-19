@@ -1,66 +1,123 @@
 import { useMemo } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Flame, Trophy } from 'lucide-react';
+import { Flame, Trophy, Check } from 'lucide-react';
 
 /* ─── Streak badge — consecutive days the station hit 100% ─── */
 export function StreakBadge({ count, size = 'md' }) {
   if (!count) return null;
   const small = size === 'sm';
   return (
-    <motion.span
-      initial={{ scale: 0.6, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 22 }}
-      className={`inline-flex items-center gap-1 rounded-xl font-black tabular-nums flex-shrink-0 ${small ? 'px-2 py-1 text-sm' : 'px-3 py-1.5 text-base'}`}
-      style={{ background: 'rgba(249,115,22,0.15)', color: '#FB923C', border: '1px solid rgba(249,115,22,0.35)' }}
-      aria-label={`רצף של ${count} ימים`}
+    <span
+      className={`inline-flex items-center gap-1 rounded-md font-medium tabular-nums flex-shrink-0 text-text-secondary ${small ? 'px-2 py-1 text-sm' : 'px-2.5 py-1 text-base'}`}
+      style={{ border: '1px solid var(--border)' }}
+      aria-label={`${count} ימים ברצף שהפס הושלם`}
     >
-      <Flame size={small ? 15 : 18} strokeWidth={2.2} fill="#FB923C" />
+      <Flame size={small ? 14 : 16} strokeWidth={1.5} />
       {count}
-    </motion.span>
+    </span>
+  );
+}
+
+/* ─── Segmented bar: one segment per item, falls back to a solid bar when there are many ─── */
+const MAX_SEGMENTS = 30;
+export function SegmentedBar({ done, total, color, height = 6 }) {
+  if (total <= MAX_SEGMENTS) {
+    return (
+      <div className="flex gap-1" aria-hidden="true">
+        {Array.from({ length: total }, (_, i) => (
+          <div
+            key={i}
+            className="flex-1 rounded-sm"
+            style={{ height, background: i < done ? color : 'rgba(255,255,255,0.10)', transition: 'background-color 0.2s' }}
+          />
+        ))}
+      </div>
+    );
+  }
+  const pct = total ? (done / total) * 100 : 0;
+  return (
+    <div className="relative rounded-sm overflow-hidden" style={{ height, background: 'rgba(255,255,255,0.10)' }} aria-hidden="true">
+      <div className="absolute inset-y-0 right-0" style={{ width: `${pct}%`, background: color, transition: 'width 0.25s' }} />
+    </div>
   );
 }
 
 /* ─── Compact progress bar that sticks under the header while scrolling ─── */
-export function StickyProgress({ pct, done, total, color, streak }) {
+export function StickyProgress({ done, total, color, streak }) {
+  const left = total - done;
   return (
     <div
-      className="sticky top-16 md:top-0 z-20 px-4 md:px-6 py-3"
+      className="sticky top-16 md:top-0 z-20 px-4 md:px-6 py-3 space-y-2"
       style={{
-        background: 'rgba(18,18,18,0.92)',
+        background: 'rgba(18,18,18,0.94)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         borderBottom: '1px solid var(--border)',
       }}
     >
-      <div className="flex items-center gap-3">
-        <motion.span
-          key={pct}
-          initial={{ scale: 1.25 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 18 }}
-          className="text-2xl font-black tabular-nums leading-none"
-          style={{ color: pct === 100 ? '#34D399' : color, minWidth: 58 }}
-        >
-          {pct}%
-        </motion.span>
-        <div className="flex-1 relative h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-          <motion.div
-            className="absolute inset-y-0 right-0 rounded-full"
-            animate={{ width: `${pct}%` }}
-            transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-            style={{
-              background: pct === 100 ? '#34D399' : `linear-gradient(270deg, ${color}, ${color}cc)`,
-              
-            }}
-          />
-        </div>
-        <span className="text-sm font-bold tabular-nums text-text-secondary">
-          {done}/{total}
+      <div className="flex items-baseline gap-3">
+        <span className="text-xl font-bold text-text-primary">
+          {left > 0 ? <>נשארו <span className="tabular-nums">{left}</span></> : 'הכול מוכן'}
         </span>
-        <StreakBadge count={streak} size="sm" />
+        <span className="text-base tabular-nums text-text-secondary">{done}/{total}</span>
+        <span className="mr-auto"><StreakBadge count={streak} size="sm" /></span>
       </div>
+      <SegmentedBar done={done} total={total} color={left === 0 ? '#10B981' : color} />
     </div>
+  );
+}
+
+/* ─── Status shape: readable without relying on color alone ─── */
+export function StatusMark({ status, color, size = 30 }) {
+  const ring = { width: size, height: size, borderRadius: '50%', flexShrink: 0, transition: 'background-color 0.15s, border-color 0.15s' };
+  if (status === 'done') {
+    return (
+      <span className="flex items-center justify-center" style={{ ...ring, background: color, border: `2px solid ${color}` }}>
+        <Check size={size * 0.55} strokeWidth={2.5} color="#fff" />
+      </span>
+    );
+  }
+  if (status === 'progress') {
+    return <span style={{ ...ring, border: '2px solid #F59E0B', background: 'linear-gradient(to left, #F59E0B 50%, transparent 50%)' }} />;
+  }
+  if (status === 'stuck') {
+    return <span style={{ ...ring, border: '2px dashed #F87171' }} />;
+  }
+  return <span style={{ ...ring, border: '2px solid rgba(255,255,255,0.45)' }} />;
+}
+
+/* ─── Bottom toast with an Undo button, closes itself after a few seconds ─── */
+export function UndoToast({ toast, onUndo }) {
+  return (
+    <AnimatePresence>
+      {toast && (
+        <motion.div
+          key={toast.id}
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 12 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="fixed z-40 inset-x-0 bottom-28 md:bottom-8 flex justify-center px-4"
+          dir="rtl"
+          role="status"
+        >
+          <div
+            className="w-full max-w-md flex items-center gap-3 rounded-xl pr-5 pl-2 py-1.5"
+            style={{ background: '#F4F4F5', color: '#121212' }}
+          >
+            <span className="flex-1 text-base font-medium">{toast.text}</span>
+            {toast.undoable && (
+              <button
+                onClick={onUndo}
+                className="min-h-[48px] px-4 text-base font-bold underline underline-offset-4"
+              >
+                ביטול
+              </button>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useTenantId } from '../context/TenantContext';
@@ -85,6 +85,13 @@ export function computePrepProgress(station, completedTasks, completedSubs, cust
   };
 }
 
+// Set updater that adds or removes one id.
+const putIn = (id, want) => prev => {
+  const next = new Set(prev);
+  want ? next.add(id) : next.delete(id);
+  return next;
+};
+
 // Consecutive service days on which the station reached 100%.
 function useStationStreak(station, day, pct) {
   const tenantId = useTenantId();
@@ -130,17 +137,39 @@ export function usePrepState(station) {
   const [completedSubs,  setCompletedSubs]  = useFirestoreSet(`prep_subs_${stationKey}_${day}`);
   const [customTasks,    setCustomTasks]    = useFirestoreArray(`custom_prep_${stationKey}`);
   const [hiddenIds,      setHiddenIds]      = useFirestoreSet(`hidden_prep_${stationKey}`);
+  // Optional in-between states for a task that isn't done yet.
+  const [inProgress,     setInProgress]     = useFirestoreSet(`prep_progress_${stationKey}_${day}`);
+  const [stuck,          setStuck]          = useFirestoreSet(`prep_stuck_${stationKey}_${day}`);
 
   const progress = computePrepProgress(station, completedTasks, completedSubs, customTasks, hiddenIds);
   const streak   = useStationStreak(station, day, progress.pct);
 
+  // Latest sets, so callbacks kept for later (e.g. an Undo button) never act on stale data.
+  const latest = useRef({});
+  latest.current = { completedTasks, inProgress, stuck };
+
+  // Each set writes to Firestore, so only touch the ones that actually change.
   const toggleTask = useCallback(id => {
-    setCompletedTasks(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }, [setCompletedTasks]);
+    const { inProgress: ip, stuck: sk } = latest.current;
+    setCompletedTasks(prev => putIn(id, !prev.has(id))(prev));
+    if (ip.has(id)) setInProgress(putIn(id, false));
+    if (sk.has(id)) setStuck(putIn(id, false));
+  }, [setCompletedTasks, setInProgress, setStuck]);
+
+  // status: 'todo' | 'progress' | 'stuck' | 'done' (done only for tasks without sub-items)
+  const taskStatus = useCallback(task => {
+    if (progress.isTaskDone(task)) return 'done';
+    if (stuck.has(task.id))        return 'stuck';
+    if (inProgress.has(task.id))   return 'progress';
+    return 'todo';
+  }, [progress, stuck, inProgress]);
+
+  const setTaskStatus = useCallback((id, status) => {
+    const { completedTasks: ct, inProgress: ip, stuck: sk } = latest.current;
+    if (ct.has(id) !== (status === 'done'))     setCompletedTasks(putIn(id, status === 'done'));
+    if (ip.has(id) !== (status === 'progress')) setInProgress(putIn(id, status === 'progress'));
+    if (sk.has(id) !== (status === 'stuck'))    setStuck(putIn(id, status === 'stuck'));
+  }, [setCompletedTasks, setInProgress, setStuck]);
 
   const toggleSub = useCallback(id => {
     setCompletedSubs(prev => {
@@ -153,7 +182,9 @@ export function usePrepState(station) {
   const resetDay = useCallback(() => {
     setCompletedTasks(new Set());
     setCompletedSubs(new Set());
-  }, [setCompletedTasks, setCompletedSubs]);
+    setInProgress(new Set());
+    setStuck(new Set());
+  }, [setCompletedTasks, setCompletedSubs, setInProgress, setStuck]);
 
   return {
     day,
@@ -165,6 +196,10 @@ export function usePrepState(station) {
     setHiddenIds,
     toggleTask,
     toggleSub,
+    inProgress,
+    stuck,
+    taskStatus,
+    setTaskStatus,
     resetDay,
     progress,
     streak,
