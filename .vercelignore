@@ -1,0 +1,4 @@
+.env*
+.plans
+build
+node_modules
