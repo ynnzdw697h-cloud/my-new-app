@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UtensilsCrossed, User, Snowflake, Flame, PackageCheck, ChefHat } from 'lucide-react';
+import { UtensilsCrossed, Snowflake, Flame, PackageCheck } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 import { CHEFS } from '../data/chefs';
 
@@ -11,26 +11,31 @@ const STATION_ICONS = {
 };
 
 export default function LoginFlow({ onLogin }) {
-  const [step, setStep]                 = useState(1); // 1=pick chef, 2=pin, 3=station
+  const [step, setStep]                 = useState(1); // 1=pin, 2=welcome + station
   const [selectedChef, setSelectedChef] = useState(null);
-  const [authPayload, setAuthPayload]   = useState(null); // { token, tenantId, role }
+  const [authPayload, setAuthPayload]   = useState(null); // { token, tenantId, role, chefId }
 
   const today = new Date().toLocaleDateString('he-IL', {
     weekday: 'long', month: 'long', day: 'numeric',
   });
 
-  function pickChef(chef) {
+  // The PIN alone identifies the user — the server tells us who it is.
+  function onPinSuccess(payload) {
+    const chef = CHEFS.find(c => c.id === payload.chefId)
+      || { id: payload.chefId, displayName: payload.displayName, role: payload.role };
     setSelectedChef(chef);
-    setStep(2);
+    setAuthPayload(payload);
+    if (chef.role === 'checker') {
+      onLogin(chef.displayName, 'checker', 'checker', payload.tenantId, payload.token);
+    } else {
+      setStep(2);
+    }
   }
 
-  function onPinSuccess(payload) {
-    setAuthPayload(payload);
-    if (payload.role === 'checker') {
-      onLogin(selectedChef.displayName, 'checker', 'checker', payload.tenantId, payload.token);
-    } else {
-      setStep(3);
-    }
+  function logoutBack() {
+    setSelectedChef(null);
+    setAuthPayload(null);
+    setStep(1);
   }
 
   function pickStation(stationId) {
@@ -64,17 +69,12 @@ export default function LoginFlow({ onLogin }) {
       <AnimatePresence mode="wait">
         {step === 1 && (
           <motion.div key="step1" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="w-full flex justify-center">
-            <ChefStep onSelect={pickChef} />
+            <PinStep onSuccess={onPinSuccess} />
           </motion.div>
         )}
-        {step === 2 && (
+        {step === 2 && selectedChef && (
           <motion.div key="step2" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="w-full flex justify-center">
-            <PinStep chef={selectedChef} onSuccess={onPinSuccess} onBack={() => setStep(1)} />
-          </motion.div>
-        )}
-        {step === 3 && (
-          <motion.div key="step3" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="w-full flex justify-center">
-            <StationStep user={selectedChef.displayName} allowed={selectedChef.stations} onSelect={pickStation} onBack={() => setStep(2)} />
+            <StationStep user={selectedChef.displayName} allowed={selectedChef.stations} onSelect={pickStation} onBack={logoutBack} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -82,51 +82,8 @@ export default function LoginFlow({ onLogin }) {
   );
 }
 
-/* ─── Step 1: Pick chef ─── */
-function ChefStep({ onSelect }) {
-  return (
-    <div className="w-full max-w-md">
-      <p className="text-center font-bold text-xl mb-6" style={{ color: 'rgba(255,255,255,0.85)' }}>
-        מי אתה?
-      </p>
-      <div className="grid grid-cols-2 gap-3">
-        {CHEFS.filter(c => c.role !== 'checker').map(chef => (
-          <button
-            key={chef.id}
-            onClick={() => onSelect(chef)}
-            className="rounded-xl px-4 py-5 min-h-[88px] text-white font-semibold text-lg text-center transition-colors duration-150 active:bg-white/10"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-          >
-            <div className="flex items-center justify-center mb-1.5">
-              <ChefHat size={22} style={{ color: 'rgba(255,255,255,0.5)' }} strokeWidth={1.5} />
-            </div>
-            {chef.displayName}
-          </button>
-        ))}
-      </div>
-
-      {CHEFS.some(c => c.role === 'checker') && (
-        <>
-          <p className="text-center text-sm font-semibold mt-7 mb-3 text-text-tertiary">קבלת סחורה</p>
-          {CHEFS.filter(c => c.role === 'checker').map(chef => (
-            <button
-              key={chef.id}
-              onClick={() => onSelect(chef)}
-              className="w-full rounded-xl px-4 min-h-[64px] flex items-center justify-center gap-2.5 text-white font-semibold text-lg transition-colors duration-150 active:bg-white/10"
-              style={{ background: 'var(--bg-card)', border: '1px solid rgba(16,185,129,0.3)' }}
-            >
-              <PackageCheck size={22} style={{ color: '#10B981' }} strokeWidth={1.75} aria-hidden="true" />
-              {chef.displayName}
-            </button>
-          ))}
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ─── Step 2: PIN pad ─── */
-function PinStep({ chef, onSuccess, onBack }) {
+/* ─── Step 1: PIN pad (the PIN identifies the user) ─── */
+function PinStep({ onSuccess }) {
   const [pin, setPin]         = useState('');
   const [error, setError]     = useState(false);
   const [loading, setLoading] = useState(false);
@@ -150,12 +107,12 @@ function PinStep({ chef, onSuccess, onBack }) {
       const res  = await fetch('/api/auth', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ chefId: chef.id, pin: entered }),
+        body:    JSON.stringify({ pin: entered }),
       });
       const data = await res.json();
       if (res.ok) {
         setError(false);
-        onSuccess(data); // passes { token, tenantId, role, displayName }
+        onSuccess(data); // passes { token, chefId, tenantId, role, displayName }
       } else {
         setError(true);
         setTimeout(() => { setPin(''); setError(false); }, 700);
@@ -178,28 +135,7 @@ function PinStep({ chef, onSuccess, onBack }) {
 
   return (
     <div className="w-full max-w-xs flex flex-col items-center gap-7">
-      {/* Back */}
-      <div className="w-full flex items-center justify-between gap-6">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1 text-sm font-medium min-h-[44px] px-2"
-          style={{ color: 'rgba(255,255,255,0.62)' }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
-          חזרה
-        </button>
-        <div
-          className="flex items-center gap-2 rounded-2xl px-4 py-2"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)' }}
-        >
-          <ChefHat size={16} style={{ color: 'rgba(255,255,255,0.5)' }} strokeWidth={1.5} />
-          <span className="text-white font-bold text-sm">{chef.displayName}</span>
-        </div>
-      </div>
-
-      <p className="text-xl font-bold" style={{ color: 'rgba(255,255,255,0.85)' }}>הכנס קוד PIN</p>
+      <p className="text-xl font-bold" style={{ color: 'rgba(255,255,255,0.85)' }}>הכנס קוד אישי</p>
 
       {/* Dots */}
       <motion.div
@@ -280,12 +216,12 @@ function PinStep({ chef, onSuccess, onBack }) {
   );
 }
 
-/* ─── Step 3: Station selection ─── */
+/* ─── Step 2: Welcome + station selection ─── */
 function StationStep({ user, allowed, onSelect, onBack }) {
   const stations = Object.values(STATIONS).filter(s => !allowed || allowed.includes(s.id));
   return (
     <div className="w-full max-w-sm">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center mb-6">
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 min-h-[48px] px-1 text-base font-medium"
@@ -294,18 +230,12 @@ function StationStep({ user, allowed, onSelect, onBack }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M9 18l6-6-6-6"/>
           </svg>
-          חזרה
+          לא אני
         </button>
-        <div
-          className="flex items-center gap-2 rounded-2xl px-4 py-2"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)' }}
-        >
-          <User size={16} style={{ color: 'rgba(255,255,255,0.5)' }} strokeWidth={1.5} />
-          <span className="text-white font-bold text-sm">{user}</span>
-        </div>
       </div>
 
-      <p className="text-center font-bold text-xl mb-6" style={{ color: 'rgba(255,255,255,0.85)' }}>
+      <h2 className="text-center font-bold text-3xl text-white mb-2">ברוך הבא {user}</h2>
+      <p className="text-center font-semibold text-lg mb-6" style={{ color: 'rgba(255,255,255,0.7)' }}>
         בחר את הפס שלך
       </p>
 
