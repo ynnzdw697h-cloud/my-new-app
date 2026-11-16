@@ -21,16 +21,13 @@ if (!admin.apps.length) {
 // Chef registry. PINs are NOT stored here — the repo is public.
 // They come from the CHEF_PINS env var (set in Vercel), e.g. {"yamski":"4821","kaydi":"9307",...}
 // In a future version this can be fetched from Firestore per-tenant.
+// Token role stays 'chef' for everyone (same claims Firestore has always seen);
+// the extra admin access for דורון/קידר is decided client-side in src/data/chefs.js.
 const CHEFS = [
-  { id: 'yamski',       displayName: 'ימסקי',     role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'kaydi',        displayName: 'קיידי',      role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'shontz',       displayName: 'שונצה',      role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'noam_s',       displayName: 'נועם הנמוך', role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'noam_t',       displayName: 'נועם הגבוה', role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'ortal',        displayName: 'אורטל',       role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'or',           displayName: 'אור',         role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'nitzan',       displayName: 'ניצן',        role: 'chef',    tenantId: 'villa-acadia' },
-  { id: 'checker_main', displayName: 'קבלה',        role: 'checker', tenantId: 'villa-acadia' },
+  { id: 'yamski', displayName: 'דורון',    role: 'chef', tenantId: 'villa-acadia' },
+  { id: 'kedar',  displayName: 'קידר',     role: 'chef', tenantId: 'villa-acadia' },
+  { id: 'keshem', displayName: 'קסם ברכה', role: 'chef', tenantId: 'villa-acadia' },
+  { id: 'ofek',   displayName: 'אופק',     role: 'chef', tenantId: 'villa-acadia' },
 ];
 
 function loadPins() {
