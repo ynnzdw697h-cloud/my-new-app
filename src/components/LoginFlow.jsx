@@ -157,8 +157,8 @@ function PinStep({ onSuccess }) {
         ))}
       </motion.div>
 
-      {/* Keypad */}
-      <div className="grid grid-cols-3 gap-4 w-full">
+      {/* Keypad is always 1-2-3 left to right, like a phone — even on an RTL page */}
+      <div className="grid grid-cols-3 gap-4 w-full" dir="ltr">
         {PAD.flat().map((key, i) => {
           if (key === 'del') {
             return (
