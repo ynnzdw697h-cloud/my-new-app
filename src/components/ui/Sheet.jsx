@@ -25,18 +25,25 @@ export function Sheet({ open, onClose, title, children, noPad = false }) {
           />
 
           {/* Panel — bottom sheet on mobile, centered modal on tablet */}
+          {/* Positioning lives on a static wrapper: framer-motion's `y` animation
+              overwrites `transform`, which used to cancel the md:-translate centering. */}
+          <div
+            className={[
+              'fixed z-50 pointer-events-none',
+              // Mobile: bottom sheet
+              'bottom-0 inset-x-0',
+              // Tablet: centered modal
+              'md:inset-0 md:flex md:items-center md:justify-center md:p-4',
+            ].join(' ')}
+          >
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 30 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             className={[
-              'fixed z-50',
-              // Mobile: bottom sheet
-              'bottom-0 inset-x-0 rounded-t-3xl',
-              // Tablet: centered modal
-              'md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2',
-              'md:inset-x-auto md:w-full md:max-w-[560px] md:rounded-3xl',
+              'pointer-events-auto rounded-t-3xl',
+              'md:w-full md:max-w-[560px] md:rounded-3xl',
               noPad ? '' : 'p-6',
             ].join(' ')}
             style={{
@@ -57,6 +64,7 @@ export function Sheet({ open, onClose, title, children, noPad = false }) {
 
             {children}
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
