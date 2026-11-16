@@ -44,18 +44,24 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
   }
 
-  const { chefId, pin } = req.body || {};
+  const { pin } = req.body || {};
 
-  if (!chefId || !pin) {
+  if (!pin) {
     return res.status(400).json({ error: 'MISSING_FIELDS' });
   }
 
-  const chef = CHEFS.find(c => c.id === chefId);
-  const expectedPin = chef && loadPins()[chef.id];
+  // PIN-only login: the PIN identifies the user. PINs must be unique —
+  // if two users ever share a PIN, refuse rather than guess who it is.
+  const pins    = loadPins();
+  const matches = CHEFS.filter(c => pins[c.id] && String(pins[c.id]) === String(pin));
 
-  if (!chef || !expectedPin || String(expectedPin) !== String(pin)) {
+  if (matches.length !== 1) {
+    if (matches.length > 1) console.error('[Auth] Duplicate PIN in CHEF_PINS');
+    await new Promise(r => setTimeout(r, 400)); // slow down guessing
     return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
   }
+
+  const chef = matches[0];
 
   try {
     // uid must be unique per user. Using tenantId:chefId ensures cross-tenant uniqueness.
@@ -69,6 +75,7 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json({
       token,
+      chefId:      chef.id,
       tenantId:    chef.tenantId,
       role:        chef.role,
       displayName: chef.displayName,
