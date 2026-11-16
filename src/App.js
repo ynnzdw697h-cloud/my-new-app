@@ -56,6 +56,15 @@ function useIsTablet() {
   );
 }
 
+// Phone: the page itself scrolls. Tablet: the <main> panel scrolls.
+// Runs after React has swapped in the new screen.
+function scrollToTop() {
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 0);
+    document.querySelector('main')?.scrollTo(0, 0);
+  });
+}
+
 // Inner component — rendered only after login, always inside TenantProvider
 function AppShell({ user, station, role, tenantId, onLogout }) {
   const [view, setView]                         = useState(role === 'checker' ? 'checker_hub' : 'dashboard');
@@ -72,10 +81,14 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
   const openDelivery = useCallback((id) => {
     setActiveDeliveryId(id);
     setView('checker_detail');
+    scrollToTop();
   }, []);
 
+  // Menu / tile navigation always opens the new screen at its top.
+  // (Search picks use setView directly so they can scroll to the found item.)
   const navigate = useCallback((id) => {
     setView(id);
+    scrollToTop();
   }, []);
 
   const onSearchPick = useCallback((type, payload) => {
