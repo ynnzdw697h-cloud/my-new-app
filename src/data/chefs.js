@@ -1,13 +1,11 @@
+// Kitchen users.
+// role 'admin' = full app access (all pages incl. קבלת סחורה).
+// stations = which stations the user can pick after entering their PIN.
 export const CHEFS = [
-  { id: 'yamski',       displayName: 'ימסקי',     emoji: '👨‍🍳', role: 'chef'    },
-  { id: 'kaydi',        displayName: 'קיידי',      emoji: '👨‍🍳', role: 'chef'    },
-  { id: 'shontz',       displayName: 'שונצה',      emoji: '👨‍🍳', role: 'chef'    },
-  { id: 'noam_s',       displayName: 'נועם הנמוך', emoji: '👨‍🍳', role: 'chef'    },
-  { id: 'noam_t',       displayName: 'נועם הגבוה', emoji: '👨‍🍳', role: 'chef'    },
-  { id: 'ortal',        displayName: 'אורטל',       emoji: '👩‍🍳', role: 'chef'    },
-  { id: 'or',           displayName: 'אור',         emoji: '👨‍🍳', role: 'chef'    },
-  { id: 'nitzan',       displayName: 'ניצן',        emoji: '👨‍🍳', role: 'chef'    },
-  { id: 'checker_main', displayName: 'קבלה',        emoji: '📋',   role: 'checker' },
+  { id: 'yamski', displayName: 'דורון',    emoji: '👨‍🍳', role: 'admin', stations: ['hot', 'cold', 'checker'] },
+  { id: 'kedar',  displayName: 'קידר',     emoji: '👨‍🍳', role: 'admin', stations: ['hot', 'cold', 'checker'] },
+  { id: 'keshem', displayName: 'קסם ברכה', emoji: '👨‍🍳', role: 'chef',  stations: ['hot', 'cold'] },
+  { id: 'ofek',   displayName: 'אופק',     emoji: '👨‍🍳', role: 'chef',  stations: ['hot', 'cold'] },
 ];
 
 export const SESSION_KEY = 'villa_akadia_session';

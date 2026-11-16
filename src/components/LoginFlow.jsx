@@ -74,7 +74,7 @@ export default function LoginFlow({ onLogin }) {
         )}
         {step === 3 && (
           <motion.div key="step3" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="w-full flex justify-center">
-            <StationStep user={selectedChef.displayName} onSelect={pickStation} onBack={() => setStep(2)} />
+            <StationStep user={selectedChef.displayName} allowed={selectedChef.stations} onSelect={pickStation} onBack={() => setStep(2)} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -281,7 +281,8 @@ function PinStep({ chef, onSuccess, onBack }) {
 }
 
 /* ─── Step 3: Station selection ─── */
-function StationStep({ user, onSelect, onBack }) {
+function StationStep({ user, allowed, onSelect, onBack }) {
+  const stations = Object.values(STATIONS).filter(s => !allowed || allowed.includes(s.id));
   return (
     <div className="w-full max-w-sm">
       <div className="flex items-center justify-between mb-8">
@@ -309,7 +310,7 @@ function StationStep({ user, onSelect, onBack }) {
       </p>
 
       <div className="space-y-3">
-        {Object.values(STATIONS).map(station => (
+        {stations.map(station => (
           <button
             key={station.id}
             onClick={() => onSelect(station.id)}
