@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1013">
+<link rel="icon" href="/favicon.ico">
+<meta property="og:title" content="אפליקציית המטבח · וילה אכדיה">
+<meta property="og:description" content="איך מתקינים על מסך הבית, נכנסים עם קוד אישי ומשתמשים במשמרת">
+<meta property="og:image" content="https://my-new-app-kohl-iota.vercel.app/logo512.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}</style>
+<title>מדריך אפליקציית המטבח</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=Rubik:wght@500;700&display=swap">
+<style>
+/* Layout: one narrow phone-first column, a sticky section bar, station colors used only as markers */
+:root{
+  --bg:#0E1013; --surface:#171A1F; --surface-2:#1F232A; --line:#2A2F37;
+  --fg:#F2F3F5; --fg-2:#A9AFB9; --fg-3:#7C838F;
+  --accent:#3B82F6; --cold:#3B82F6; --hot:#EF4444; --checker:#10B981; --amber:#F59E0B;
+  --font-display:"Rubik","Heebo",system-ui,sans-serif;
+  --font-body:"Heebo",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#F5F6F8; --surface:#FFFFFF; --surface-2:#EEF0F3; --line:#DDE1E6;
+  --fg:#14171C; --fg-2:#4B5260; --fg-3:#6B7280; --accent:#2563EB; color-scheme:light;}}
+:root[data-theme="light"]{
+  --bg:#F5F6F8; --surface:#FFFFFF; --surface-2:#EEF0F3; --line:#DDE1E6;
+  --fg:#14171C; --fg-2:#4B5260; --fg-3:#6B7280; --accent:#2563EB; color-scheme:light;}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:18px;line-height:1.6;direction:rtl;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+.wrap{max-width:640px;margin:0 auto}
+h1,h2,h3{font-family:var(--font-display);line-height:1.2;text-wrap:balance;margin:0}
+p{margin:0}
+a{color:var(--accent)}
+
+/* hero */
+.hero{padding-block:40px 28px;display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-size:14px;font-weight:700;letter-spacing:.06em;color:var(--fg-3)}
+.hero h1{font-size:40px;font-weight:700}
+.hero p{color:var(--fg-2);font-size:19px}
+.stations{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--surface-2);font-size:15px;font-weight:500}
+.dot{width:10px;height:10px;border-radius:50%}
+.btn{display:flex;align-items:center;justify-content:center;min-height:60px;border-radius:14px;background:var(--accent);color:#fff;
+  font-weight:700;font-size:20px;text-decoration:none;padding:0 20px}
+.btn:focus-visible,.tab:focus-visible,summary:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.url{display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 6px}
+.url code{flex:1;min-width:0;overflow-wrap:anywhere;font-size:15px;direction:ltr;text-align:left;padding:0 8px;color:var(--fg-2)}
+.copy{min-height:44px;padding:0 16px;border-radius:10px;border:0;background:var(--surface-2);color:var(--fg);font:inherit;font-size:16px;font-weight:700;cursor:pointer}
+
+/* section nav */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;gap:4px;overflow-x:auto;padding-block:10px;margin-inline:-4px;scrollbar-width:none}
+.toc a{flex:none;color:var(--fg-2);text-decoration:none;font-weight:500;font-size:16px;padding:8px 12px;border-radius:10px}
+.toc a:hover{background:var(--surface-2);color:var(--fg)}
+
+section{padding-block:36px 8px;display:flex;flex-direction:column;gap:16px;scroll-margin-top:64px}
+section>h2{font-size:28px}
+.lead{color:var(--fg-2)}
+
+/* install tabs */
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface);padding:6px;border-radius:14px;border:1px solid var(--line)}
+.tab{min-height:52px;border:0;border-radius:10px;background:transparent;color:var(--fg-2);font:inherit;font-size:18px;font-weight:700;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--surface-2);color:var(--fg)}
+.warn{background:var(--surface);border:1px solid var(--line);border-inline-start:4px solid var(--amber);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.warn strong{font-size:18px}
+.warn p{color:var(--fg-2);font-size:17px}
+
+ol.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;counter-reset:s}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:40px 1fr;gap:14px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+ol.steps li::before{content:counter(s);width:40px;height:40px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:700;font-size:20px}
+ol.steps li>div{min-width:0;display:flex;flex-direction:column;gap:4px}
+ol.steps b{font-size:19px}
+ol.steps span{color:var(--fg-2);font-size:17px}
+.key{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:0 8px;font-weight:700;color:var(--fg);white-space:nowrap}
+.key svg{width:18px;height:18px}
+.done{color:var(--fg-2);font-size:17px}
+
+/* login mock */
+.pinrow{display:flex;gap:12px;justify-content:center;padding:6px 0 2px;direction:ltr}
+.pinrow i{width:16px;height:16px;border-radius:50%;border:2px solid var(--fg-3)}
+.pinrow i.f{background:var(--accent);border-color:var(--accent)}
+.st{display:flex;gap:8px;flex-wrap:wrap}
+
+/* features */
+.feat{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.feat>div{display:grid;grid-template-columns:44px 1fr;gap:14px;padding:16px;border-top:1px solid var(--line)}
+.feat>div:first-child{border-top:0}
+.ico{width:44px;height:44px;border-radius:12px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--fg)}
+.ico svg{width:22px;height:22px}
+.feat h3{font-size:19px;font-family:var(--font-body);font-weight:700}
+.feat p{color:var(--fg-2);font-size:17px}
+.where{font-size:14px;color:var(--fg-3);font-weight:500}
+.group{font-size:14px;font-weight:700;letter-spacing:.06em;color:var(--fg-3);padding-top:8px}
+
+/* status legend */
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.legend>div{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.legend span{font-size:17px}
+@media (max-width:420px){.legend{grid-template-columns:1fr}}
+
+/* day timeline */
+.day{display:flex;flex-direction:column;gap:0;border-inline-start:2px solid var(--line);margin-inline-start:8px;padding-inline-start:20px}
+.day>div{position:relative;padding-block:0 18px;display:flex;flex-direction:column;gap:4px}
+.day>div::before{content:"";position:absolute;inset-inline-start:-28px;top:6px;width:14px;height:14px;border-radius:50%;background:var(--bg);border:2px solid var(--fg-3)}
+.day b{font-size:19px}
+.day span{color:var(--fg-2);font-size:17px}
+
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+summary{cursor:pointer;list-style:none;padding:16px;font-weight:700;font-size:18px;min-height:56px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-size:24px;color:var(--fg-3);font-weight:400}
+details[open] summary::after{content:"−"}
+details p{padding:0 16px 16px;color:var(--fg-2);font-size:17px}
+.faq{display:flex;flex-direction:column;gap:8px}
+footer{padding-top:40px;color:var(--fg-3);font-size:15px;text-align:center}
+</style>
+</head><body>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">וילה אכדיה · המטבח</div>
+    <h1>האפליקציה של המטבח, בטלפון שלך</h1>
+    <p>צ׳ק ליסט, מתכונים, חוסרים והודעות לצוות במקום אחד. מתקינים פעם אחת על מסך הבית, נכנסים עם קוד אישי, וזה עובד כמו כל אפליקציה.</p>
+    <div class="stations">
+      <span class="chip"><i class="dot" style="background:var(--cold)"></i>פס קר</span>
+      <span class="chip"><i class="dot" style="background:var(--hot)"></i>פס חם</span>
+      <span class="chip"><i class="dot" style="background:var(--checker)"></i>צ׳קר</span>
+    </div>
+    <a class="btn" href="https://my-new-app-kohl-iota.vercel.app" target="_blank" rel="noopener">פתיחת האפליקציה</a>
+    <div class="url">
+      <code id="appurl">https://my-new-app-kohl-iota.vercel.app</code>
+      <button class="copy" id="copybtn" type="button">העתקה</button>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="תוכן">
+    <a href="#install">התקנה</a>
+    <a href="#login">כניסה</a>
+    <a href="#inside">מה יש בה</a>
+    <a href="#use">איך עובדים</a>
+    <a href="#beta">בטה</a>
+    <a href="#faq">שאלות</a>
+  </nav>
+
+  <section id="install">
+    <h2>התקנה על מסך הבית</h2>
+    <p class="lead">לוקח פחות מדקה. אחרי זה יהיה לך אייקון במסך הבית, והאפליקציה תיפתח במסך מלא בלי שורת כתובת.</p>
+
+    <div class="warn">
+      <strong>קודם כול: לפתוח בדפדפן הנכון</strong>
+      <p>אם הגעת מקישור בוואטסאפ, הוא נפתח בתוך וואטסאפ ומשם אי אפשר להתקין. לוחצים על שלוש הנקודות או על סמל המצפן, ובוחרים "פתח ב־Safari" באייפון או "פתח ב־Chrome" באנדרואיד.</p>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="סוג טלפון">
+      <button class="tab" role="tab" id="t-ios" aria-controls="p-ios" aria-selected="true" type="button">אייפון</button>
+      <button class="tab" role="tab" id="t-and" aria-controls="p-and" aria-selected="false" type="button">אנדרואיד</button>
+    </div>
+
+    <div id="p-ios" role="tabpanel" aria-labelledby="t-ios">
+      <ol class="steps">
+        <li><div><b>פותחים את האפליקציה ב־Safari</b><span>לוחצים על "פתיחת האפליקציה" למעלה, או מדביקים את הכתובת ב־Safari. רק Safari יודע להוסיף למסך הבית באייפון.</span></div></li>
+        <li><div><b>לוחצים על כפתור השיתוף</b><span>הריבוע עם החץ למעלה <span class="key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>שיתוף</span>, בשורה התחתונה של Safari. לא רואים אותו? לוחצים על <span class="key">···</span> ואז על "שיתוף".</span></div></li>
+        <li><div><b>בוחרים "הוסף למסך הבית"</b><span>גוללים קצת למטה ברשימה עד שמופיע <span class="key">הוסף למסך הבית</span>.</span></div></li>
+        <li><div><b>לוחצים "הוסף"</b><span>בפינה העליונה. אפשר לשנות את השם לפני כן, למשל ל"מטבח".</span></div></li>
+      </ol>
+    </div>
+
+    <div id="p-and" role="tabpanel" aria-labelledby="t-and" hidden>
+      <ol class="steps">
+        <li><div><b>פותחים את האפליקציה ב־Chrome</b><span>לוחצים על "פתיחת האפליקציה" למעלה, או מדביקים את הכתובת ב־Chrome.</span></div></li>
+        <li><div><b>לוחצים על שלוש הנקודות</b><span>בפינה של המסך <span class="key">⋮</span>.</span></div></li>
+        <li><div><b>בוחרים "הוספה למסך הבית"</b><span>בחלק מהטלפונים זה נקרא <span class="key">התקנת אפליקציה</span>. שתי האפשרויות עושות אותו דבר.</span></div></li>
+        <li><div><b>מאשרים "התקנה" או "הוספה"</b><span>אם נשאלים איפה לשים את האייקון, בוחרים "הוספה אוטומטית".</span></div></li>
+      </ol>
+      <p class="done">בסמסונג עם הדפדפן של סמסונג: לוחצים על שלושת הקווים <span class="key">☰</span> למטה ← "הוסף דף אל" ← "מסך הבית".</p>
+    </div>
+
+    <p class="done">מעכשיו פותחים את האפליקציה מהאייקון במסך הבית, ולא מהדפדפן.</p>
+  </section>
+
+  <section id="login">
+    <h2>כניסה עם הקוד שלך</h2>
+    <p class="lead">לכל טבח יש קוד אישי של 4 ספרות, והוא זה שמזהה אותך. את הקוד מקבלים מהשף. לא מעבירים אותו לאף אחד, כי כל מה שמסמנים באפליקציה נרשם על השם שלך.</p>
+    <ol class="steps">
+      <li><div><b>מקלידים את הקוד האישי</b><span>במסך הפתיחה מופיע "הכנס קוד אישי". מקלידים 4 ספרות ואז ✓.</span>
+        <div class="pinrow" aria-hidden="true"><i class="f"></i><i class="f"></i><i class="f"></i><i></i></div></div></li>
+      <li><div><b>בודקים שזה השם שלך</b><span>מופיע "ברוך הבא" עם השם שלך. אם זה לא השם שלך, לוחצים "לא אני" ומקלידים שוב.</span></div></li>
+      <li><div><b>בוחרים את הפס שלך היום</b><span>הצ׳ק ליסט והמשימות מתאימים את עצמם לפס. מופיעים רק הפסים שפתוחים לך.</span>
+        <div class="st">
+          <span class="chip"><i class="dot" style="background:var(--cold)"></i>קר</span>
+          <span class="chip"><i class="dot" style="background:var(--hot)"></i>חם</span>
+        </div></div></li>
+    </ol>
+    <p class="done">האפליקציה זוכרת אותך, אז לא צריך להקליד קוד בכל פעם. בטלפון משותף או בסוף העבודה: <span class="key">עוד</span> ← <span class="key">התנתק</span>.</p>
+  </section>
+
+  <section id="inside">
+    <h2>מה יש באפליקציה</h2>
+    <p class="lead">הסרגל התחתון מוביל למסכים הראשיים. כל השאר נמצא תחת "עוד". הכפתור עם זכוכית המגדלת בראש כל מסך מחפש בכל האפליקציה.</p>
+
+    <div class="group">בסרגל התחתון</div>
+    <div class="feat">
+      <div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span>
+        <div><h3>בית</h3><p>תמונת מצב של היום: כמה נשאר בפס, מה השאירה המשמרת הקודמת, הודעות חדשות מהשף ומצב החוסרים שדיווחת.</p></div></div>
+      <div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></span>
+        <div><h3>צ׳ק ליסט</h3><p>ההכנות של הפס שלך להיום, מחולקות לבוקר ולצהריים. לחיצה אחת מסמנת שסיימת. יש גם משימות עם שעת יעד ומשימות של מדידת טמפרטורה.</p></div></div>
+      <div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/></svg></span>
+        <div><h3>מתכונים</h3><p>צירים, רטבים לכל פס, מותססים וכבושים, בצקים. אפשר להכפיל או לחלק כמויות, והאפליקציה מחשבת הכול לבד.</p></div></div>
+      <div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5"/><circle cx="12" cy="16.5" r=".6" fill="currentColor"/><path d="M10.3 3.6L2.4 17.5A2 2 0 0 0 4.1 20.5h15.8a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/></svg></span>
+        <div><h3>חוסרים</h3><p>נגמר משהו? מדווחים כאן. רואים כשהדיווח עובר מ"דווח" ל"הוזמן" ול"הגיע". כאן גם כותבים הערות למשמרת.</p></div></div>
+    </div>
+
+    <div class="group">תחת "עוד"</div>
+    <div class="feat">
+      <div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span>
+        <div><h3>יומן משמרת</h3><p>מה קרה במשמרת: הערות, תקלות ציוד וסיכום של חוסרים וצ׳ק ליסט. המעבר בין בוקר לערב הוא ב־16:00.</p></div></div>
+      <div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg></span>
+        <div><h3>הודעות לצוות</h3><p>הודעות מהשף ומכל הצוות. לוחצים "ראיתי" כדי שיידעו שקראת.</p></div></div>
+      <div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
+        <div><h3>משימות שבועיות</h3><p>ניקיונות ומשימות שחוזרים פעם בשבוע ולא כל יום.</p></div></div>
+      <div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12c3-5 9-6 13-3l5-3v12l-5-3c-4 3-10 2-13-3z"/><circle cx="7.5" cy="11" r=".6" fill="currentColor"/></svg></span>
+        <div><h3>ספירת חלבונים</h3><p>ספירת מלאי של דגים, טרטרים ופילה בסוף משמרת.</p></div></div>
+      <div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></span>
+        <div><h3>תפוגה ובזבוז</h3><p>מתי הוכנה כל הכנה ועד מתי היא טובה.</p></div></div>
+      <div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h4l2.5 12h11L21 8H6.5"/><circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/></svg></span>
+        <div><h3>הזמנות ספקים</h3><p>רשימת ההזמנה לספק הירקות. ספקים נוספים יתווספו בהמשך.</p></div></div>
+      <div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/></svg></span>
+        <div><h3>קבלת סחורה</h3><p>בדיקת משלוחים מול ההזמנה כשסחורה מגיעה.</p><span class="where">לשף ולצ׳קר</span></div></div>
+    </div>
+  </section>
+
+  <section id="use">
+    <h2>איך עובדים איתה במשמרת</h2>
+    <div class="day">
+      <div><b>תחילת משמרת</b><span>פותחים את האפליקציה ובוחרים פס. בדף הבית קוראים מה השאירה המשמרת הקודמת ולוחצים "קראתי". אם יש הודעה מהשף, לוחצים "ראיתי".</span></div>
+      <div><b>במהלך ההכנות</b><span>בצ׳ק ליסט מסמנים כל הכנה ברגע שסיימת. צריך מתכון? מחפשים בזכוכית המגדלת ומשנים כמות לפי הצורך.</span></div>
+      <div><b>משהו נגמר</b><span>מדווחים מיד במסך החוסרים, ולא מחכים לסוף המשמרת. ככה הוא נכנס להזמנה בזמן.</span></div>
+      <div><b>סוף משמרת</b><span>סופרים חלבונים, כותבים הערה למשמרת הבאה אם צריך, ובודקים שאין משימות פתוחות.</span></div>
+    </div>
+
+    <h3 style="font-size:21px;padding-top:8px">מה אומר כל סימן</h3>
+    <div class="legend">
+      <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="12" fill="none" stroke="var(--fg-3)" stroke-width="2.5"/></svg><span>עוד לא התחיל</span></div>
+      <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="12" fill="none" stroke="var(--amber)" stroke-width="2.5"/><path d="M15 3a12 12 0 0 1 0 24z" fill="var(--amber)"/></svg><span>בעבודה</span></div>
+      <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="12" fill="none" stroke="var(--hot)" stroke-width="2.5" stroke-dasharray="4 3"/></svg><span>תקוע או חסר</span></div>
+      <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="13" fill="var(--checker)"/><path d="M9.5 15.5l3.5 3.5 7-8" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>בוצע</span></div>
+    </div>
+    <p class="done">לחצת בטעות? למטה מופיע "ביטול" ל־5 שניות. לוחצים עליו וזה חוזר אחורה. משימות שסיימת עוברות לרשימה מקופלת "הושלמו".</p>
+  </section>
+
+  <section id="beta">
+    <h2>גרסת בטה: עוזרים לנו לעדכן</h2>
+    <p class="lead">האפליקציה חדשה, ועוד לא הכול בה מעודכן. בצ׳ק ליסט יכולות להופיע הכנות של מנות שכבר ירדו מהתפריט, ויכולים לחסור מתכונים. אתם מכירים את הפס הכי טוב, אז כל אחד מתקן את מה שהוא רואה.</p>
+    <ol class="steps">
+      <li><div><b>חסרה הכנה בצ׳ק ליסט</b><span>בתחתית הצ׳ק ליסט לוחצים <span class="key">+ הוסף הכנה</span>, כותבים שם ובוחרים בוקר או צהריים.</span></div></li>
+      <li><div><b>הכנה לא רלוונטית או עם שם לא נכון</b><span>לוחצים <span class="key">עריכה</span> ליד "הוסף הכנה", מתקנים או מוחקים, ובסוף לוחצים <span class="key">סיום</span>. הכנה קבועה שנמחקה אפשר להחזיר במצב עריכה.</span></div></li>
+      <li><div><b>חסר מתכון</b><span>במסך המתכונים לוחצים על כפתור ה־<span class="key">+</span> הירוק בפינה, ומוסיפים מתכון חדש עם כמויות ושלבים.</span></div></li>
+      <li><div><b>משהו לא מסתדר</b><span>לא מצליחים לתקן לבד, משהו נראה שבור או שיש רעיון לשיפור? שולחים לים הודעה עם צילום מסך.</span></div></li>
+    </ol>
+  </section>
+
+  <section id="faq">
+    <h2>שאלות נפוצות</h2>
+    <div class="faq">
+      <details><summary>שכחתי את הקוד</summary><p>פונים לשף. הוא יכול לתת לך את הקוד שוב או לקבוע קוד חדש.</p></details>
+      <details><summary>הקוד לא עובד</summary><p>אם מופיע "קוד שגוי", מנסים שוב לאט. אם זה עדיין לא עובד, בודקים שיש אינטרנט ופונים לשף.</p></details>
+      <details><summary>הופיע שם של מישהו אחר</summary><p>לוחצים "לא אני" ומקלידים שוב את הקוד שלך. אם זה חוזר, פונים לשף.</p></details>
+      <details><summary>בחרתי פס לא נכון</summary><p>נכנסים ל"עוד" ← "התנתק", ונכנסים שוב עם הפס הנכון.</p></details>
+      <details><summary>צריך להוריד משהו מ־App Store או מ־Google Play?</summary><p>לא. ההתקנה היא דרך הדפדפן בלבד, כמו שמוסבר למעלה. לא תופסת מקום בטלפון.</p></details>
+      <details><summary>איך מעדכנים את האפליקציה?</summary><p>לא צריך לעשות כלום. בכל פתיחה מקבלים את הגרסה הכי חדשה.</p></details>
+      <details><summary>זה עובד בלי אינטרנט?</summary><p>צריך חיבור לאינטרנט כדי לראות ולשמור עדכונים. כל מה שמסמנים מופיע מיד אצל כל הצוות.</p></details>
+      <details><summary>לא מוצא את "הוסף למסך הבית"</summary><p>כמעט תמיד זה אומר שהקישור נפתח בתוך וואטסאפ, אינסטגרם או דפדפן אחר. פותחים את הכתובת ב־Safari (אייפון) או ב־Chrome (אנדרואיד) ומנסים שוב.</p></details>
+    </div>
+  </section>
+
+  <footer>שאלות על האפליקציה? פונים לים.</footer>
+</div>
+
+<script>
+(function(){
+  var tabs=[document.getElementById('t-ios'),document.getElementById('t-and')];
+  var panels=[document.getElementById('p-ios'),document.getElementById('p-and')];
+  function pick(i){tabs.forEach(function(t,j){t.setAttribute('aria-selected',j===i?'true':'false');panels[j].hidden=j!==i;});}
+  tabs.forEach(function(t,i){t.addEventListener('click',function(){pick(i);});});
+  if(/android/i.test(navigator.userAgent)) pick(1);
+
+  var btn=document.getElementById('copybtn'), code=document.getElementById('appurl');
+  btn.addEventListener('click',function(){
+    function selectIt(){var r=document.createRange();r.selectNodeContents(code);var s=getSelection();s.removeAllRanges();s.addRange(r);btn.textContent='סומן';}
+    try{
+      navigator.clipboard.writeText(code.textContent).then(function(){btn.textContent='הועתק';setTimeout(function(){btn.textContent='העתקה';},2000);},selectIt);
+    }catch(e){selectIt();}
+  });
+})();
+</script>
+</body></html>
