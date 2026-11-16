@@ -7,6 +7,7 @@ import { useTenantId } from '../context/TenantContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { SUPPLIERS } from '../data/suppliers';
+import CatalogOrder from './supplier/CatalogOrder';
 import { Card, Button, Input, Sheet } from './ui';
 import { ChevronRight, Plus, RotateCcw, Copy, FileDown, Clock, Trash2, Carrot, Fish, Package, Truck } from 'lucide-react';
 
@@ -342,6 +343,11 @@ export default function SupplierOrder() {
         </div>
       </div>
     );
+  }
+
+  // Catalog-driven suppliers (e.g. עלה עלה) use the new order screen
+  if (selectedSupplier.catalog) {
+    return <CatalogOrder supplier={selectedSupplier} onBack={() => setSelectedSupplier(null)} />;
   }
 
   // ═══════════════════════════════════════════════════════

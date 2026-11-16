@@ -1,0 +1,700 @@
+{
+  "supplier": "עלה עלה",
+  "units": {
+    "kg": "ק״ג",
+    "pack": "נספ״ק",
+    "unit": "יח׳",
+    "bunch": "צרורות"
+  },
+  "items": [
+    {
+      "name": "ליים",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "standing",
+      "standing_qty": 5,
+      "min": null,
+      "max": null,
+      "hint": "קבוע יומי"
+    },
+    {
+      "name": "תפוז",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "standing",
+      "standing_qty": 15,
+      "min": null,
+      "max": null,
+      "hint": "קבוע יומי"
+    },
+    {
+      "name": "לימון",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "standing",
+      "standing_qty": 10,
+      "min": null,
+      "max": null,
+      "hint": "קבוע יומי"
+    },
+    {
+      "name": "עגבניה אשכול",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "מגי",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "שרי תמר אדום",
+      "category": "פירות וירקות",
+      "unit": "pack",
+      "step": 1,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "שרי עגול אדום",
+      "category": "פירות וירקות",
+      "unit": "pack",
+      "step": 1,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "שרי צהוב",
+      "category": "פירות וירקות",
+      "unit": "pack",
+      "step": 1,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "שושקה",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "תפוא באטר",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "אבוקדו האס",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "par",
+      "min": 6,
+      "max": null,
+      "hint": "מינ׳ 6"
+    },
+    {
+      "name": "צילי אדום",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "צילי ירוק",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "מלפפון",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "מלפפון ארומטו",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "זוקיני",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "גזר",
+      "category": "פירות וירקות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "תירס",
+      "category": "בצלים, פירות ושונות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "בצל סגול",
+      "category": "בצלים, פירות ושונות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "בצל לבן",
+      "category": "בצלים, פירות ושונות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "כרישה",
+      "category": "בצלים, פירות ושונות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "בננה",
+      "category": "בצלים, פירות ושונות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "par",
+      "min": 1,
+      "max": 2,
+      "hint": "1–2"
+    },
+    {
+      "name": "גרני סמית",
+      "category": "בצלים, פירות ושונות",
+      "unit": "pack",
+      "step": 1,
+      "mode": "par",
+      "min": 1,
+      "max": 2,
+      "hint": "1–2"
+    },
+    {
+      "name": "מלון",
+      "category": "בצלים, פירות ושונות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "ארטישוק ירושלמי",
+      "category": "בצלים, פירות ושונות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "גינגר",
+      "category": "בצלים, פירות ושונות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "שאלוט מוארך",
+      "category": "בצלים, פירות ושונות",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "כוסברה",
+      "category": "עשבי תיבול",
+      "unit": "kg",
+      "step": 0.25,
+      "mode": "par",
+      "min": 0.25,
+      "max": 0.5,
+      "hint": "0.25–0.5"
+    },
+    {
+      "name": "שמיר",
+      "category": "עשבי תיבול",
+      "unit": "kg",
+      "step": 0.25,
+      "mode": "when_out",
+      "min": 0,
+      "max": 0.25,
+      "hint": "רק כשנגמר · עד 0.25"
+    },
+    {
+      "name": "זעתר",
+      "category": "עשבי תיבול",
+      "unit": "kg",
+      "step": 0.25,
+      "mode": "par",
+      "min": 0.25,
+      "max": 0.5,
+      "hint": "0.25–0.5"
+    },
+    {
+      "name": "נענע",
+      "category": "עשבי תיבול",
+      "unit": "kg",
+      "step": 0.25,
+      "mode": "when_out",
+      "min": 0,
+      "max": 0.25,
+      "hint": "רק כשנגמר · עד 0.25"
+    },
+    {
+      "name": "מרווה",
+      "category": "עשבי תיבול",
+      "unit": "kg",
+      "step": 0.25,
+      "mode": "par",
+      "min": 0.25,
+      "max": 0.25,
+      "hint": "0.25"
+    },
+    {
+      "name": "עירית",
+      "category": "עשבי תיבול",
+      "unit": "kg",
+      "step": 0.25,
+      "mode": "par",
+      "min": 0.25,
+      "max": 0.5,
+      "hint": "0.25–0.5"
+    },
+    {
+      "name": "טימין",
+      "category": "עשבי תיבול",
+      "unit": "kg",
+      "step": 0.25,
+      "mode": "par",
+      "min": 0.25,
+      "max": 0.25,
+      "hint": "0.25"
+    },
+    {
+      "name": "בזיליקום",
+      "category": "עשבי תיבול",
+      "unit": "kg",
+      "step": 0.25,
+      "mode": "par",
+      "min": 0.25,
+      "max": 0.5,
+      "hint": "0.25–0.5"
+    },
+    {
+      "name": "פטרוזיליה",
+      "category": "עשבי תיבול",
+      "unit": "kg",
+      "step": 0.25,
+      "mode": "par",
+      "min": 0.25,
+      "max": 0.5,
+      "hint": "0.25–0.5"
+    },
+    {
+      "name": "בצל ירוק",
+      "category": "עלים וירוקים",
+      "unit": "kg",
+      "step": 0.25,
+      "mode": "on_request",
+      "min": null,
+      "max": null,
+      "hint": "לפי בקשה"
+    },
+    {
+      "name": "מיזונה",
+      "category": "עלים וירוקים",
+      "unit": "pack",
+      "step": 1,
+      "mode": "when_out",
+      "min": 0,
+      "max": 1,
+      "hint": "כשנגמר · עד 1"
+    },
+    {
+      "name": "עלי חרדל",
+      "category": "עלים וירוקים",
+      "unit": "pack",
+      "step": 1,
+      "mode": "when_out",
+      "min": 0,
+      "max": 2,
+      "hint": "כשנגמר · עד 2"
+    },
+    {
+      "name": "עלי שומר",
+      "category": "עלים וירוקים",
+      "unit": "pack",
+      "step": 1,
+      "mode": "when_out",
+      "min": 0,
+      "max": 2,
+      "hint": "כשנגמר · עד 2"
+    },
+    {
+      "name": "עלי חזרת",
+      "category": "עלים וירוקים",
+      "unit": "pack",
+      "step": 1,
+      "mode": "when_out",
+      "min": 0,
+      "max": 2,
+      "hint": "כשנגמר · עד 2"
+    },
+    {
+      "name": "לאליק",
+      "category": "עלים וירוקים",
+      "unit": "pack",
+      "step": 1,
+      "mode": "standing",
+      "standing_qty": 8,
+      "min": 8,
+      "max": 8,
+      "hint": "קבוע · סגור, לא שטוף",
+      "supplier_note": "סגור, לא שטוף"
+    },
+    {
+      "name": "קייל",
+      "category": "עלים וירוקים",
+      "unit": "kg",
+      "step": 0.25,
+      "mode": "when_out",
+      "min": 0,
+      "max": 0.5,
+      "hint": "כשנגמר · עד 0.5"
+    },
+    {
+      "name": "שומר בייבי",
+      "category": "עלים וירוקים",
+      "unit": "unit",
+      "step": 5,
+      "mode": "manual",
+      "min": null,
+      "max": null,
+      "hint": "בקפיצות של 5 (חבילה)"
+    },
+    {
+      "name": "פאקוס",
+      "category": "עלים וירוקים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "תרד",
+      "category": "עלים וירוקים",
+      "unit": "kg",
+      "step": 0.25,
+      "mode": "par",
+      "min": 0.5,
+      "max": 1,
+      "hint": "0.5–1"
+    },
+    {
+      "name": "סלרי",
+      "category": "עלים וירוקים",
+      "unit": "unit",
+      "step": 1,
+      "mode": "manual",
+      "min": null,
+      "max": null,
+      "hint": "לרוב 2"
+    },
+    {
+      "name": "מלפפון בייבי",
+      "category": "עלים וירוקים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "קישוא מיני",
+      "category": "עלים וירוקים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "ברוקולי",
+      "category": "עלים וירוקים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "שעועית ירוקה",
+      "category": "עלים וירוקים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "גרגיר",
+      "category": "עלים וירוקים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "par",
+      "min": 1,
+      "max": 3,
+      "hint": "1–3"
+    },
+    {
+      "name": "נקטרינה",
+      "category": "עלים וירוקים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "סלק זהוב",
+      "category": "שורשים ומיוחדים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "צנונית",
+      "category": "שורשים ומיוחדים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "צנונית אבטיח",
+      "category": "שורשים ומיוחדים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "חזרת",
+      "category": "שורשים ומיוחדים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "שום ישראלי קלוף",
+      "category": "שורשים ומיוחדים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "מנגולד",
+      "category": "שורשים ומיוחדים",
+      "unit": "pack",
+      "step": 1,
+      "mode": "par",
+      "min": 1,
+      "max": 2,
+      "hint": "1–2"
+    },
+    {
+      "name": "פטל",
+      "category": "שורשים ומיוחדים",
+      "unit": "pack",
+      "step": 1,
+      "mode": "par",
+      "min": 4,
+      "max": 6,
+      "hint": "4–6"
+    },
+    {
+      "name": "אוכמניות",
+      "category": "שורשים ומיוחדים",
+      "unit": "pack",
+      "step": 1,
+      "mode": "par",
+      "min": 4,
+      "max": 6,
+      "hint": "4–6"
+    },
+    {
+      "name": "תותים",
+      "category": "שורשים ומיוחדים",
+      "unit": "pack",
+      "step": 1,
+      "mode": "par",
+      "min": 4,
+      "max": 6,
+      "hint": "4–6"
+    },
+    {
+      "name": "קולורבי",
+      "category": "שורשים ומיוחדים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "חרוש",
+      "category": "שורשים ומיוחדים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "אספרגוס",
+      "category": "שורשים ומיוחדים",
+      "unit": "bunch",
+      "step": 1,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "פאק צ'וי",
+      "category": "שורשים ומיוחדים",
+      "unit": "pack",
+      "step": 1,
+      "mode": "par",
+      "min": 3,
+      "max": 8,
+      "hint": "3–8"
+    },
+    {
+      "name": "פדרון",
+      "category": "שורשים ומיוחדים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "שעועית יריחו",
+      "category": "שורשים ומיוחדים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "סלק זברה",
+      "category": "שורשים ומיוחדים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "צנון",
+      "category": "שורשים ומיוחדים",
+      "unit": "kg",
+      "step": 0.5,
+      "mode": "manual",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "שום ירוק עלים",
+      "category": "שורשים ומיוחדים",
+      "unit": "bunch",
+      "step": 1,
+      "mode": "on_request",
+      "min": null,
+      "max": null,
+      "hint": "לפי בקשה · להתססה"
+    }
+  ],
+  "inactive_items": [
+    {
+      "name": "אבטיח",
+      "category": "בצלים, פירות ושונות",
+      "unit": "unit",
+      "step": 1,
+      "mode": "manual",
+      "min": null,
+      "max": null,
+      "active": false,
+      "note": "לא בעונה"
+    }
+  ]
+}
