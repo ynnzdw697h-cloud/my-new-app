@@ -853,7 +853,7 @@ const TaskRow = memo(function TaskRow({ task, status, subMask, open, reduce, has
             )}
           </span>
           {hasSubItems && (
-            <span className="flex items-center gap-1.5 text-base tabular-nums text-text-secondary flex-shrink-0">
+            <span className="flex items-center gap-1.5 text-lg tabular-nums text-text-secondary flex-shrink-0">
               {subsDone}/{subsTotal}
               <ChevronDown size={18} strokeWidth={1.5} aria-hidden="true" style={{ transform: open ? 'none' : 'rotate(90deg)', transition: reduce ? 'none' : 'transform 0.15s' }} />
             </span>
@@ -863,10 +863,10 @@ const TaskRow = memo(function TaskRow({ task, status, subMask, open, reduce, has
           <button
             onClick={() => onOpenRecipe(task)}
             aria-label={`מתכון: ${task.task}`}
-            className="flex items-center gap-1.5 px-3 text-sm text-text-secondary flex-shrink-0"
+            className="w-12 flex items-center justify-center text-text-secondary flex-shrink-0"
           >
-            <BookOpen size={18} strokeWidth={1.5} aria-hidden="true" />
-            מתכון
+            <BookOpen size={22} strokeWidth={1.5} aria-hidden="true" />
+            <span className="sr-only">מתכון</span>
           </button>
         )}
         <button
@@ -886,12 +886,12 @@ const TaskRow = memo(function TaskRow({ task, status, subMask, open, reduce, has
               <button
                 key={sub.id}
                 onClick={() => onToggleSub(task, sub)}
-                className="w-full flex items-center gap-3 min-h-[52px] text-right select-none"
+                className="w-full flex items-center gap-3 min-h-[64px] text-right select-none"
                 style={{ borderTop: '1px solid var(--border)' }}
               >
                 <TaskMark status={subDone ? 'done' : 'todo'} color={stationColor} size={24} reduce={reduce} />
-                <span className={`flex-1 text-base ${subDone ? 'text-text-secondary' : 'text-text-primary'}`}>{sub.label}</span>
-                {sub.unit && <span className="text-sm text-text-secondary">{sub.unit}</span>}
+                <span className={`flex-1 text-lg ${subDone ? 'text-text-secondary' : 'text-text-primary'}`}>{sub.label}</span>
+                {sub.unit && <span className="text-lg text-text-secondary">{sub.unit}</span>}
               </button>
             );
           })}

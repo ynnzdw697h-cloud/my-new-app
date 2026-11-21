@@ -274,12 +274,12 @@ function StationRowView({ station, prep, mine, onOpen }) {
       <div className="flex items-center gap-2">
         <span style={{ width: 8, height: 8, borderRadius: '50%', background: station.color, flexShrink: 0 }} />
         <span className="text-lg font-medium text-text-primary">{station.name}</span>
-        {mine && <span className="text-sm text-text-secondary">· הפס שלך</span>}
-        <span className="mr-auto text-base text-text-secondary tabular-nums">{done}/{total}</span>
+        {mine && <span className="text-lg text-text-secondary">· הפס שלך</span>}
+        <span className="mr-auto text-lg text-text-secondary tabular-nums">{done}/{total}</span>
         {onOpen && <ChevronLeft size={18} strokeWidth={1.5} className="text-text-tertiary" />}
       </div>
       <SegmentedBar done={done} total={total} color={ready ? '#10B981' : station.color} height={5} />
-      <div className="flex flex-wrap gap-x-3 text-sm">
+      <div className="flex flex-wrap gap-x-3 text-lg">
         <span className={ready ? 'text-sem-success' : 'text-text-secondary'}>
           {ready ? 'מוכן לשירות' : `נשארו ${left}`}
         </span>
@@ -327,12 +327,12 @@ function MyStationCard({ station, prep, onOpen }) {
         <div className="flex items-center gap-2">
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: station.color, flexShrink: 0 }} />
           <span className="text-lg font-medium text-text-primary">{station.name}</span>
-          <span className="text-sm text-text-secondary">· הפס שלך</span>
-          <span className="mr-auto text-base text-text-secondary tabular-nums">{done}/{total}</span>
+          <span className="text-lg text-text-secondary">· הפס שלך</span>
+          <span className="mr-auto text-lg text-text-secondary tabular-nums">{done}/{total}</span>
           <ChevronLeft size={18} strokeWidth={1.5} className="text-text-tertiary" />
         </div>
         <SegmentedBar done={done} total={total} color={ready ? '#10B981' : station.color} height={5} />
-        <div className="flex flex-wrap gap-x-3 text-sm">
+        <div className="flex flex-wrap gap-x-3 text-lg">
           <span className={ready ? 'text-sem-success' : 'text-text-secondary'}>
             {ready ? 'מוכן לשירות' : `נשארו ${left}`}
           </span>
@@ -342,7 +342,7 @@ function MyStationCard({ station, prep, onOpen }) {
       </div>
       {next && (
         <div className="px-4 py-3.5 min-h-[64px]" style={{ borderTop: '1px solid var(--border)' }}>
-          <p className="text-sm" style={{ color: nextStuck ? '#F87171' : 'rgba(255,255,255,0.62)' }}>
+          <p className="text-lg" style={{ color: nextStuck ? '#F87171' : 'rgba(255,255,255,0.62)' }}>
             {nextStuck ? 'חסר / תקוע' : 'הבא בתור'}
           </p>
           <p className="text-lg font-medium text-text-primary truncate">
@@ -367,7 +367,7 @@ function UnreadAnnouncements({ user, onOpenAll }) {
     return (
       <div className="space-y-1">
         <AnnouncementBanner user={user} onOpen={onOpenAll} />
-        <button onClick={() => setOpen(false)} className="w-full min-h-[48px] text-sm text-text-secondary">הסתר</button>
+        <button onClick={() => setOpen(false)} className="w-full min-h-[48px] text-lg text-text-secondary">הסתר</button>
       </div>
     );
   }
@@ -379,7 +379,7 @@ function UnreadAnnouncements({ user, onOpenAll }) {
       style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}
     >
       <Megaphone size={20} strokeWidth={1.5} className="text-text-secondary flex-shrink-0" aria-hidden="true" />
-      <span className="flex-1 min-w-0 text-base text-text-primary truncate">
+      <span className="flex-1 min-w-0 text-lg text-text-primary truncate">
         {unseen.length > 1 ? `${unseen.length} הודעות שלא נקראו` : 'הודעה שלא נקראה'} · {newest.text}
       </span>
       <ChevronLeft size={18} strokeWidth={1.5} className="text-text-tertiary flex-shrink-0" />
