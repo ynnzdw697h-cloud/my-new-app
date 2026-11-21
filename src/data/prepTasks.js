@@ -151,6 +151,7 @@ export const PREP_TASKS = {
 
     {
       id: 'c_egg_salad',
+      recipeId: 5, // 'סלט ביצים חדש' in recipes.js
       shift: 'בוקר',
       category: 'סלט ביצים',
       categoryIcon: '🥚',
@@ -301,3 +302,6 @@ export const PREP_TASKS = {
     { id: 'ch8', shift: 'צהריים', category: 'ניקיון',    categoryIcon: '🧹', task: 'בדיקת ניקיון כללי',              details: '', estimatedTime: '10 דק׳' },
   ],
 };
+
+// Stations whose checklist is still placeholder content (not a real list yet): hidden from the dashboard's station overview
+export const PLACEHOLDER_STATIONS = ['hot', 'checker'];

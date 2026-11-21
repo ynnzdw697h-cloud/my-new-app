@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import WeighingDemo from './demo/WeighingDemo';
 import FohDemo from './demo/FohDemo';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Utensils, Search } from 'lucide-react';
+import { Utensils, Search, ArrowRight } from 'lucide-react';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { TenantProvider } from './context/TenantContext';
@@ -11,11 +11,11 @@ import LoginFlow from './components/LoginFlow';
 import BottomNav from './components/BottomNav';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
-import PrepChecklist from './components/PrepChecklist';
+import PrepChecklist, { dueInfo, minutesNow } from './components/PrepChecklist';
 import RecipeDatabase from './components/RecipeDatabase';
 import PrepTracker from './components/PrepTracker';
 import WeeklyTasks from './components/WeeklyTasks';
-import ShiftNotes from './components/ShiftNotes';
+import ShiftNotes, { missingStatus } from './components/ShiftNotes';
 import ShiftLog from './components/ShiftLog';
 import Announcements from './components/Announcements';
 import ProteinCount from './components/ProteinCount';
@@ -24,6 +24,8 @@ import CheckerHub from './components/checker/CheckerHub';
 import CheckerDetail from './components/checker/CheckerDetail';
 import GlobalSearch from './components/GlobalSearch';
 import { usePrepState } from './hooks/usePrepState';
+import { useFirestoreArray } from './hooks/useFirestoreArray';
+import { LOG_DOCS } from './data/shifts';
 import { STATIONS } from './data/stations';
 import { SESSION_KEY } from './data/chefs';
 
@@ -75,8 +77,24 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
   const [recipeTarget,     setRecipeTarget]      = useState(null); // { kind, item }
   const [focusTaskId,      setFocusTaskId]       = useState(null);
   const [focusMissingId,   setFocusMissingId]    = useState(null);
+  // Set when a recipe was opened from a checklist row, so "back" returns to that row
+  const [recipeFromTask,   setRecipeFromTask]   = useState(null);
   const isTablet    = useIsTablet();
   const prep        = usePrepState(station);
+
+  // Small dots in the menu: something is waiting on that screen
+  const [missingItems]  = useFirestoreArray('missing_items');
+  const [announcements] = useFirestoreArray(LOG_DOCS.announcements);
+  const [nowMin, setNowMin] = useState(minutesNow);
+  useEffect(() => {
+    const id = setInterval(() => setNowMin(minutesNow()), 60000);
+    return () => clearInterval(id);
+  }, []);
+  const badges = {
+    shift: missingItems.some(i => missingStatus(i) === 'reported'),
+    announcements: announcements.some(a => !a.removed && ![a.author, ...(a.seenBy || []).map(s => s.name)].includes(user)),
+    prep: prep.progress.pendingTasks.some(t => dueInfo(t, false, nowMin)?.late),
+  };
 
   const openDelivery = useCallback((id) => {
     setActiveDeliveryId(id);
@@ -88,10 +106,26 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
   // (Search picks use setView directly so they can scroll to the found item.)
   const navigate = useCallback((id) => {
     setView(id);
+    setRecipeFromTask(null);
     scrollToTop();
   }, []);
 
+  // "מתכון" button on a checklist row
+  const openRecipeFromTask = useCallback((target, taskId) => {
+    setRecipeTarget(target);
+    setRecipeFromTask(taskId);
+    setView('recipes');
+    scrollToTop();
+  }, []);
+
+  const backToChecklist = useCallback(() => {
+    setFocusTaskId(recipeFromTask);
+    setRecipeFromTask(null);
+    setView('prep');
+  }, [recipeFromTask]);
+
   const onSearchPick = useCallback((type, payload) => {
+    setRecipeFromTask(null);
     if (type === 'recipe')  { setRecipeTarget(payload);       setView('recipes'); }
     if (type === 'task')    { setFocusTaskId(payload.id);     setView('prep'); }
     if (type === 'missing') { setFocusMissingId(payload.id);  setView('shift'); }
@@ -136,7 +170,18 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
           <Dashboard station={station} user={user} prep={prep} onNavigate={navigate} role={role} />
         )}
         {view === 'prep' && (
-          <PrepChecklist station={station} prep={prep} user={user} focusTaskId={focusTaskId} onFocused={() => setFocusTaskId(null)} />
+          <PrepChecklist station={station} prep={prep} user={user} focusTaskId={focusTaskId} onFocused={() => setFocusTaskId(null)} onOpenRecipe={openRecipeFromTask} />
+        )}
+        {view === 'recipes' && recipeFromTask && (
+          <div className="sticky top-16 md:top-0 z-20 px-4 py-2" style={{ background: 'rgba(18,18,18,0.94)', borderBottom: '1px solid var(--border)' }}>
+            <button
+              onClick={backToChecklist}
+              className="flex items-center gap-2 min-h-[48px] text-lg font-medium text-text-primary"
+            >
+              <ArrowRight size={20} strokeWidth={1.75} aria-hidden="true" />
+              חזרה לצ׳ק ליסט
+            </button>
+          </div>
         )}
         {view === 'recipes'        && (
           <RecipeDatabase
@@ -179,6 +224,7 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
           role={role}
           isOpen={true}
           onClose={() => {}}
+          badges={badges}
         />
         <div className="flex-1 flex flex-col min-w-0" style={{ borderRight: '1px solid var(--border)' }}>
           {/* Tablet top bar — slimmer, no user chip (sidebar has it) */}
@@ -249,6 +295,7 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
         station={station}
         onLogout={onLogout}
         role={role}
+        badges={badges}
       />
     </div>
   );
