@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import WeighingDemo from './demo/WeighingDemo';
 import FohDemo from './demo/FohDemo';
-import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Utensils, Search, ArrowRight } from 'lucide-react';
+import { motion, MotionConfig } from 'framer-motion';
+import { Utensils, Search, ArrowRight, Check, LogOut } from 'lucide-react';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { TenantProvider } from './context/TenantContext';
@@ -23,11 +23,14 @@ import SupplierOrder from './components/SupplierOrder';
 import CheckerHub from './components/checker/CheckerHub';
 import CheckerDetail from './components/checker/CheckerDetail';
 import GlobalSearch from './components/GlobalSearch';
+import ErrorBoundary from './components/ErrorBoundary';
+import { Sheet } from './components/ui/Sheet';
+import { useBackClose } from './hooks/useBackClose';
 import { usePrepState } from './hooks/usePrepState';
 import { useFirestoreArray } from './hooks/useFirestoreArray';
 import { LOG_DOCS } from './data/shifts';
 import { STATIONS } from './data/stations';
-import { SESSION_KEY } from './data/chefs';
+import { SESSION_KEY, CHEFS } from './data/chefs';
 
 const PAGE_TITLES = {
   dashboard:      'וילה אכדיה',
@@ -67,9 +70,28 @@ function scrollToTop() {
   });
 }
 
+// The last screen is kept for this tab only, so a refresh stays on the same screen.
+const VIEW_KEY = 'villa_akadia_view';
+function homeFor(role) { return role === 'checker' ? 'checker_hub' : 'dashboard'; }
+function loadView(user, role) {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(VIEW_KEY) || 'null');
+    if (!v || v.user !== user || !PAGE_TITLES[v.view] || v.view === 'checker_detail') return homeFor(role);
+    if ((role === 'checker') !== v.view.startsWith('checker')) return homeFor(role);
+    return v.view;
+  } catch (_) {
+    return homeFor(role);
+  }
+}
+
+// Last station a user worked on (shown first at the next login)
+export function lastStationKey(user) { return `villa_akadia_last_station:${user}`; }
+
 // Inner component — rendered only after login, always inside TenantProvider
-function AppShell({ user, station, role, tenantId, onLogout }) {
-  const [view, setView]                         = useState(role === 'checker' ? 'checker_hub' : 'dashboard');
+function AppShell({ user, station, role, tenantId, onLogout, onChangeStation }) {
+  const home = homeFor(role);
+  const [view, setView]                         = useState(() => loadView(user, role));
+  const [stationOpen,      setStationOpen]       = useState(false);
   const [activeDeliveryId, setActiveDeliveryId] = useState(null);
   const [markReadyRecipe,  setMarkReadyRecipe]   = useState(null);
   const [searchOpen,       setSearchOpen]        = useState(false);
@@ -132,6 +154,20 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
   }, []);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
 
+  // Phone "back" button: closes search / sheet first, then returns to the home screen.
+  // From the home screen it leaves the app.
+  useBackClose(searchOpen, closeSearch);
+  useBackClose(view !== home, useCallback(() => { setView(home); setRecipeFromTask(null); }, [home]));
+  useBackClose(stationOpen, useCallback(() => setStationOpen(false), []));
+  useEffect(() => {
+    try { sessionStorage.setItem(VIEW_KEY, JSON.stringify({ user, view })); } catch (_) { /* ignore */ }
+  }, [user, view]);
+
+  // Stations this user may work on (the checker has no choice)
+  const allowedStations = role === 'checker'
+    ? []
+    : (CHEFS.find(c => c.displayName === user)?.stations || [station]).filter(id => STATIONS[id]);
+
   const st          = STATIONS[station];
   const isDashboard = view === 'dashboard';
   const canSearch   = role !== 'checker';
@@ -147,6 +183,52 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
     </button>
   );
 
+  const userChip = (
+    <button
+      onClick={() => setStationOpen(true)}
+      aria-label={`${user}, ${st.name}. החלפת פס`}
+      className="flex items-center gap-2 rounded-2xl px-3 min-h-[48px] transition-colors duration-150 active:bg-white/10"
+      style={{ background: st.color + '18', border: `1px solid ${st.color}35` }}
+    >
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: st.color, flexShrink: 0 }} />
+      <span className="text-label font-bold" style={{ color: st.color }}>{user}</span>
+    </button>
+  );
+
+  const stationSheet = (
+    <Sheet open={stationOpen} onClose={() => setStationOpen(false)} title={user}>
+      {allowedStations.length > 1 && (
+        <div className="space-y-2 mb-3">
+          {allowedStations.map(id => {
+            const s = STATIONS[id];
+            const current = id === station;
+            return (
+              <button
+                key={id}
+                onClick={() => { setStationOpen(false); if (!current) onChangeStation(id); }}
+                aria-current={current ? 'true' : undefined}
+                className="w-full flex items-center gap-4 px-4 min-h-[64px] rounded-xl text-right text-lg font-medium transition-colors duration-150 active:bg-white/10"
+                style={{ background: current ? s.color + '18' : 'var(--bg-card)', border: `1px solid ${current ? s.color + '60' : 'var(--border)'}` }}
+              >
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
+                <span className="text-text-primary">{s.name}</span>
+                {current && <Check size={20} strokeWidth={2} className="mr-auto" style={{ color: s.color }} aria-label="הפס הנוכחי" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <button
+        onClick={() => { setStationOpen(false); onLogout(); }}
+        className="w-full flex items-center gap-4 px-4 min-h-[64px] rounded-xl text-right text-lg font-medium transition-colors duration-150 active:bg-white/10"
+        style={{ border: '1px solid var(--border)', color: 'rgba(255,255,255,0.8)' }}
+      >
+        <LogOut size={20} strokeWidth={1.5} aria-hidden="true" />
+        התנתק
+      </button>
+    </Sheet>
+  );
+
   const searchOverlay = searchOpen && (
     <GlobalSearch
       prep={prep}
@@ -158,14 +240,13 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
   );
 
   const contentArea = (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={view}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.18, ease: 'easeInOut' }}
-      >
+    <motion.div
+      key={view}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.12, ease: 'easeOut' }}
+    >
+      <ErrorBoundary key={view} onHome={() => navigate(home)}>
         {view === 'dashboard' && (
           <Dashboard station={station} user={user} prep={prep} onNavigate={navigate} role={role} />
         )}
@@ -173,7 +254,7 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
           <PrepChecklist station={station} prep={prep} user={user} focusTaskId={focusTaskId} onFocused={() => setFocusTaskId(null)} onOpenRecipe={openRecipeFromTask} />
         )}
         {view === 'recipes' && recipeFromTask && (
-          <div className="sticky top-16 md:top-0 z-20 px-4 py-2" style={{ background: 'rgba(18,18,18,0.94)', borderBottom: '1px solid var(--border)' }}>
+          <div className="sticky md:top-0 z-20 px-4 py-2" style={{ top: isTablet ? 0 : 'calc(64px + env(safe-area-inset-top, 0px))', background: 'rgba(18,18,18,0.94)', borderBottom: '1px solid var(--border)' }}>
             <button
               onClick={backToChecklist}
               className="flex items-center gap-2 min-h-[48px] text-lg font-medium text-text-primary"
@@ -207,14 +288,14 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
         {view === 'supplier'       && <SupplierOrder />}
         {view === 'checker_hub'    && <CheckerHub user={user} onOpenDelivery={openDelivery} />}
         {view === 'checker_detail' && <CheckerDetail deliveryId={activeDeliveryId} user={user} onBack={() => navigate('checker_hub')} />}
-      </motion.div>
-    </AnimatePresence>
+      </ErrorBoundary>
+    </motion.div>
   );
 
   // ── Tablet layout: persistent sidebar + content canvas ──
   if (isTablet) {
     return (
-      <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }} dir="rtl">
+      <div className="flex overflow-hidden" style={{ background: 'var(--bg)', height: '100dvh' }} dir="rtl">
         <Sidebar
           currentView={view}
           onNavigate={navigate}
@@ -239,25 +320,28 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
           >
             {isDashboard && <Utensils size={16} style={{ color: 'rgba(255,255,255,0.4)', marginLeft: '8px' }} strokeWidth={1.5} />}
             <span className="text-h3 text-text-primary">{PAGE_TITLES[view]}</span>
-            <div className="mr-auto">{searchButton}</div>
+            <div className="mr-auto flex items-center gap-2">{searchButton}{userChip}</div>
           </header>
           <main className="flex-1 overflow-y-auto">
             {contentArea}
           </main>
         </div>
         {searchOverlay}
+        {stationSheet}
       </div>
     );
   }
 
   // ── Mobile layout: bottom nav + fixed header ──
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: 'var(--bg)' }} dir="rtl">
+    <div className="flex flex-col" style={{ background: 'var(--bg)', minHeight: '100dvh' }} dir="rtl">
 
       {/* ── Top header ── */}
       <header
-        className="fixed top-0 inset-x-0 z-30 h-16 flex items-center justify-between px-5"
+        className="fixed top-0 inset-x-0 z-30 flex items-center justify-between px-5"
         style={{
+          height: 'calc(64px + env(safe-area-inset-top, 0px))',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
           background: 'rgba(18,18,18,0.9)',
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
@@ -272,22 +356,17 @@ function AppShell({ user, station, role, tenantId, onLogout }) {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {searchButton}
-          <div
-            className="flex items-center gap-2 rounded-2xl px-3 py-1.5"
-            style={{ background: st.color + '18', border: `1px solid ${st.color}35` }}
-          >
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: st.color, flexShrink: 0 }} />
-            <span className="text-label font-bold" style={{ color: st.color }}>{user}</span>
-          </div>
+          {userChip}
         </div>
       </header>
 
       {/* ── Main content ── */}
-      <main className="flex-1" style={{ paddingTop: '64px', paddingBottom: '96px' }}>
+      <main className="flex-1" style={{ paddingTop: 'calc(64px + env(safe-area-inset-top, 0px))', paddingBottom: '96px' }}>
         {contentArea}
       </main>
 
       {searchOverlay}
+      {stationSheet}
 
       <BottomNav
         currentView={view}
@@ -327,6 +406,18 @@ function App() {
     setAuthReady(true);
   }, []);
 
+  function saveSession(newSession) {
+    setSession(newSession);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+    try { localStorage.setItem(lastStationKey(newSession.user), newSession.station); } catch (_) { /* ignore */ }
+  }
+
+  // Switch station without logging in again
+  function handleChangeStation(stationId) {
+    if (!session || !STATIONS[stationId]) return;
+    saveSession({ ...session, station: stationId });
+  }
+
   async function handleLogin(displayName, stationId, role, tenantId, firebaseToken) {
     // Sign into Firebase if a custom token was provided (new auth flow)
     if (firebaseToken) {
@@ -343,12 +434,12 @@ function App() {
       role:     role     || 'chef',
       tenantId: tenantId || DEFAULT_TENANT_ID,
     };
-    setSession(newSession);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+    saveSession(newSession);
   }
 
   async function handleLogout() {
     localStorage.removeItem(SESSION_KEY);
+    try { sessionStorage.removeItem(VIEW_KEY); } catch (_) { /* ignore */ }
     setSession(null);
     try { await signOut(auth); } catch (_) { /* ignore */ }
   }
@@ -359,7 +450,7 @@ function App() {
 
   if (!authReady) return null;
 
-  if (!session) return <LoginFlow onLogin={handleLogin} />;
+  if (!session) return <MotionConfig reducedMotion="user"><LoginFlow onLogin={handleLogin} /></MotionConfig>;
 
   return (
     <MotionConfig reducedMotion="user">
@@ -370,10 +461,20 @@ function App() {
         role={session.role}
         tenantId={session.tenantId}
         onLogout={handleLogout}
+        onChangeStation={handleChangeStation}
       />
     </TenantProvider>
     </MotionConfig>
   );
 }
 
-export default App;
+// Last safety net: if the whole app fails, show "refresh" instead of a black page
+function AppRoot() {
+  return (
+    <ErrorBoundary root>
+      <App />
+    </ErrorBoundary>
+  );
+}
+
+export default AppRoot;

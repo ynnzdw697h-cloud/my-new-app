@@ -1,3 +1,4 @@
+import { useBackClose } from '../hooks/useBackClose';
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Clock, Search, X, Plus } from 'lucide-react';
@@ -156,6 +157,11 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
   function closeDrill()  { setDrillRecipe(null);    restoreScroll(); }
   function closeDish()   { setSelectedDish(null);   restoreScroll(); }
   function closeRecipe() { setSelectedRecipe(null); restoreScroll(); }
+
+  // The phone's back button goes from an open recipe / dish back to the list
+  useBackClose(!!selectedDish,   closeDish);
+  useBackClose(!!selectedRecipe, closeRecipe);
+  useBackClose(!!drillRecipe,    closeDrill);
 
   useEffect(() => {
     if (restored.current && (drillRecipe || selectedDish || selectedRecipe)) goTop();

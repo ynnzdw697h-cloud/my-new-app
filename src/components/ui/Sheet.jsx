@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useBackClose } from '../../hooks/useBackClose';
 
 /**
  * Whether a field inside a sheet may grab focus on open.
@@ -23,6 +24,9 @@ export function canAutoFocus() {
  */
 export function Sheet({ open, onClose, title, children, noPad = false }) {
   const panelRef = useRef(null);
+
+  // The phone's back button closes the sheet
+  useBackClose(open, onClose);
 
   // Escape closes
   useEffect(() => {
