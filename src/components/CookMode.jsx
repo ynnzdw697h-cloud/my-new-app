@@ -52,6 +52,18 @@ export default function CookMode({ title, steps, color, onClose }) {
     return () => clearInterval(id);
   }, [anyRunning]);
 
+  // Keep ringing every 3 seconds until the cook taps the banner (stops by itself after 2 minutes)
+  useEffect(() => {
+    if (ringing === null) return undefined;
+    let n = 0;
+    const id = setInterval(() => {
+      n += 1;
+      if (n > 40) { clearInterval(id); return; }
+      beep(audioRef);
+    }, 3000);
+    return () => clearInterval(id);
+  }, [ringing]);
+
   const step  = steps[idx];
   const total = steps.length;
   const left  = i => {
