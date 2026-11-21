@@ -11,6 +11,7 @@ import AnnouncementBanner from './AnnouncementBanner';
 import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { useTenantId } from '../context/TenantContext';
+import { Sheet, Button } from './ui';
 
 /* ── Time-of-day greeting ── */
 function getTimeOfDay() {
@@ -100,7 +101,6 @@ function Avatar({ name, color, avatarData, onUpload }) {
     <>
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <motion.button
-          whileTap={{ scale: 0.9 }}
           onClick={() => fileRef.current.click()}
           style={{
             width: 48, height: 48,
@@ -120,7 +120,7 @@ function Avatar({ name, color, avatarData, onUpload }) {
               style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${objX}% ${objY}%` }}
             />
           ) : (
-            <span style={{ fontSize: 20, fontWeight: 900, color }}>{name ? name.slice(0, 1) : '?'}</span>
+            <span style={{ fontSize: 20, fontWeight: 700, color }}>{name ? name.slice(0, 1) : '?'}</span>
           )}
         </motion.button>
 
@@ -182,59 +182,45 @@ function CropModal({ url, color, onConfirm, onCancel }) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 p-6"
-      style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(14px)' }}
-      dir="rtl"
-    >
-      <p className="text-white font-bold text-lg">מרכז את התמונה</p>
-      <p className="text-sm" style={{ color: 'rgba(255,255,255,0.62)' }}>גרור כדי למקם את הפנים</p>
+    <Sheet open onClose={onCancel} title="מרכז את התמונה">
+      <div className="flex flex-col items-center gap-5">
+        <p className="text-base text-text-secondary">גרור כדי למקם את הפנים</p>
 
-      <div
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={() => { dragRef.current = null; }}
-        style={{
-          width: 220, height: 220,
-          borderRadius: '50%',
-          overflow: 'hidden',
-          border: `3px solid ${color}`,
-          cursor: 'grab',
-          touchAction: 'none',
-          userSelect: 'none',
-        }}
-      >
-        <img
-          src={url}
-          alt=""
-          draggable={false}
+        <div
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={() => { dragRef.current = null; }}
           style={{
-            width: '100%', height: '100%',
-            objectFit: 'cover',
-            objectPosition: `${pos.x}% ${pos.y}%`,
-            pointerEvents: 'none',
+            width: 220, height: 220,
+            borderRadius: '50%',
+            overflow: 'hidden',
+            border: `3px solid ${color}`,
+            cursor: 'grab',
+            touchAction: 'none',
+            userSelect: 'none',
           }}
-        />
-      </div>
+        >
+          <img
+            src={url}
+            alt=""
+            draggable={false}
+            style={{
+              width: '100%', height: '100%',
+              objectFit: 'cover',
+              objectPosition: `${pos.x}% ${pos.y}%`,
+              pointerEvents: 'none',
+            }}
+          />
+        </div>
 
-      <div className="flex gap-3 w-full max-w-xs">
-        <button
-          onClick={onCancel}
-          className="flex-1 rounded-2xl py-3.5 font-bold text-sm"
-          style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}
-        >
-          ביטול
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex-1 rounded-2xl py-3.5 font-bold text-sm"
-          style={{ background: color, color: '#fff', opacity: saving ? 0.7 : 1 }}
-        >
-          {saving ? '...' : 'שמור'}
-        </button>
+        <div className="flex gap-3 w-full">
+          <Button variant="ghost" fullWidth onClick={onCancel}>ביטול</Button>
+          <Button variant="primary" fullWidth onClick={handleSave} disabled={saving}>
+            {saving ? '...' : 'שמור'}
+          </Button>
+        </div>
       </div>
-    </div>
+    </Sheet>
   );
 }
 

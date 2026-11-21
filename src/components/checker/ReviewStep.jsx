@@ -113,7 +113,7 @@ export default function ReviewStep({ ocrResult, supplierId, invoiceImageBase64, 
                     value={it.name}
                     onChange={e => updateItem(idx, 'name', e.target.value)}
                     placeholder="שם פריט"
-                    className="flex-1 rounded-xl px-3 py-2 text-sm text-white font-semibold"
+                    className="flex-1 rounded-xl px-3 py-2 text-lg text-white font-semibold"
                     style={{ background: 'rgba(255,255,255,0.07)', border: 'none', outline: 'none', textAlign: 'right' }}
                   />
                   <button onClick={() => removeRow(idx)} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -177,7 +177,7 @@ function Field({ label, value, onChange, placeholder, type = 'text' }) {
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder || label}
-        className="w-full rounded-xl px-4 py-2.5 text-sm text-white font-semibold"
+        className="w-full rounded-xl px-4 py-2.5 text-lg text-white font-semibold"
         style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', outline: 'none', textAlign: 'right' }}
       />
     </div>
@@ -194,7 +194,7 @@ function NumField({ label, value, onChange, step = '1' }) {
         step={step}
         min="0"
         onChange={e => onChange(parseFloat(e.target.value) || 0)}
-        className="w-full text-center text-sm font-bold text-white"
+        className="w-full text-center text-lg font-bold text-white"
         style={{ background: 'transparent', border: 'none', outline: 'none' }}
       />
     </div>

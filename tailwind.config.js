@@ -5,14 +5,11 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        // Inter first (Latin/numbers), Heebo fallback (Hebrew)
-        sans:   ['Inter', 'Heebo', 'Arial Hebrew', 'Arial', 'sans-serif'],
+        // Heebo only (Hebrew + Latin + numbers)
+        sans:   ['Heebo', 'Arial Hebrew', 'Arial', 'sans-serif'],
         hebrew: ['Heebo', 'Arial Hebrew', 'Arial', 'sans-serif'],
       },
       colors: {
-        // ── Brand ──────────────────────────────────────────────
-        accent: '#D4ED31',
-
         // ── Station identity ───────────────────────────────────
         station: {
           cold:    '#3B82F6',
@@ -75,15 +72,15 @@ module.exports = {
       },
 
       fontWeight: {
-        // cap heavy weights so hierarchy comes from size, not boldness
+        // only Heebo 400/500/600/700 are loaded: cap heavy weights at 700
         extrabold: '700',
         black:     '700',
       },
 
       fontSize: {
         // Kitchen typography scale (size / [lineHeight, fontWeight])
-        'display': ['32px', { lineHeight: '38px', fontWeight: '800' }],
-        'h1':      ['24px', { lineHeight: '30px', fontWeight: '800' }],
+        'display': ['32px', { lineHeight: '38px', fontWeight: '700' }],
+        'h1':      ['24px', { lineHeight: '30px', fontWeight: '700' }],
         'h2':      ['20px', { lineHeight: '26px', fontWeight: '700' }],
         'h3':      ['17px', { lineHeight: '24px', fontWeight: '600' }],
         'body':    ['15px', { lineHeight: '22px', fontWeight: '500' }],
@@ -94,10 +91,6 @@ module.exports = {
       boxShadow: {
         sheet: '0 -8px 40px rgba(0,0,0,0.55)',
         modal: '0 20px 60px rgba(0,0,0,0.55)',
-      },
-
-      backgroundImage: {
-        'accent-glow': 'none',
       },
     },
   },

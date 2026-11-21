@@ -251,7 +251,7 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
                 {hasIssue ? (
                   <button
                     onClick={() => clearIssue(item.id)}
-                    className="flex-1 rounded-2xl py-3.5 text-sm font-bold min-h-[48px] active:scale-[0.97] transition-all duration-150"
+                    className="flex-1 rounded-2xl py-3.5 text-sm font-bold min-h-[48px] active:bg-white/10 transition-colors duration-150"
                     style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }}
                   >
                     בטל דיווח
@@ -259,7 +259,7 @@ export default function CheckerDetail({ deliveryId, user, onBack }) {
                 ) : null}
                 <button
                   onClick={() => setActiveItem(item)}
-                  className="flex-1 rounded-2xl py-3.5 text-sm font-bold min-h-[48px] active:scale-[0.97] transition-all duration-150"
+                  className="flex-1 rounded-2xl py-3.5 text-sm font-bold min-h-[48px] active:bg-white/10 transition-colors duration-150"
                   style={{
                     background: hasIssue ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.07)',
                     color:      hasIssue ? '#EF4444' : 'rgba(255,255,255,0.6)',

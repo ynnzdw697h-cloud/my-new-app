@@ -8,7 +8,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { SUPPLIERS } from '../data/suppliers';
 import CatalogOrder from './supplier/CatalogOrder';
-import { Card, Button, Input, Sheet } from './ui';
+import { Card, Button, Input, Sheet, canAutoFocus } from './ui';
 import { UndoToast } from './PrepCelebrations';
 import { ChevronRight, Plus, RotateCcw, Copy, Check, FileDown, Clock, Trash2, Carrot, Fish, Package, Truck, Apple, Leaf, Salad } from 'lucide-react';
 
@@ -549,7 +549,7 @@ export default function SupplierOrder() {
       >
         <div className="space-y-4">
           <Input
-            autoFocus
+            autoFocus={canAutoFocus()}
             placeholder="שם המוצר..."
             value={addName}
             onChange={e => setAddName(e.target.value)}
@@ -559,7 +559,7 @@ export default function SupplierOrder() {
           <select
             value={addCategory}
             onChange={e => setAddCategory(e.target.value)}
-            className="w-full px-4 py-3.5 rounded-2xl text-body text-text-primary outline-none transition-all duration-200"
+            className="w-full min-h-[56px] px-4 py-3.5 rounded-2xl text-lg text-text-primary outline-none transition-colors duration-150 focus:border-white/60"
             style={{
               background: 'var(--bg-inset)',
               border: '1px solid var(--border)',

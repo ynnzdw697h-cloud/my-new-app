@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { Sun, Plus, RotateCcw, Pencil, Check, Trash2, Undo2, X, MoreHorizontal, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STATIONS } from '../data/stations';
-import { Sheet, Button } from './ui';
+import { Sheet, Button, canAutoFocus } from './ui';
 import { StickyProgress, SegmentedBar, StatusMark, UndoToast } from './PrepCelebrations';
 import { useFocusFlash } from '../hooks/useFocusFlash';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
@@ -129,25 +129,8 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
   };
 
   return (
-    <>
-      <div
-        className="fixed inset-0 z-50"
-        style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)' }}
-        onClick={onClose}
-      />
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl p-6 space-y-5"
-        style={{ background: '#1a1a23', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '92vh', overflowY: 'auto' }}
-        dir="rtl"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="w-10 h-1 rounded-full mx-auto mb-1" style={{ background: 'rgba(255,255,255,0.18)' }} />
-        <h2 className="text-white font-bold text-xl text-center">הוספת הכנה</h2>
-
+    <Sheet open onClose={onClose} title="הוספת הכנה">
+      <div className="space-y-5">
         {/* Shift toggle */}
         <div>
           <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>משמרת</p>
@@ -196,7 +179,7 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
         <div>
           <p className="text-base font-medium mb-2" style={{ color: 'rgba(255,255,255,0.62)' }}>שם ההכנה *</p>
           <input
-            autoFocus
+            autoFocus={canAutoFocus()}
             type="text"
             value={taskName}
             onChange={e => setTaskName(e.target.value)}
@@ -336,8 +319,8 @@ function AddPrepModal({ stationColor, onAdd, onClose }) {
         >
           <span className="inline-flex items-center gap-2"><Check size={18} strokeWidth={2} />הוסף הכנה</span>
         </button>
-      </motion.div>
-    </>
+      </div>
+    </Sheet>
   );
 }
 
@@ -622,7 +605,7 @@ export default function PrepChecklist({ station, prep, focusTaskId, onFocused, u
       )}
 
       {/* ── Reset (rarely needed — the list resets itself every morning) ── */}
-      <div className="flex justify-center pt-2 pb-24">
+      <div className="flex justify-center pt-2 pb-4">
         <button
           onClick={() => setConfirmReset(true)}
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-text-tertiary min-h-[44px]"
@@ -684,15 +667,13 @@ export default function PrepChecklist({ station, prep, focusTaskId, onFocused, u
       </Sheet>
 
       {/* ── Add Prep Modal ── */}
-      <AnimatePresence>
-        {showAdd && (
-          <AddPrepModal
-            stationColor={st.color}
-            onAdd={task => { setCustomTasks(prev => [...prev, task]); setShowAdd(false); }}
-            onClose={() => setShowAdd(false)}
-          />
-        )}
-      </AnimatePresence>
+      {showAdd && (
+        <AddPrepModal
+          stationColor={st.color}
+          onAdd={task => { setCustomTasks(prev => [...prev, task]); setShowAdd(false); }}
+          onClose={() => setShowAdd(false)}
+        />
+      )}
 
       <UndoToast toast={toast} onUndo={handleUndo} />
     </div>
