@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useWakeLock } from '../hooks/useWakeLock';
-import { AlertTriangle, Salad, ListOrdered, Scale, ChevronLeft, Check, Info } from 'lucide-react';
+import MethodBlock from './MethodBlock';
+import { AlertTriangle, Salad, Scale, ChevronLeft, Check, Info } from 'lucide-react';
 import {
   CAT_META, DEFAULT_META, fmt, compressImage,
-  DetailTopBar, FoldSection, Block, ScaleBadge, StepList, StepperButton, QuickPicks, ImageUploadButton, HeroImage, MetaLine,
+  DetailTopBar, FoldSection, Block, ScaleBadge, StepperButton, QuickPicks, ImageUploadButton, HeroImage, MetaLine,
 } from './recipeShared';
 
 const QUICK = [0.5, 1, 2, 3, 4];
@@ -14,7 +15,7 @@ const QUICK = [0.5, 1, 2, 3, 4];
 ════════════════════════════════════════════════════ */
 export default function RecipeDetail({
   recipe, scaleFactor, batches, onUpdateBatches, onBack, stationColor, imageUrl, onSaveImage,
-  onMarkReady, allPrepRecipes = [], onOpenSubRecipe,
+  onMarkReady, allPrepRecipes = [], onOpenSubRecipe, stepsInfo,
 }) {
   const [uploading, setUploading]     = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -157,9 +158,7 @@ export default function RecipeDetail({
         </Block>
 
         {/* Steps */}
-        <Block title="אופן הכנה" icon={ListOrdered}>
-          <StepList steps={recipe.steps} color={stationColor} />
-        </Block>
+        <MethodBlock title={recipe.name} steps={stepsInfo.steps} hasEdited={stepsInfo.hasEdited} color={stationColor} onSave={stepsInfo.save} onReset={stepsInfo.reset} />
 
         {onMarkReady && (
           <button

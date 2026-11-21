@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useWakeLock } from '../hooks/useWakeLock';
+import MethodBlock from './MethodBlock';
 import {
-  AlertTriangle, Coins, Target, Wine, Thermometer, UtensilsCrossed, Salad, ListOrdered, Scale, ChevronLeft, Info,
+  AlertTriangle, Coins, Target, Wine, Thermometer, UtensilsCrossed, Salad, Scale, ChevronLeft, Info,
 } from 'lucide-react';
 import {
   fmt, foodCostColor, compressImage,
-  DetailTopBar, FoldSection, Block, ScaleBadge, StepList, StepperButton, ImageUploadButton, HeroImage, MetaLine,
+  DetailTopBar, FoldSection, Block, ScaleBadge, StepperButton, ImageUploadButton, HeroImage, MetaLine,
 } from './recipeShared';
 
 const QUICK_PORTIONS = [1, 2, 4, 6, 10];
@@ -16,6 +17,7 @@ const QUICK_PORTIONS = [1, 2, 4, 6, 10];
 ════════════════════════════════════════════════════ */
 export default function DishDetail({
   dish, portions, onPortions, onOpenSubRecipe, onBack, stationColor, imageUrl, onSaveImage, allPrepRecipes,
+  stepsInfo,
 }) {
   const [uploading, setUploading]     = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -130,9 +132,7 @@ export default function DishDetail({
         </Block>
 
         {/* Method */}
-        <Block title="אופן הכנה" icon={ListOrdered}>
-          <StepList steps={dish.method} color={stationColor} />
-        </Block>
+        <MethodBlock title={dish.name} steps={stepsInfo.steps} hasEdited={stepsInfo.hasEdited} color={stationColor} onSave={stepsInfo.save} onReset={stepsInfo.reset} />
 
         {/* Folded extras */}
         {dish.description && (

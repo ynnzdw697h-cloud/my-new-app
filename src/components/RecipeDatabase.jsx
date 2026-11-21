@@ -6,6 +6,7 @@ import { MAIN_DISHES, DISH_CATEGORIES } from '../data/mainDishes';
 import { STATIONS } from '../data/stations';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { useRecipeImages, useFullImage } from '../hooks/useRecipeImages';
+import { useRecipeSteps } from '../hooks/useRecipeSteps';
 import RecipeWizard from './RecipeWizard';
 import DishDetail from './DishDetail';
 import RecipeDetail from './RecipeDetail';
@@ -44,6 +45,7 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
   const [showAddModal, setShowAddModal]     = useState(false);
   const scrollMemo                          = useRef([]);
   const restored                            = useRef(false);
+  const { stepsFor, saveSteps, resetSteps } = useRecipeSteps();
   const imgs                                = useRecipeImages();
   const { images, saveImage }               = imgs;
 
@@ -195,6 +197,12 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
   const fullOpen = useFullImage(openId, imgs);
   const photoOf  = id => fullOpen || images[String(id).replace(/\./g, '_')] || null;
 
+  const stepsInfoFor = (id, original) => ({
+    ...stepsFor(id, original),
+    save:  steps => saveSteps(id, steps),
+    reset: () => resetSteps(id),
+  });
+
   const scaleFactor = selectedRecipe ? batches / selectedRecipe.batches : 1;
 
   // ── Sub-recipe drill-down (from a dish or from another prep recipe) ──
@@ -210,6 +218,7 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
         imageUrl={photoOf(drillRecipe.id)}
         onSaveImage={url => saveImage(drillRecipe.id, url)}
         allPrepRecipes={allRecipes}
+        stepsInfo={stepsInfoFor(drillRecipe.id, drillRecipe.steps)}
       />
     );
   }
@@ -226,6 +235,7 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
         imageUrl={photoOf(selectedDish.id)}
         onSaveImage={url => saveImage(selectedDish.id, url)}
         allPrepRecipes={allRecipes}
+        stepsInfo={stepsInfoFor(selectedDish.id, selectedDish.method)}
       />
     );
   }
@@ -244,6 +254,7 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
         onMarkReady={onMarkReady}
         allPrepRecipes={allRecipes}
         onOpenSubRecipe={openDrill}
+        stepsInfo={stepsInfoFor(selectedRecipe.id, selectedRecipe.steps)}
       />
     );
   }
