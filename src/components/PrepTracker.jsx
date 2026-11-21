@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { AlertTriangle, BarChart3, Settings2, ChevronUp, ChevronDown, Trash2, Check, X, Clock, ThumbsDown, PackageX, Package, CircleX, CircleCheck, Sparkles } from 'lucide-react';
+import { AlertTriangle, BarChart3, Settings2, ChevronUp, ChevronDown, Trash2, Check, Clock, ThumbsDown, PackageX, Package, CircleX, CircleCheck, Sparkles } from 'lucide-react';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { RECIPES } from '../data/recipes';
 import { SHELF_LIFE, DEFAULT_SHELF_LIFE } from '../data/shelfLife';
+import { Sheet, canAutoFocus } from './ui';
 
 // ─── Pure helpers ────────────────────────────────────────────
 
@@ -423,43 +424,19 @@ function MarkReadySheet({ initialRecipe, getShelfLife, onSave, onCancel }) {
   const fmtTime = d => d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end" dir="rtl">
-      <div
-        className="absolute inset-0"
-        style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
-        onClick={onCancel}
-      />
-      <div
-        className="relative rounded-t-3xl overflow-hidden flex flex-col"
-        style={{ background: '#16161e', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '88vh' }}
-      >
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-          <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.2)' }} />
-        </div>
-
-        {/* Title */}
-        <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0">
-          <h3 className="text-white font-black text-lg">סמן הכנה מוכנה</h3>
-          <button
-            onClick={onCancel}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-sm"
-            style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
-          ><X size={20} strokeWidth={1.5} /></button>
-        </div>
-
-        <div className="px-5 pb-8 overflow-y-auto space-y-4 flex-1">
+    <Sheet open onClose={onCancel} title="סמן הכנה מוכנה">
+        <div className="space-y-4">
 
           {!recipe ? (
             /* ── Recipe picker ── */
             <>
               <input
-                autoFocus
+                autoFocus={canAutoFocus()}
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="חפש מתכון הכנה..."
-                className="w-full rounded-2xl px-4 py-3 text-white text-sm focus:outline-none"
+                className="w-full rounded-2xl px-4 py-3 text-white text-lg focus:outline-none"
                 style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
               />
               <div className="space-y-1.5">
@@ -469,7 +446,7 @@ function MarkReadySheet({ initialRecipe, getShelfLife, onSave, onCancel }) {
                     <button
                       key={r.id}
                       onClick={() => setRecipe(r)}
-                      className="w-full text-right px-4 py-3.5 rounded-2xl flex items-center justify-between active:scale-[0.98] transition-all"
+                      className="w-full text-right px-4 py-3.5 rounded-2xl flex items-center justify-between active:bg-white/10 transition-colors duration-150"
                       style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}
                     >
                       <div>
@@ -565,8 +542,7 @@ function MarkReadySheet({ initialRecipe, getShelfLife, onSave, onCancel }) {
             </>
           )}
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 }
 
@@ -582,30 +558,8 @@ function WasteLoggerSheet({ batch, onSave, onCancel }) {
   const canSave = reason && qty && parseFloat(qty) > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end" dir="rtl">
-      <div
-        className="absolute inset-0"
-        style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
-        onClick={onCancel}
-      />
-      <div
-        className="relative rounded-t-3xl"
-        style={{ background: '#16161e', border: '1px solid rgba(255,255,255,0.1)' }}
-      >
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.2)' }} />
-        </div>
-
-        <div className="px-5 pb-8 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-white font-black text-lg">לוג בזבוז</h3>
-            <button
-              onClick={onCancel}
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-sm"
-              style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
-            ><X size={20} strokeWidth={1.5} /></button>
-          </div>
-
+    <Sheet open onClose={onCancel} title="לוג בזבוז">
+        <div className="space-y-4">
           {/* Batch info */}
           <div
             className="rounded-2xl px-4 py-3"
@@ -624,14 +578,14 @@ function WasteLoggerSheet({ batch, onSave, onCancel }) {
               value={qty}
               onChange={e => setQty(e.target.value)}
               placeholder="כמות"
-              className="flex-1 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none"
+              className="flex-1 rounded-2xl px-4 py-3 text-white text-lg focus:outline-none"
               style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
             />
             <input
               value={unit}
               onChange={e => setUnit(e.target.value)}
               placeholder="יחידה"
-              className="w-28 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none text-center"
+              className="w-28 rounded-2xl px-4 py-3 text-white text-lg focus:outline-none text-center"
               style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
             />
           </div>
@@ -666,7 +620,7 @@ function WasteLoggerSheet({ batch, onSave, onCancel }) {
             onChange={e => setNote(e.target.value)}
             placeholder="הערה (אופציונלי)..."
             rows={2}
-            className="w-full rounded-2xl px-4 py-3 text-white text-sm focus:outline-none resize-none"
+            className="w-full rounded-2xl px-4 py-3 text-white text-lg focus:outline-none resize-none"
             style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
           />
 
@@ -683,8 +637,7 @@ function WasteLoggerSheet({ batch, onSave, onCancel }) {
             <span className="inline-flex items-center justify-center gap-1.5"><Trash2 size={18} strokeWidth={2} aria-hidden="true" />אשר בזבוז</span>
           </button>
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 }
 
@@ -820,36 +773,11 @@ function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end" dir="rtl">
-      <div
-        className="absolute inset-0"
-        style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)' }}
-        onClick={onClose}
-      />
-      <div
-        className="relative rounded-t-3xl flex flex-col"
-        style={{ background: '#16161e', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '85vh' }}
-      >
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-          <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.2)' }} />
-        </div>
-
-        {/* Header */}
-        <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0">
-          <h3 className="text-white font-black text-lg">תוקפי ברירת מחדל</h3>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-sm"
-            style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
-          ><X size={20} strokeWidth={1.5} /></button>
-        </div>
-
-        <p className="px-5 pb-3 text-sm flex-shrink-0" style={{ color: 'rgba(255,255,255,0.62)' }}>
+    <Sheet open onClose={onClose} title="תוקפי ברירת מחדל">
+        <p className="pb-3 text-base" style={{ color: 'rgba(255,255,255,0.62)' }}>
           הגדר כמה זמן כל הכנה נשמרת. השינוי ישפיע על סימוני "מוכן" עתידיים.
         </p>
-
-        <div className="overflow-y-auto px-5 pb-8 space-y-2">
+        <div className="space-y-2">
           {RECIPES.map(recipe => {
             const effectiveH = getEffective(recipe.id);
             const baseH = (SHELF_LIFE[recipe.id] || DEFAULT_SHELF_LIFE).hours;
@@ -893,7 +821,7 @@ function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
                           max="30"
                           value={days}
                           onChange={e => setDays(e.target.value)}
-                          className="w-full rounded-xl px-3 py-2 text-white text-sm text-center focus:outline-none"
+                          className="w-full rounded-xl px-3 py-2 min-h-[48px] text-white text-lg text-center focus:outline-none"
                           style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.15)' }}
                         />
                       </div>
@@ -905,7 +833,7 @@ function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
                           max="23"
                           value={hours}
                           onChange={e => setHours(e.target.value)}
-                          className="w-full rounded-xl px-3 py-2 text-white text-sm text-center focus:outline-none"
+                          className="w-full rounded-xl px-3 py-2 min-h-[48px] text-white text-lg text-center focus:outline-none"
                           style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.15)' }}
                         />
                       </div>
@@ -924,7 +852,6 @@ function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
             );
           })}
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 }

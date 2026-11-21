@@ -6,7 +6,7 @@ import { STATIONS } from '../data/stations';
 import { useFirestoreSet } from '../hooks/useFirestoreSet';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { useServiceDay, getWeekStart, getDayIndex } from '../hooks/usePrepState';
-import { Sheet, Button, Input, EmptyState } from './ui';
+import { Sheet, Button, Input, EmptyState, canAutoFocus } from './ui';
 import { StickyProgress, StatusMark, UndoToast } from './PrepCelebrations';
 
 const DAY_SHORT = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
@@ -321,14 +321,14 @@ function AddWeeklySheet({ open, defaultDay, color, onAdd, onClose }) {
 
   return (
     <Sheet open={open} onClose={onClose} title="משימה שבועית חדשה">
-      <div className="space-y-5 max-h-[70vh] overflow-y-auto -mx-1 px-1">
+      <div className="space-y-5">
         <Input
           label="שם המשימה"
           placeholder="לדוגמה: איולי צ׳יפוטלה"
           value={task}
           onChange={e => setTask(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && submit()}
-          autoFocus
+          autoFocus={canAutoFocus()}
         />
 
         <div>

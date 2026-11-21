@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
-import { Card, Button, Input, Sheet } from '../ui';
+import { Card, Button, Input, Sheet, canAutoFocus } from '../ui';
 import { useTenantId } from '../../context/TenantContext';
 import {
   UNITS, UNIT_KEYS, MODES, MODE_KEYS, formatQty, groupByCategory,
@@ -210,8 +210,8 @@ function ItemForm({ form, setForm, categoryNames, onSave, onCancel, onDelete }) 
   const valid = form.name.trim() && (form.category !== NEW_CAT || form.newCategory.trim());
 
   return (
-    <div className="space-y-4 max-h-[70vh] overflow-y-auto -mx-1 px-1 pb-1">
-      <Input label="שם" value={form.name} onChange={e => set({ name: e.target.value })} autoFocus={!form.id} />
+    <div className="space-y-4">
+      <Input label="שם" value={form.name} onChange={e => set({ name: e.target.value })} autoFocus={!form.id && canAutoFocus()} />
 
       <Field label="קטגוריה">
         <select

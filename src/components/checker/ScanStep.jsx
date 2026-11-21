@@ -114,7 +114,7 @@ export default function ScanStep({ user, onSaved, onCancel }) {
           <div className="flex gap-3">
             <button
               onClick={() => camRef.current.click()}
-              className="flex-1 rounded-3xl p-6 flex flex-col items-center gap-3 active:scale-95 transition-transform"
+              className="flex-1 rounded-3xl p-6 flex flex-col items-center gap-3 active:bg-white/10 transition-colors duration-150"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}
             >
               <Camera size={32} style={{ color: 'rgba(255,255,255,0.6)' }} strokeWidth={1.25} />
@@ -122,7 +122,7 @@ export default function ScanStep({ user, onSaved, onCancel }) {
             </button>
             <button
               onClick={() => fileRef.current.click()}
-              className="flex-1 rounded-3xl p-6 flex flex-col items-center gap-3 active:scale-95 transition-transform"
+              className="flex-1 rounded-3xl p-6 flex flex-col items-center gap-3 active:bg-white/10 transition-colors duration-150"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}
             >
               <ImageIcon size={32} style={{ color: 'rgba(255,255,255,0.6)' }} strokeWidth={1.25} />

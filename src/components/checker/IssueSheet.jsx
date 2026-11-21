@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { AlertTriangle, TrendingDown, Clock, Camera, CheckCircle2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Sheet } from '../ui';
 
 const ISSUE_TYPES = [
   { id: 'quality',     label: 'איכות ירודה',   Icon: AlertTriangle },
@@ -56,29 +56,9 @@ export default function IssueSheet({ item, user, onSave, onClose }) {
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50"
-        style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
-        onClick={onClose}
-      />
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-        className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl p-6 pb-10"
-        style={{ background: '#1a1a23', border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 -8px 40px rgba(0,0,0,0.6)' }}
-        dir="rtl"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="w-12 h-1 rounded-full mx-auto mb-6" style={{ background: 'rgba(255,255,255,0.15)' }} />
-
-        <h3 className="text-white font-black text-lg mb-1">דיווח בעיה</h3>
-        <p className="text-sm mb-5" style={{ color: 'rgba(255,255,255,0.62)' }}>{item.name}</p>
+    <Sheet open onClose={onClose} title="דיווח בעיה">
+      <div>
+        <p className="text-base mb-5" style={{ color: 'rgba(255,255,255,0.62)' }}>{item.name}</p>
 
         {/* Issue type */}
         <div className="flex gap-2 mb-5">
@@ -105,7 +85,7 @@ export default function IssueSheet({ item, user, onSave, onClose }) {
           onChange={e => setNote(e.target.value)}
           placeholder="הערה (אופציונלי)"
           rows={2}
-          className="w-full rounded-2xl px-4 py-3 text-sm text-white mb-4 resize-none"
+          className="w-full rounded-2xl px-4 py-3 text-lg text-white mb-4 resize-none"
           style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', outline: 'none', textAlign: 'right' }}
         />
 
@@ -129,11 +109,11 @@ export default function IssueSheet({ item, user, onSave, onClose }) {
         <button
           onClick={handleSave}
           className="w-full rounded-2xl py-4 font-black text-white text-base"
-          style={{ background: '#EF4444', boxShadow: '0 0 20px rgba(239,68,68,0.35)' }}
+          style={{ background: '#EF4444' }}
         >
           שמור דיווח
         </button>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </Sheet>
   );
 }

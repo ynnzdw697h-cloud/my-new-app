@@ -37,10 +37,9 @@ export function Button({
 
   const base = [
     'inline-flex items-center justify-center gap-2.5',
-    'font-semibold text-label tracking-tight',
+    'font-semibold text-lg tracking-tight',
     'rounded-2xl select-none cursor-pointer',
-    'transition-all duration-200',
-    'active:scale-[0.97] active:transition-[transform_80ms]',
+    'transition-colors duration-150',
     'disabled:opacity-40 disabled:pointer-events-none',
     fullWidth ? 'w-full' : '',
   ].join(' ');
@@ -51,27 +50,25 @@ export function Button({
 
   const variants = {
     primary: [
-      'bg-accent text-[#0E0E0E]',
-      'hover:brightness-110',
-      'shadow-[0_0_0_1px_rgba(212,237,49,0.0)]',
-      'hover:shadow-[0_0_20px_rgba(212,237,49,0.42),0_0_55px_rgba(212,237,49,0.14)]',
+      'bg-white text-[#121212]',
+      'hover:bg-white/90 active:bg-white/75',
     ].join(' '),
 
     secondary: [
       'bg-bg-surface text-text-primary',
       'border border-border',
-      'hover:border-border-strong hover:bg-bg-elevated',
+      'hover:border-border-strong hover:bg-bg-elevated active:bg-white/10',
     ].join(' '),
 
     ghost: [
       'bg-transparent text-text-secondary',
-      'hover:text-text-primary hover:bg-white/[0.05]',
+      'hover:text-text-primary hover:bg-white/[0.05] active:bg-white/10',
     ].join(' '),
 
     danger: [
       'bg-transparent text-sem-danger',
       'border border-sem-danger/40',
-      'hover:bg-sem-danger/10 hover:border-sem-danger/70',
+      'hover:bg-sem-danger/10 hover:border-sem-danger/70 active:bg-sem-danger/20',
     ].join(' '),
   };
 
@@ -84,7 +81,7 @@ export function Button({
       style={style}
       className={`${base} ${sizeClass} ${variants[variant]} ${className}`}
     >
-      {Icon && <Icon size={size === 'sm' ? 18 : 20} strokeWidth={1.5} />}
+      {Icon && <Icon size={size === 'sm' ? 20 : 22} strokeWidth={1.5} />}
       {children}
     </button>
   );

@@ -11,7 +11,7 @@ function SkeletonBox({ className = '', style }) {
   );
 }
 
-/** Single row skeleton (matches ListRow height) */
+/** Single row skeleton (64px row) */
 export function SkeletonRow({ className = '' }) {
   return (
     <div className={`flex items-center gap-4 px-4 py-3.5 min-h-[64px] ${className}`}>

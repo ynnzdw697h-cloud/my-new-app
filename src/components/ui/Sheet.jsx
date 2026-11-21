@@ -1,14 +1,52 @@
+import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * Sheet — bottom sheet for mobile, centered modal for tablet (≥768px).
- * Replaces all alert()/confirm() usage.
+ * Whether a field inside a sheet may grab focus on open.
+ * On a phone it must not: the keyboard would pop up and cover half the form.
+ */
+export function canAutoFocus() {
+  return typeof window !== 'undefined'
+    && !!window.matchMedia
+    && window.matchMedia('(min-width: 768px)').matches;
+}
+
+/**
+ * Sheet — the one bottom sheet for every screen. Centered modal on tablet (≥768px).
  *
- * title: string
- * onClose: called on backdrop tap or swipe-down
- * noPad: remove default padding (compose your own)
+ * title:   string (also the accessible name)
+ * onClose: backdrop tap or Escape
+ * noPad:   remove default padding (compose your own)
+ *
+ * Max height is 90dvh; the content scrolls inside, so a save button is never
+ * pushed under the keyboard. The bottom padding clears the iPhone home bar.
  */
 export function Sheet({ open, onClose, title, children, noPad = false }) {
+  const panelRef = useRef(null);
+
+  // Escape closes
+  useEffect(() => {
+    if (!open) return undefined;
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose?.();
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  // Move focus into the sheet (unless a field already took it)
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => {
+      const panel = panelRef.current;
+      if (panel && !panel.contains(document.activeElement)) panel.focus({ preventScroll: true });
+    }, 50);
+    return () => clearTimeout(t);
+  }, [open]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -36,34 +74,41 @@ export function Sheet({ open, onClose, title, children, noPad = false }) {
               'md:inset-0 md:flex md:items-center md:justify-center md:p-4',
             ].join(' ')}
           >
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 30 }}
-            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className={[
-              'pointer-events-auto rounded-t-3xl',
-              'md:w-full md:max-w-[560px] md:rounded-3xl',
-              noPad ? '' : 'p-6',
-            ].join(' ')}
-            style={{
-              background: '#1F1F24',
-              border: '1px solid rgba(255,255,255,0.10)',
-              boxShadow: '0 -8px 40px rgba(0,0,0,0.55)',
-            }}
-          >
-            {/* Drag handle — mobile only */}
-            <div
-              className="md:hidden w-10 h-1 rounded-full mx-auto mb-5"
-              style={{ background: 'rgba(255,255,255,0.18)' }}
-            />
+            <motion.div
+              ref={panelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label={title || undefined}
+              tabIndex={-1}
+              dir="rtl"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 30 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className={[
+                'pointer-events-auto bg-bg-elevated rounded-t-3xl outline-none',
+                'flex flex-col max-h-[90dvh]',
+                'md:w-full md:max-w-[560px] md:rounded-3xl',
+              ].join(' ')}
+              style={{
+                border: '1px solid rgba(255,255,255,0.10)',
+                boxShadow: '0 -8px 40px rgba(0,0,0,0.55)',
+              }}
+            >
+              <div
+                className={[
+                  'flex-1 min-h-0 overflow-y-auto overscroll-contain',
+                  noPad ? '' : 'p-6',
+                ].join(' ')}
+                style={{ paddingBottom: noPad ? undefined : 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+              >
+                {title && (
+                  <h2 className="text-h2 text-text-primary mb-5 text-right">{title}</h2>
+                )}
 
-            {title && (
-              <h2 className="text-h2 text-text-primary mb-5 text-right">{title}</h2>
-            )}
-
-            {children}
-          </motion.div>
+                {children}
+              </div>
+            </motion.div>
           </div>
         </>
       )}
