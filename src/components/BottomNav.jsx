@@ -56,13 +56,23 @@ export function navForProfile(role) {
   };
 }
 
-export default function BottomNav({ currentView, onNavigate, station, onLogout, role }) {
+// Small status dot: something is waiting on that screen (never a number)
+function Dot({ className = '' }) {
+  return (
+    <span className={`absolute w-2 h-2 rounded-full ${className}`} style={{ background: '#F59E0B' }}>
+      <span className="sr-only">יש חדש</span>
+    </span>
+  );
+}
+
+export default function BottomNav({ currentView, onNavigate, station, onLogout, role, badges = {} }) {
   const [showMore, setShowMore] = useState(false);
   const st = STATIONS[station] || STATIONS['cold'];
 
   const { main: mainNav, more: moreNav } = navForProfile(role);
 
   const inMore = moreNav.some(item => item.id === currentView);
+  const moreBadge = moreNav.some(item => badges[item.id]);
 
   function go(id) {
     onNavigate(id);
@@ -108,6 +118,7 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
                     <item.Icon size={20} style={{ color: currentView === item.id ? st.color : 'rgba(255,255,255,0.6)' }} strokeWidth={1.5} />
                   </span>
                   <span className="text-lg font-medium" style={{ color: currentView === item.id ? st.color : '#fff' }}>{item.label}</span>
+                  {badges[item.id] && <span className="relative w-2 h-2 mr-auto ml-2"><Dot className="inset-0" /></span>}
                 </button>
               ))}
 
@@ -158,8 +169,9 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
                   className="absolute top-0 h-[3px] w-8 rounded-b-full transition-opacity duration-150"
                   style={{ background: st.color, opacity: active ? 1 : 0 }}
                 />
-                <div className="w-12 h-10 flex items-center justify-center">
+                <div className="relative w-12 h-10 flex items-center justify-center">
                   <Icon active={active} color={st.color} />
+                  {badges[id] && <Dot className="top-1 right-2" />}
                 </div>
                 <span
                   className="text-sm font-semibold transition-colors duration-150"
@@ -181,8 +193,9 @@ export default function BottomNav({ currentView, onNavigate, station, onLogout, 
               className="absolute top-0 h-[3px] w-8 rounded-b-full transition-opacity duration-150"
               style={{ background: st.color, opacity: inMore ? 1 : 0 }}
             />
-            <div className="w-12 h-10 flex items-center justify-center">
+            <div className="relative w-12 h-10 flex items-center justify-center">
               <MoreIcon active={showMore || inMore} />
+              {moreBadge && <Dot className="top-1 right-2" />}
             </div>
             <span
               className="text-sm font-semibold transition-colors duration-150"

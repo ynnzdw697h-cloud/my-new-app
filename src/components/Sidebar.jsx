@@ -18,7 +18,7 @@ const NAV_META = {
   checker_hub:  { label: 'קבלת סחורה',       Icon: PackageCheck },
 };
 
-export default function Sidebar({ currentView, onNavigate, station, user, onLogout, role, isOpen, onClose }) {
+export default function Sidebar({ currentView, onNavigate, station, user, onLogout, role, isOpen, onClose, badges = {} }) {
   const st = STATIONS[station] || STATIONS['cold'];
   const { main, more } = navForProfile(role);
   const navItems = [...main, ...more].map(i => ({ id: i.id, ...NAV_META[i.id] }));
@@ -123,6 +123,11 @@ export default function Sidebar({ currentView, onNavigate, station, user, onLogo
               >
                 {label}
               </span>
+              {badges[id] && (
+                <span className="w-2 h-2 rounded-full mr-auto" style={{ background: '#F59E0B' }}>
+                  <span className="sr-only">יש חדש</span>
+                </span>
+              )}
             </button>
           );
         })}

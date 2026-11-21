@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
-import { ClipboardList, BookOpen, CalendarDays, AlertCircle, Camera, PackageCheck, ShoppingCart, Fish, ChevronLeft, NotebookText, Megaphone } from 'lucide-react';
+import { Camera, PackageCheck, ShoppingCart, Fish, ChevronLeft, NotebookText, Megaphone } from 'lucide-react';
 import { useRef, useEffect, useState, useCallback, memo } from 'react';
 import { STATIONS } from '../data/stations';
+import { PLACEHOLDER_STATIONS } from '../data/prepTasks';
+import { LOG_DOCS } from '../data/shifts';
 import { usePrepState, getServiceDay } from '../hooks/usePrepState';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { StreakBadge, SegmentedBar, StatusMark } from './PrepCelebrations';
@@ -288,48 +290,98 @@ function StationRowView({ station, prep, mine, onOpen }) {
   );
 }
 
-function KitchenStatus({ myStation, prep, onOpenMine }) {
-  const stations = Object.values(STATIONS);
+// Other stations' status. A station whose list is still placeholder content is left out.
+function KitchenStatus({ title = 'המטבח עכשיו', excludeStation = null }) {
+  const stations = Object.values(STATIONS).filter(s => s.id !== excludeStation && !PLACEHOLDER_STATIONS.includes(s.id));
+  if (stations.length === 0) return null;
   return (
     <section className="space-y-2">
-      <h2 className="text-sm font-medium text-text-secondary px-1">המטבח עכשיו</h2>
+      <h2 className="text-sm font-medium text-text-secondary px-1">{title}</h2>
       <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
-        {stations.map(s => (
-          <StationRow
-            key={s.id}
-            station={s}
-            prep={s.id === myStation ? prep : null}
-            mine={s.id === myStation}
-            onOpen={s.id === myStation ? onOpenMine : undefined}
-          />
-        ))}
+        {stations.map(s => <StationRow key={s.id} station={s} prep={null} mine={false} />)}
       </div>
     </section>
   );
 }
 
-/* ─── Next prep to do on the cook's station ─── */
-function NextUp({ prep, onOpen }) {
-  const pending = prep.progress.pendingTasks;
-  if (!pending || pending.length === 0) return null;
+/* ─── My station and what's next, in one card ─── */
+function MyStationCard({ station, prep, onOpen }) {
+  const { done, total, pendingTasks } = prep.progress;
+  const left     = total - done;
+  const ready    = total > 0 && left === 0;
+  const stuckN   = prep.stuck?.size || 0;
+  const activeN  = prep.inProgress?.size || 0;
   // Stuck items first — they need someone's attention.
-  const next = pending.find(t => prep.taskStatus?.(t) === 'stuck') || pending.find(t => prep.taskStatus?.(t) !== 'progress') || pending[0];
-  const isStuck = prep.taskStatus?.(next) === 'stuck';
+  const next = !ready && pendingTasks?.length
+    ? (pendingTasks.find(t => prep.taskStatus?.(t) === 'stuck') || pendingTasks.find(t => prep.taskStatus?.(t) !== 'progress') || pendingTasks[0])
+    : null;
+  const nextStuck = next && prep.taskStatus?.(next) === 'stuck';
+
   return (
     <button
       onClick={() => { vibrate(); onOpen(); }}
-      className="w-full text-right rounded-xl px-4 py-3.5 flex items-center gap-3 min-h-[64px]"
-      style={{ border: `1px solid ${isStuck ? 'rgba(248,113,113,0.45)' : 'var(--border)'}` }}
+      className="w-full text-right rounded-xl block overflow-hidden"
+      style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}
     >
-      <div className="flex-1 min-w-0">
-        <p className="text-sm" style={{ color: isStuck ? '#F87171' : 'rgba(255,255,255,0.62)' }}>
-          {isStuck ? 'חסר / תקוע' : 'הבא בתור'}
-        </p>
-        <p className="text-lg font-medium text-text-primary truncate">
-          {next.task}
-          {next.estimatedTime && <span className="text-text-secondary font-normal"> · {next.estimatedTime}</span>}
-        </p>
+      <div className="px-4 py-4 space-y-2.5">
+        <div className="flex items-center gap-2">
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: station.color, flexShrink: 0 }} />
+          <span className="text-lg font-medium text-text-primary">{station.name}</span>
+          <span className="text-sm text-text-secondary">· הפס שלך</span>
+          <span className="mr-auto text-base text-text-secondary tabular-nums">{done}/{total}</span>
+          <ChevronLeft size={18} strokeWidth={1.5} className="text-text-tertiary" />
+        </div>
+        <SegmentedBar done={done} total={total} color={ready ? '#10B981' : station.color} height={5} />
+        <div className="flex flex-wrap gap-x-3 text-sm">
+          <span className={ready ? 'text-sem-success' : 'text-text-secondary'}>
+            {ready ? 'מוכן לשירות' : `נשארו ${left}`}
+          </span>
+          {activeN > 0 && <span style={{ color: '#F59E0B' }}>{activeN} בתהליך</span>}
+          {stuckN > 0 && <span style={{ color: '#F87171' }}>{stuckN} חסר / תקוע</span>}
+        </div>
       </div>
+      {next && (
+        <div className="px-4 py-3.5 min-h-[64px]" style={{ borderTop: '1px solid var(--border)' }}>
+          <p className="text-sm" style={{ color: nextStuck ? '#F87171' : 'rgba(255,255,255,0.62)' }}>
+            {nextStuck ? 'חסר / תקוע' : 'הבא בתור'}
+          </p>
+          <p className="text-lg font-medium text-text-primary truncate">
+            {next.task}
+            {next.estimatedTime && <span className="text-text-secondary font-normal"> · {next.estimatedTime}</span>}
+          </p>
+        </div>
+      )}
+    </button>
+  );
+}
+
+/* ─── Unread team announcements: one short line, tap to read them in full ─── */
+const seenBy = a => [a.author, ...(a.seenBy || []).map(x => x.name)];
+function UnreadAnnouncements({ user, onOpenAll }) {
+  const [announcements] = useFirestoreArray(LOG_DOCS.announcements);
+  const [open, setOpen] = useState(false);
+  const unseen = announcements.filter(a => !a.removed && !seenBy(a).includes(user));
+  if (unseen.length === 0) return null;
+  const newest = unseen[unseen.length - 1];
+  if (open) {
+    return (
+      <div className="space-y-1">
+        <AnnouncementBanner user={user} onOpen={onOpenAll} />
+        <button onClick={() => setOpen(false)} className="w-full min-h-[48px] text-sm text-text-secondary">הסתר</button>
+      </div>
+    );
+  }
+  return (
+    <button
+      onClick={() => { vibrate(); setOpen(true); }}
+      aria-expanded="false"
+      className="w-full text-right rounded-xl px-4 flex items-center gap-3 min-h-[56px]"
+      style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}
+    >
+      <Megaphone size={20} strokeWidth={1.5} className="text-text-secondary flex-shrink-0" aria-hidden="true" />
+      <span className="flex-1 min-w-0 text-base text-text-primary truncate">
+        {unseen.length > 1 ? `${unseen.length} הודעות שלא נקראו` : 'הודעה שלא נקראה'} · {newest.text}
+      </span>
       <ChevronLeft size={18} strokeWidth={1.5} className="text-text-tertiary flex-shrink-0" />
     </button>
   );
@@ -376,7 +428,6 @@ function MyShortages({ user, onOpen }) {
 export default function Dashboard({ station, user, prep, onNavigate, role }) {
   const st = STATIONS[station];
   const { avatars, saveAvatar } = useChefAvatars();
-  const { done, total, pct } = prep.progress;
 
   const isChecker = role === 'checker';
 
@@ -395,7 +446,7 @@ export default function Dashboard({ station, user, prep, onNavigate, role }) {
           </div>
         </section>
 
-        <KitchenStatus myStation={null} prep={null} />
+        <KitchenStatus />
       </div>
     );
   }
@@ -405,23 +456,20 @@ export default function Dashboard({ station, user, prep, onNavigate, role }) {
     <div className="px-4 py-5 max-w-xl mx-auto space-y-6" dir="rtl">
       <Header user={user} color={st.color} avatars={avatars} saveAvatar={saveAvatar} streak={prep.streak.count} />
 
-      <AnnouncementBanner user={user} onOpen={() => onNavigate('announcements')} />
+      <MyStationCard station={st} prep={prep} onOpen={() => onNavigate('prep')} />
+
+      <UnreadAnnouncements user={user} onOpenAll={() => onNavigate('announcements')} />
 
       <HandoverCard user={user} />
 
-      <NextUp prep={prep} onOpen={() => onNavigate('prep')} />
-
-      <KitchenStatus myStation={station} prep={prep} onOpenMine={() => onNavigate('prep')} />
+      <KitchenStatus title="שאר הפסים" excludeStation={station} />
 
       <MyShortages user={user} onOpen={() => onNavigate('shift')} />
 
+      {/* Only screens from the "עוד" menu: the rest are already in the bottom bar */}
       <div className="grid grid-cols-2 gap-3">
-        <QuickAction Icon={ClipboardList} label="צ׳ק ליסט יומי"   sub={pct === 100 ? 'הושלם' : `נשארו ${total - done}`} onClick={() => onNavigate('prep')} />
-        <QuickAction Icon={CalendarDays}  label="משימות שבועיות" sub="לפי ימים"       onClick={() => onNavigate('weekly')} />
-        <QuickAction Icon={AlertCircle}   label="חוסרים והערות"  sub="דיווח מהיר"     onClick={() => onNavigate('shift')} />
-        <QuickAction Icon={BookOpen}      label="ספר מתכונים"    sub="מתכונים והכנות" onClick={() => onNavigate('recipes')} />
-        <QuickAction Icon={NotebookText}  label="יומן משמרת"     sub="תקלות, סיכום, מי קרא" onClick={() => onNavigate('shift_log')} />
-        <QuickAction Icon={Megaphone}     label="הודעות לצוות"   sub="מי ראה"         onClick={() => onNavigate('announcements')} />
+        <QuickAction Icon={NotebookText} label="יומן משמרת"   sub="תקלות, סיכום, מי קרא" onClick={() => onNavigate('shift_log')} />
+        <QuickAction Icon={Megaphone}    label="הודעות לצוות" sub="מי ראה"               onClick={() => onNavigate('announcements')} />
       </div>
     </div>
   );
