@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UtensilsCrossed, Snowflake, Flame, PackageCheck } from 'lucide-react';
+import { UtensilsCrossed, Snowflake, Flame, PackageCheck, Delete } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 import { CHEFS } from '../data/chefs';
 
@@ -85,42 +85,50 @@ export default function LoginFlow({ onLogin }) {
 /* ─── Step 1: PIN pad (the PIN identifies the user) ─── */
 function PinStep({ onSuccess }) {
   const [pin, setPin]         = useState('');
-  const [error, setError]     = useState(false);
+  const [error, setError]     = useState(null); // null | 'wrong' | 'busy' | 'network'
   const [loading, setLoading] = useState(false);
 
+  const ERRORS = {
+    wrong:   'קוד שגוי. נסה שוב.',
+    busy:    'יותר מדי ניסיונות. נסה שוב בעוד כמה דקות.',
+    network: 'אין חיבור לשרת. נסה שוב.',
+  };
+
   function press(digit) {
-    if (pin.length >= 4 || loading) return;
-    const next = pin + digit;
+    if (loading) return;
+    // After an error, the next key starts a new code
+    const base = error ? '' : pin;
+    if (base.length >= 4) return;
+    const next = base + digit;
+    setError(null);
     setPin(next);
     if (next.length === 4) validate(next);
   }
 
   function del() {
     if (loading) return;
-    setPin(p => p.slice(0, -1));
-    setError(false);
+    setError(null);
+    setPin(p => (error ? '' : p.slice(0, -1)));
   }
 
   async function validate(entered) {
     setLoading(true);
+    setError(null);
     try {
-      const res  = await fetch('/api/auth', {
+      const res = await fetch('/api/auth', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ pin: entered }),
       });
-      const data = await res.json();
       if (res.ok) {
-        setError(false);
+        const data = await res.json();
         onSuccess(data); // passes { token, chefId, tenantId, role, displayName }
-      } else {
-        setError(true);
-        setTimeout(() => { setPin(''); setError(false); }, 700);
+        return;
       }
+      // Only a real "wrong code" answer is shown as a wrong code
+      setError(res.status === 401 ? 'wrong' : res.status === 429 ? 'busy' : 'network');
     } catch {
-      // Network error — PINs are only checked server-side, so just reject and let them retry
-      setError(true);
-      setTimeout(() => { setPin(''); setError(false); }, 700);
+      setError('network'); // no connection, or a reply we can't read
     } finally {
       setLoading(false);
     }
@@ -134,14 +142,14 @@ function PinStep({ onSuccess }) {
   ];
 
   return (
-    <div className="w-full max-w-xs flex flex-col items-center gap-7">
+    <div className="w-full max-w-xs flex flex-col items-center gap-6">
       <p className="text-xl font-bold" style={{ color: 'rgba(255,255,255,0.85)' }}>הכנס קוד אישי</p>
 
       {/* Dots */}
       <motion.div
-        animate={error ? { x: [-8, 8, -6, 6, -4, 0] } : { x: 0 }}
+        animate={error === 'wrong' ? { x: [-8, 8, -6, 6, -4, 0] } : { x: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex gap-4"
+        className={`flex gap-4 ${loading ? 'animate-pulse' : ''}`}
       >
         {[0,1,2,3].map(i => (
           <div
@@ -149,7 +157,7 @@ function PinStep({ onSuccess }) {
             className="w-4 h-4 rounded-full transition-all duration-200"
             style={{
               background: i < pin.length
-                ? (error ? '#ef4444' : '#3B82F6')
+                ? (error === 'wrong' ? '#ef4444' : '#3B82F6')
                 : 'rgba(255,255,255,0.15)',
               boxShadow: i < pin.length && !error ? 'none' : 'none',
             }}
@@ -165,11 +173,12 @@ function PinStep({ onSuccess }) {
               <button
                 key={i}
                 onClick={del}
+                disabled={loading}
                 aria-label="מחק ספרה"
-                className="rounded-xl h-20 flex items-center justify-center text-2xl transition-colors duration-150 active:bg-white/10"
+                className="rounded-xl h-20 flex items-center justify-center transition-colors duration-150 active:bg-white/10"
                 style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}
               >
-                ⌫
+                <Delete size={26} strokeWidth={1.75} aria-hidden="true" />
               </button>
             );
           }
@@ -178,6 +187,7 @@ function PinStep({ onSuccess }) {
               <button
                 key={i}
                 onClick={() => pin.length === 4 && !loading && validate(pin)}
+                disabled={loading}
                 aria-label="אישור"
                 className="rounded-xl h-20 flex items-center justify-center text-2xl font-bold"
                 style={{
@@ -194,6 +204,7 @@ function PinStep({ onSuccess }) {
             <button
               key={i}
               onClick={() => press(key)}
+              disabled={loading}
               className="rounded-xl h-20 flex items-center justify-center text-2xl font-semibold transition-colors duration-150 active:bg-white/10"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white' }}
             >
@@ -203,22 +214,22 @@ function PinStep({ onSuccess }) {
         })}
       </div>
 
-      {error && (
-        <motion.p
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="text-sm font-semibold"
-          style={{ color: '#ef4444' }}
-        >
-          קוד שגוי — נסה שוב
-        </motion.p>
-      )}
+      {/* Fixed height, so the keypad never jumps when a message appears */}
+      <p className="text-lg font-semibold min-h-[56px] text-center" style={{ color: '#ef4444' }} role="alert">
+        {error ? ERRORS[error] : ''}
+      </p>
     </div>
   );
 }
 
 /* ─── Step 2: Welcome + station selection ─── */
 function StationStep({ user, allowed, onSelect, onBack }) {
-  const stations = Object.values(STATIONS).filter(s => !allowed || allowed.includes(s.id));
+  let last = null;
+  try { last = localStorage.getItem(`villa_akadia_last_station:${user}`); } catch (_) { /* ignore */ }
+  // The station this user worked on last comes first
+  const stations = Object.values(STATIONS)
+    .filter(s => !allowed || allowed.includes(s.id))
+    .sort((a, b) => (b.id === last) - (a.id === last));
   return (
     <div className="w-full max-w-sm">
       <div className="flex items-center mb-6">

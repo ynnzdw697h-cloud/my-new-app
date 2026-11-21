@@ -1,3 +1,4 @@
+import { useBackClose } from '../hooks/useBackClose';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Timer, Fish, ShoppingCart, LogOut, NotebookText, Megaphone } from 'lucide-react';
@@ -67,6 +68,7 @@ function Dot({ className = '' }) {
 
 export default function BottomNav({ currentView, onNavigate, station, onLogout, role, badges = {} }) {
   const [showMore, setShowMore] = useState(false);
+  useBackClose(showMore, () => setShowMore(false));
   const st = STATIONS[station] || STATIONS['cold'];
 
   const { main: mainNav, more: moreNav } = navForProfile(role);
