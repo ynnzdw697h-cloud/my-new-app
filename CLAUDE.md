@@ -2,114 +2,86 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 🤖 AI PERSONA & CLI OPERATIONAL DIRECTIVES (CRITICAL)
+## Working with the product owner
 
-You are my Senior Full-Stack Developer, UX Expert, and Technical Lead. The user interacting with you is the Product Owner (deep domain knowledge of the kitchen, but not a technical developer). Your goal is to be highly autonomous, token-efficient, and to produce production-ready code.
+The user (Yam) owns the product and knows the kitchen deeply, but is not a programmer.
 
-1. **High Autonomy:** Use your CLI tools to search directories, read files, and understand context on your own. Do not ask the user to paste code. Investigate the codebase autonomously.
-2. **Zero Fluff (Save Tokens):** Completely eliminate polite filler, apologies, and long-winded explanations (e.g., no "Certainly!", no "Here is the code"). Provide only necessary insights, code diffs, and commands.
-3. **Surgical Edits:** Only rewrite or modify the specific parts of the code that require changes. Do not output entire files unless absolutely necessary.
-4. **Clear Communication:** Explain technical changes in simple, non-jargon terms.
-5. **Actionable Next Steps:** At the end of every response, tell the user EXACTLY what they need to do next in 1-2 bullet points.
+1. Explain in short, simple Hebrew. No jargon.
+2. Long plans and findings go on a Hebrew RTL HTML page (the terminal reverses Hebrew), not in terminal text.
+3. Workflow: plan, user approves, build one screen, check it in the browser at phone width (390px), user tests, user says "מאשר", then commit.
+4. Commit only after "מאשר". Ask before any push or deploy.
+5. Do not add features beyond what was requested.
+6. Investigate the codebase yourself; do not ask the user to paste code.
 
 ---
 
-# Luxury Kitchen OS — Developer Guidelines
+# Villa Akadia Kitchen App — Developer Guidelines
 
 ## Commands
 
 ```bash
-npm start          # local dev server (port 3000)
-vercel dev         # run React + Vercel serverless functions together
-CI=true npm run build   # production build (RUN ONLY WHEN EXPLICITLY INSTRUCTED BY USER)
-npm test           # run Jest tests
+npm start               # local dev server (port 3000)
+vercel dev              # React + serverless functions (api/) together
+CI=true npm run build   # production build (only when explicitly asked, or when a task says so)
+npm test                # Jest
 ```
 
-Local env: create `.env.local` with `ANTHROPIC_API_KEY` and `FIREBASE_SERVICE_ACCOUNT_JSON`.
+Local env: `.env.local` holds secrets (`ANTHROPIC_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON`, `CHEF_PINS`). Never print or copy its contents.
 
----
+## Source of truth and deploy
 
-## Project Vision
-We are building a premium **Luxury Kitchen OS** (B2B SaaS) for high-end hospitality. Client Zero: Villa Acadia.
-It is an ROI-driven, AI-first operational system designed to connect BOH with FOH, prevent food waste, and enforce Michelin-level standards.
+- `origin/main` on GitHub is the truth. Always `git fetch` and work from it. Other local copies (`~/my-new-app`) drift; do not touch them.
+- Vercel is NOT connected to GitHub. After merging to main, publish from an up-to-date local main with `npx vercel --prod --yes`, only after the user approves, then check the live site.
+- The local app reads and writes the REAL Firestore. Do not press buttons that save, delete or send while testing unless the user asks.
 
----
+## 1. Architecture rules
 
-## 1. Core Architecture Rules (STRICT)
+- Single tenant today (Villa Akadia). Data lives under `tenants/{tenantId}/...`; keep the `tenantId` path so more kitchens are possible later, but do not build multi-tenant features yet.
+- Security: users must never read or write outside their tenant. Roles and allowed stations must come from the server-issued token, not from localStorage.
+- Roles: admin, chef, checker (receiving). UI adapts to role.
+- Instructions vs knowledge: code is logic; recipes, suppliers and lists belong in Firestore.
 
-- **Multi-Tenant:** Every core data entity must include a `tenant_id`. Build with SaaS scale in mind.
-- **Security:** Users must NEVER read/write data outside their assigned `tenant_id`.
-- **Roles:** Admin, Chef, Checker, FOH/Waiter, Bartender. UI adapts dynamically.
+## 2. Design rules (agreed with the product owner)
 
----
+Built for cooks with wet hands, on phones. Calm, factual, dark (`#121212` base). Not an office app.
 
-## 2. Design & UI/UX System
+- Color only for status and station: cold `#3B82F6`, hot `#EF4444`, checker `#10B981`. **No glows, gradients, emoji, confetti or cheering text.** Messages state facts ("נשארו 5 בפס").
+- Size minimums: rows 64px+, text 18px (`text-lg`), status circle 30px, buttons 48px+, inputs 16px+ (avoids iOS zoom), transitions 150-250ms, no `active:scale`.
+- Status = shape + color via `StatusMark`: empty = not started, half amber = in progress, dashed red = stuck/missing, filled with check = done.
+- No confirm dialogs for reversible actions: act immediately and show `UndoToast` with "ביטול" for 5s.
+- Finished items fold under "הושלמו (N)".
+- Quantity fields must allow typing (`inputMode`); +/- buttons are a complement.
+- Do not add next/previous browsing between recipes (rejected by the owner): cooks open a recipe to find one specific thing.
+- All text is Hebrew, layouts are `dir="rtl"`. Fonts: Heebo (Hebrew) + Inter (Latin/numbers).
+- Respect `prefers-reduced-motion`.
+- Shared pieces: `src/components/PrepCelebrations.jsx` (`StatusMark`, `UndoToast`, `SegmentedBar`, `StickyProgress`), `src/hooks/useFocusFlash.js`, `src/components/GlobalSearch.jsx` (`rememberRecent`), `src/components/ui/*`.
+- Do not change things that work just because another way looks nicer.
 
-- **Theme:** Premium Dark Mode. Deep elegant darks with high-contrast glowing accents.
-- **Ergonomics:** Built for high-pressure kitchen environments — large touch targets, accessible for wet hands, minimal clicks. Clean cards and traffic-light systems. Features must be robust and error-proof.
-- **Current stack:** React 19, Tailwind CSS, framer-motion, Firebase Firestore, Vercel. All UI is Hebrew (`dir="rtl"`).
+## 3. AI and API
 
----
+- Vision (invoice OCR in `api/ocr.js`): use a current Claude Sonnet model. Check the current model ID in the Claude API docs before changing it; the ID currently in code may be outdated.
+- Text-only tasks: a current Haiku model.
 
-## 3. AI & API Strategy (Cost Efficiency)
+## 4. Current status
 
-**Smart model routing:**
-- **Vision tasks** (OCR invoice scanning): use `claude-sonnet-4-6`
-- **Text-only tasks**: use `claude-haiku-4-5-20251001`
+- LIVE: PIN-only login (code identifies the cook, then station choice), Dashboard, Prep Checklist (incl. temperature tasks and due times), Recipes, Weekly Tasks, Shift Notes and Shift Log, Handover card, Announcements, Protein Count, Supplier Orders (עלה עלה catalog), Global Search, Checker/Receiving module (AI OCR), cooks' guide at `/guide.html`.
+- Known review with prioritized fixes: `~/Documents/kitchen app/docs/fable-review-2026-11-16.md`.
+- Future ideas (do not build unasked): offline service worker, push notifications, recipes/prep lists moved to Firestore with an admin screen, staff admin screen, analytics for managers.
 
----
+## 5. Tech constraints
 
-## 4. Current Development Status & Roadmap
+- Firebase Firestore on the free plan: NO Firebase Storage. Images are Canvas to base64 to Firestore.
+- Serverless functions in `api/` use CommonJS (`require` / `module.exports`), not ESM.
+- Keep Firestore documents small (1MB limit); avoid ever-growing arrays in one document.
 
-- **LIVE:** PIN auth, session persistence, Dashboard, Prep Checklist, Recipes, Weekly Tasks, Shift Notes, Protein Count, Supplier Orders.
-- **IN PROGRESS:** Checker / Receiving Module (AI OCR, RMA logic).
-- **FUTURE ROADMAP (IGNORE FOR NOW):** Keep architecture scalable, but DO NOT write premature code for future modules (like live food cost, expiry trackers, or FOH sync) until explicitly instructed.
+## 6. Key files
 
----
+- `src/App.js` (shell, session, navigation)
+- `src/data/` chefs.js, stations.js, suppliers.js, supplierCatalog.js, recipes.js, mainDishes.js, prepTasks.js, weeklyTasks.js, shifts.js, shelfLife.js, tenants.js
+- `src/hooks/` useFirestoreSet.js, useFirestoreArray.js, usePrepState.js, useSupplierCatalog.js, useDeliveries.js, useDelivery.js, useFocusFlash.js
+- `src/components/` Dashboard, PrepChecklist, RecipeDatabase, WeeklyTasks, ShiftNotes, ShiftLog, HandoverCard, Announcements, ProteinCount, SupplierOrder, `supplier/*`, `checker/*`, `ui/*`
+- `api/` auth.js (PIN to Firebase custom token), ocr.js
 
-## 5. Tech Stack & Constraints
+## 7. Session
 
-- Firebase Firestore (free plan — **NO Firebase Storage**; use Canvas API → base64 → Firestore for images).
-- Serverless functions in `api/` must use **CommonJS** (`require` / `module.exports`), not ESM.
-
----
-
-## 6. Developer Rules
-
-- Rely on the local dev server (`npm start`) for testing. Do NOT run `npm run build` automatically; only run it when preparing for deployment.
-- Run `git add`, `commit`, and `push` ONLY after completing a logical feature, fixing a bug, or reaching a stable checkpoint.
-- All UI text is Hebrew, all layouts are `dir="rtl"`.
-- Do not add features beyond what is explicitly requested.
-
----
-
-## 7. Styling Tokens
-
-- Background: `#121212`
-- Cards: `rgba(255,255,255,0.04)` + `border: 1px solid rgba(255,255,255,0.08)`
-- Border radius: `rounded-3xl` (cards), `rounded-2xl` (buttons/inputs)
-- Fonts: Inter (Latin/numbers) + Heebo (Hebrew)
-- Glow buttons: `.glow-btn` class with CSS vars `--gc`, `--gca`, `--gcb`
-
----
-
-## 8. Firestore Structure & Roles
-
-- `kitchen/` collection includes: `prep_tasks`, `weekly`, `order`, `custom_items`, `protein_count`, `shift_notes`, `recipe_images`, `deliveries_index`, `delivery_docs`.
-- Roles: `chef` (full access), `checker` (Supplier/CheckerHub only).
-
----
-
-## 9. Key Files
-
-- `src/data/` -> chefs.js, stations.js, suppliers.js, recipes.js, prepTasks.js, weeklyTasks.js, tenants.js
-- `src/hooks/` -> useFirestoreSet.js, useFirestoreArray.js, useDeliveries.js, useDelivery.js
-- `api/` -> ocr.js, auth.js
-- `src/components/checker/` -> Checker module components.
-
----
-
-## 10. Session
-
-`localStorage` key `villa_akadia_session` stores `{ user, station, role, tenantId }`.
-`api/auth.js` validates PIN → Firebase custom token. Firestore hooks use `useTenantId()` internally.
+`localStorage` key `villa_akadia_session` stores `{ user, station, role, tenantId }`. Treat it as a convenience only; real identity is the Firebase user and its token claims.
