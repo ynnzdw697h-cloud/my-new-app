@@ -1,118 +1,51 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import {
-  Clock, Soup, CookingPot, FlaskConical, Carrot, Croissant, Container, ChefHat, Wheat, Leaf, Salad,
-  UtensilsCrossed, CakeSlice, Search, X, AlertTriangle, Scale, Coins, ListOrdered, Target, Wine,
-  Thermometer, ChevronLeft, Layers, Check,
-} from 'lucide-react';
+import { Clock, Search, X, Plus } from 'lucide-react';
 import { RECIPES, CATEGORIES } from '../data/recipes';
 import { MAIN_DISHES, DISH_CATEGORIES } from '../data/mainDishes';
 import { STATIONS } from '../data/stations';
-import { db } from '../firebase';
-import { doc, collection, onSnapshot, setDoc } from 'firebase/firestore';
-import { useTenantId } from '../context/TenantContext';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
+import { useRecipeImages, useFullImage } from '../hooks/useRecipeImages';
 import RecipeWizard from './RecipeWizard';
+import DishDetail from './DishDetail';
+import RecipeDetail from './RecipeDetail';
 import { rememberRecent } from './GlobalSearch';
+import { CAT_META, DISH_CAT_META, DEFAULT_META, foodCostColor } from './recipeShared';
 
-// ─── Prep category metadata ───
-const CAT_META = {
-  'ציר':     { Icon: Soup },
-  'רטבים':   { Icon: CookingPot },
-  'מותססים': { Icon: FlaskConical },
-  'כבושים':  { Icon: Carrot },
-  'בצקים':   { Icon: Croissant },
-  'ממרחים':  { Icon: Container },
-  'הכנות':   { Icon: ChefHat },
-  'אורז':    { Icon: Wheat },
-  'תוספות':  { Icon: Leaf },
-  'סלטים':   { Icon: Salad },
-};
+// ─── FLOW-04: remember the open recipe + amount while the cook visits other screens ───
+const VIEW_KEY = 'recipes_view_v1';
 
-// ─── Dish category metadata ───
-const DISH_CAT_META = {
-  'סלטים':   { Icon: Salad },
-  'עיקריות': { Icon: UtensilsCrossed },
-  'קינוחים': { Icon: CakeSlice },
-};
-
-const DEFAULT_META = { Icon: UtensilsCrossed };
-
-function fmt(n) {
-  if (n === 0) return '0';
-  return parseFloat((Math.round(n * 1000) / 1000).toFixed(3)).toString();
+function loadView() {
+  try { return JSON.parse(sessionStorage.getItem(VIEW_KEY)) || null; } catch (_) { return null; }
 }
-
-function foodCostColor(pct) {
-  if (pct < 25) return '#10B981';
-  if (pct < 35) return '#F59E0B';
-  return '#EF4444';
-}
-
-// ─── Hook: load recipe images from Firestore ───
-// Images are stored per-recipe in a subcollection to avoid the 1 MB document limit.
-// The legacy single-doc is also read so old saved images still appear.
-function useRecipeImages() {
-  const tenantId            = useTenantId();
-  const [images, setImages] = useState({});
-
-  useEffect(() => {
-    if (!tenantId) return;
-    // Shared mutable accumulator so both callbacks stay in sync
-    const merged = {};
-
-    // (1) Legacy: single combined document — backward compat
-    const unsub1 = onSnapshot(
-      doc(db, 'tenants', tenantId, 'kitchen', 'recipe_images'),
-      snap => {
-        if (snap.exists()) {
-          Object.assign(merged, snap.data());
-          setImages({ ...merged });
-        }
-      },
-      err => console.warn('[recipe_images legacy]', err.code)
-    );
-
-    // (2) New: per-recipe collection — no document-size limit
-    const unsub2 = onSnapshot(
-      collection(db, 'tenants', tenantId, 'recipe_images_col'),
-      snapshot => {
-        snapshot.forEach(docSnap => { merged[docSnap.id] = docSnap.data().url; });
-        setImages({ ...merged });
-      },
-      err => console.warn('[recipe_images_col]', err.code)
-    );
-
-    return () => { unsub1(); unsub2(); };
-  }, [tenantId]);
-
-  const saveImage = useCallback(async (id, imageUrl) => {
-    // Each recipe's image gets its own document — no 1 MB combined-doc overflow
-    const safeId = String(id).replace(/\./g, '_');
-    await setDoc(
-      doc(db, 'tenants', tenantId, 'recipe_images_col', safeId),
-      { url: imageUrl }
-    );
-    // Optimistic local update so the UI doesn't wait for the snapshot
-    setImages(prev => ({ ...prev, [safeId]: imageUrl }));
-  }, [tenantId]);
-
-  return { images, saveImage };
+function saveView(v) {
+  try {
+    if (v) sessionStorage.setItem(VIEW_KEY, JSON.stringify(v));
+    else sessionStorage.removeItem(VIEW_KEY);
+  } catch (_) { /* ignore */ }
 }
 
 /* ════════════════════════════════════════════════════
-   Main export
+   Recipe book: list screen. Detail screens live in
+   DishDetail.jsx and RecipeDetail.jsx.
 ════════════════════════════════════════════════════ */
 export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpenedTarget }) {
-  const [activeTab, setActiveTab]           = useState('dish');
+  const saved = useRef(loadView()).current;
+
+  const [activeTab, setActiveTab]           = useState(saved?.tab || 'dish');
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [selectedDish, setSelectedDish]     = useState(null);
   const [drillRecipe, setDrillRecipe]       = useState(null);
   const [category, setCategory]             = useState('הכל');
   const [search, setSearch]                 = useState('');
-  const [batches, setBatches]               = useState(1);
+  const [batches, setBatches]               = useState(saved?.batches || 1);
+  const [drillBatches, setDrillBatches]     = useState(saved?.drillBatches || 1);
+  const [portions, setPortions]             = useState(saved?.portions || 1);
   const [showAddModal, setShowAddModal]     = useState(false);
-  const { images, saveImage }               = useRecipeImages();
+  const scrollMemo                          = useRef([]);
+  const restored                            = useRef(false);
+  const imgs                                = useRecipeImages();
+  const { images, saveImage }               = imgs;
 
   const [customRecipes, setCustomRecipes] = useFirestoreArray('custom_recipes');
   const [customDishes,  setCustomDishes]  = useFirestoreArray('custom_dishes');
@@ -122,6 +55,41 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
 
   const st = STATIONS[station];
 
+  // Restore the previously open recipe (custom recipes may arrive a moment later)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (restored.current) return;
+    if (!saved || (saved.dishId == null && saved.recipeId == null && saved.drillId == null)) { restored.current = true; return; }
+    const dish   = saved.dishId   != null ? allDishes.find(d => d.id === saved.dishId)     : null;
+    const recipe = saved.recipeId != null ? allRecipes.find(r => r.id === saved.recipeId)  : null;
+    const drill  = saved.drillId  != null ? allRecipes.find(r => r.id === saved.drillId)   : null;
+    const needed = [saved.dishId, saved.recipeId, saved.drillId].filter(x => x != null).length;
+    const found  = [dish, recipe, drill].filter(Boolean).length;
+    if (found < needed && customRecipes.length === 0 && customDishes.length === 0) return; // wait for custom lists
+    restored.current = true;
+    if (dish)   setSelectedDish(dish);
+    if (recipe) setSelectedRecipe(recipe);
+    if (drill)  setDrillRecipe(drill);
+    if (typeof saved.scrollY === 'number') setTimeout(() => window.scrollTo(0, saved.scrollY), 300);
+  });
+
+  // Save the view whenever it changes
+  useEffect(() => {
+    if (!restored.current) return;
+    if (!selectedDish && !selectedRecipe && !drillRecipe) { saveView(null); return; }
+    saveView({
+      tab: activeTab,
+      dishId: selectedDish?.id ?? null, recipeId: selectedRecipe?.id ?? null, drillId: drillRecipe?.id ?? null,
+      portions, batches, drillBatches, scrollY: window.scrollY,
+    });
+  }, [activeTab, selectedDish, selectedRecipe, drillRecipe, portions, batches, drillBatches]);
+
+  // Keep the latest scroll position when leaving the screen
+  useEffect(() => () => {
+    const v = loadView();
+    if (v) saveView({ ...v, scrollY: window.scrollY });
+  }, []);
+
   function switchTab(tab) {
     setActiveTab(tab);
     setCategory('הכל');
@@ -129,6 +97,7 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
   }
 
   async function handleSaveRecipe(type, data, photoDataUrl) {
+    restored.current = true;
     if (type === 'prep') {
       setCustomRecipes(prev => [data, ...prev]);
       setShowAddModal(false);
@@ -138,32 +107,70 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
       setCustomDishes(prev => [data, ...prev]);
       setShowAddModal(false);
       setSelectedDish(data);
+      setPortions(data.defaultPortions || 1);
     }
     if (photoDataUrl) {
       await saveImage(data.id, photoDataUrl);
     }
   }
 
+  const q = search.trim();
   const filteredPrep = allRecipes.filter(r => {
     const matchCat    = category === 'הכל' || r.category === category;
-    const matchSearch = r.name.includes(search) || (r.description || '').includes(search);
+    const matchSearch = r.name.includes(q) || (r.description || '').includes(q);
     return matchCat && matchSearch;
   });
-
   const filteredDishes = allDishes.filter(d => {
     const matchCat    = category === 'הכל' || d.category === category;
-    const matchSearch = d.name.includes(search) || (d.description || '').includes(search);
+    const matchSearch = d.name.includes(q) || (d.description || '').includes(q);
     return matchCat && matchSearch;
   });
 
+  // Every screen change starts at the top; going back returns to where you were (BUG-09).
+  function scrollEl() { return document.querySelector('main'); }
+  function rememberScroll() {
+    const el = scrollEl();
+    scrollMemo.current.push({ w: window.scrollY, m: el ? el.scrollTop : 0 });
+  }
+  function goTop() {
+    window.scrollTo(0, 0);
+    const el = scrollEl();
+    if (el) el.scrollTop = 0;
+  }
+  function restoreScroll() {
+    const pos = scrollMemo.current.pop();
+    if (!pos) return;
+    requestAnimationFrame(() => {
+      window.scrollTo(0, pos.w);
+      const el = scrollEl();
+      if (el) el.scrollTop = pos.m;
+    });
+  }
+  function openDrill(recipe) {
+    rememberScroll();
+    setDrillRecipe(recipe);
+    setDrillBatches(recipe.batches);
+  }
+  function closeDrill()  { setDrillRecipe(null);    restoreScroll(); }
+  function closeDish()   { setSelectedDish(null);   restoreScroll(); }
+  function closeRecipe() { setSelectedRecipe(null); restoreScroll(); }
+
+  useEffect(() => {
+    if (restored.current && (drillRecipe || selectedDish || selectedRecipe)) goTop();
+  }, [drillRecipe, selectedDish, selectedRecipe]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function openRecipe(recipe) {
+    restored.current = true;
+    rememberScroll();
     setSelectedRecipe(recipe);
     setBatches(recipe.batches);
     rememberRecent('prep', recipe.id);
   }
-
   function openDish(dish) {
+    restored.current = true;
+    rememberScroll();
     setSelectedDish(dish);
+    setPortions(dish.defaultPortions);
     rememberRecent('dish', dish.id);
   }
 
@@ -183,62 +190,69 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
     onOpenedTarget?.();
   }, [openTarget]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The list uses small thumbnails; the open recipe loads its full photo (thumbnail shows meanwhile)
+  const openId   = (drillRecipe || selectedDish || selectedRecipe)?.id ?? null;
+  const fullOpen = useFullImage(openId, imgs);
+  const photoOf  = id => fullOpen || images[String(id).replace(/\./g, '_')] || null;
+
   const scaleFactor = selectedRecipe ? batches / selectedRecipe.batches : 1;
 
-  // ── Sub-recipe drill-down from DishDetail ──
+  // ── Sub-recipe drill-down (from a dish or from another prep recipe) ──
   if (drillRecipe) {
     return (
       <RecipeDetail
         recipe={drillRecipe}
-        scaleFactor={1}
-        batches={drillRecipe.batches}
-        onUpdateBatches={() => {}}
-        onBack={() => setDrillRecipe(null)}
+        scaleFactor={drillBatches / drillRecipe.batches}
+        batches={drillBatches}
+        onUpdateBatches={val => setDrillBatches(Math.max(0.25, parseFloat(val) || drillRecipe.batches))}
+        onBack={closeDrill}
         stationColor={st.color}
-        imageUrl={images[String(drillRecipe.id)] || null}
+        imageUrl={photoOf(drillRecipe.id)}
         onSaveImage={url => saveImage(drillRecipe.id, url)}
+        allPrepRecipes={allRecipes}
       />
     );
   }
 
-  // ── Dish detail ──
   if (selectedDish) {
     return (
       <DishDetail
         dish={selectedDish}
-        onOpenSubRecipe={recipe => setDrillRecipe(recipe)}
-        onBack={() => setSelectedDish(null)}
+        portions={portions}
+        onPortions={setPortions}
+        onOpenSubRecipe={openDrill}
+        onBack={closeDish}
         stationColor={st.color}
-        imageUrl={images[String(selectedDish.id)] || null}
+        imageUrl={photoOf(selectedDish.id)}
         onSaveImage={url => saveImage(selectedDish.id, url)}
         allPrepRecipes={allRecipes}
       />
     );
   }
 
-  // ── Prep recipe detail ──
   if (selectedRecipe) {
     return (
       <RecipeDetail
         recipe={selectedRecipe}
         scaleFactor={scaleFactor}
         batches={batches}
-        onUpdateBatches={val => setBatches(Math.max(0.25, parseFloat(val) || 1))}
-        onBack={() => setSelectedRecipe(null)}
+        onUpdateBatches={val => setBatches(Math.max(0.25, parseFloat(val) || selectedRecipe.batches))}
+        onBack={closeRecipe}
         stationColor={st.color}
-        imageUrl={images[String(selectedRecipe.id)] || null}
+        imageUrl={photoOf(selectedRecipe.id)}
         onSaveImage={url => saveImage(selectedRecipe.id, url)}
         onMarkReady={onMarkReady}
         allPrepRecipes={allRecipes}
-        onOpenSubRecipe={r => setDrillRecipe(r)}
+        onOpenSubRecipe={openDrill}
       />
     );
   }
 
-  const cats    = activeTab === 'dish' ? DISH_CATEGORIES : CATEGORIES;
+  const cats   = activeTab === 'dish' ? DISH_CATEGORIES : CATEGORIES;
+  const isDish = activeTab === 'dish';
 
   return (
-    <div className="px-4 py-5 max-w-xl mx-auto" dir="rtl" style={{ position: 'relative' }}>
+    <div className="px-4 py-4 max-w-xl mx-auto" dir="rtl">
       <AnimatePresence>
         {showAddModal && (
           <RecipeWizard
@@ -249,40 +263,19 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
         )}
       </AnimatePresence>
 
-      {/* FAB */}
-      <button
-        onClick={() => setShowAddModal(true)}
-        style={{
-          position: 'fixed', bottom: 104, left: 20, zIndex: 40,
-          width: 52, height: 52, borderRadius: '50%',
-          background: '#10B981',
-          
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 26, color: 'white', fontWeight: 300,
-          border: 'none',
-          transition: 'transform 0.15s, box-shadow 0.15s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-      >+</button>
-
-      {/* ── Tab switcher ── */}
-      <div
-        className="flex rounded-2xl p-1 mb-5"
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-      >
-        {[
-          { id: 'dish', label: 'מנות' },
-          { id: 'prep', label: 'הכנות' },
-        ].map(tab => (
+      {/* ── Tabs ── */}
+      <div className="flex rounded-xl p-1 mb-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }} role="tablist">
+        {[{ id: 'dish', label: 'מנות' }, { id: 'prep', label: 'הכנות' }].map(tab => (
           <button
             key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
             onClick={() => switchTab(tab.id)}
-            className="flex-1 min-h-[44px] rounded-xl text-base font-bold flex items-center justify-center gap-1.5 transition-all duration-200"
+            className="flex-1 min-h-[48px] rounded-lg text-lg font-semibold"
             style={{
-              background:  activeTab === tab.id ? st.color : 'transparent',
-              color:       activeTab === tab.id ? '#fff'   : 'rgba(255,255,255,0.62)',
-              boxShadow:   'none',
+              background: activeTab === tab.id ? st.color : 'transparent',
+              color:      activeTab === tab.id ? '#fff'   : 'var(--text-2)',
             }}
           >
             {tab.label}
@@ -291,41 +284,40 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
       </div>
 
       {/* ── Search ── */}
-      <div
-        className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-4"
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="2" strokeLinecap="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
+      <div className="flex items-center gap-3 rounded-xl px-4 mb-3 h-14" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <Search size={20} style={{ color: 'var(--text-2)' }} aria-hidden="true" />
         <input
           type="text"
-          placeholder={activeTab === 'dish' ? 'חפש מנה...' : 'חפש מתכון...'}
+          placeholder={isDish ? 'חפש מנה...' : 'חפש מתכון...'}
+          aria-label={isDish ? 'חפש מנה' : 'חפש מתכון'}
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="flex-1 bg-transparent text-white placeholder-opacity-40 focus:outline-none text-base"
-          style={{ color: 'white', caretColor: st.color }}
+          className="flex-1 min-w-0 h-full bg-transparent focus:outline-none text-lg"
+          style={{ color: 'var(--text)', caretColor: st.color }}
           dir="rtl"
         />
         {search && (
-          <button onClick={() => setSearch('')} style={{ color: 'rgba(255,255,255,0.62)' }}><X size={18} /></button>
+          <button type="button" onClick={() => setSearch('')} aria-label="נקה חיפוש" className="w-12 h-12 -ml-3 flex items-center justify-center" style={{ color: 'var(--text-2)' }}>
+            <X size={20} />
+          </button>
         )}
       </div>
 
       {/* ── Category chips ── */}
-      <div className="flex gap-2 overflow-x-auto pb-3 mb-5 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-3" style={{ scrollbarWidth: 'none' }}>
         {cats.map(c => {
           const active = category === c;
           return (
             <button
               key={c}
+              type="button"
               onClick={() => setCategory(c)}
-              className="glow-btn flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-2xl text-sm font-semibold"
+              aria-pressed={active}
+              className="flex-shrink-0 min-h-[48px] px-5 rounded-xl text-base font-semibold"
               style={{
                 background: active ? st.color : 'var(--bg-card)',
-                border:     active ? `1px solid ${st.color}` : '1px solid var(--border)',
-                color:      active ? '#fff' : 'rgba(255,255,255,0.62)',
-                boxShadow:  'none',
+                border:     `1px solid ${active ? st.color : 'var(--border)'}`,
+                color:      active ? '#fff' : 'var(--text)',
               }}
             >
               {c}
@@ -334,847 +326,97 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
         })}
       </div>
 
-      {/* ── Count ── */}
-      <p className="text-sm font-semibold mb-4 px-1" style={{ color: 'rgba(255,255,255,0.62)', letterSpacing: '0.06em' }}>
-        {activeTab === 'dish' ? filteredDishes.length : filteredPrep.length} {activeTab === 'dish' ? 'מנות' : 'מתכונים'}
+      <p className="text-base mb-3 px-1" style={{ color: 'var(--text-2)' }}>
+        {isDish ? filteredDishes.length : filteredPrep.length} {isDish ? 'מנות' : 'מתכונים'}
       </p>
 
-      {/* ── Dish grid ── */}
-      {activeTab === 'dish' ? (
-        <div className="grid grid-cols-2 gap-3">
-          {filteredDishes.map(dish => {
-            const meta   = DISH_CAT_META[dish.category] || DEFAULT_META;
-            const imgUrl = images[String(dish.id)];
-            const fcp    = dish.sellingPrice > 0 ? (dish.costPerPortion / dish.sellingPrice * 100) : 0;
-            return (
-              <button
-                key={dish.id}
-                onClick={() => openDish(dish)}
-                className="glow-btn rounded-3xl overflow-hidden text-right"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-              >
-                <div
-                  className="relative w-full"
-                  style={{
-                    paddingTop: '72%',
-                    background: imgUrl ? undefined : 'rgba(255,255,255,0.04)',
-                  }}
-                >
-                  {imgUrl ? (
-                    <img src={imgUrl} alt={dish.name} className="absolute inset-0 w-full h-full object-cover" />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <meta.Icon size={36} strokeWidth={1.25} style={{ opacity: 0.5 }} />
-                    </div>
-                  )}
-                  <div
-                    className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-xl text-sm font-bold"
-                    style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(6px)' }}
-                  >
-                    {dish.category}
-                  </div>
-                  {fcp > 0 && (
-                    <div
-                      className="absolute bottom-2 left-2 px-2 py-0.5 rounded-xl text-sm font-black"
-                      style={{ background: 'rgba(0,0,0,0.7)', color: foodCostColor(fcp), backdropFilter: 'blur(6px)' }}
-                    >
-                      {fcp.toFixed(0)}% FC
-                    </div>
-                  )}
-                </div>
-                <div className="p-3">
-                  <h3 className="text-white font-bold text-sm leading-tight mb-1.5">{dish.name}</h3>
-                  <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.62)' }}>
-                    {dish.prepTimeMin > 0 && (
-                      <span className="text-sm inline-flex items-center gap-1"><Clock size={13} strokeWidth={2} aria-hidden="true" />{dish.prepTimeMin} דק׳</span>
-                    )}
-                    {dish.sellingPrice > 0 && <span className="text-sm">{dish.prepTimeMin > 0 ? '· ' : ''}₪{dish.sellingPrice}</span>}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-          {filteredDishes.length === 0 && (
-            <div className="col-span-2 text-center py-20" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              <Search size={40} strokeWidth={1.25} className="mx-auto mb-4" style={{ opacity: 0.4 }} />
-              <div className="font-medium">לא נמצאו מנות</div>
-            </div>
-          )}
-        </div>
-      ) : (
-        /* ── Prep grid ── */
-        <>
-          <div className="grid grid-cols-2 gap-3">
-            {filteredPrep.map(recipe => {
-              const meta   = CAT_META[recipe.category] || DEFAULT_META;
-              const imgUrl = images[String(recipe.id)];
+      {/* ── Grid ── */}
+      <div className="grid grid-cols-2 gap-3">
+        {isDish
+          ? filteredDishes.map(dish => {
+              const meta = DISH_CAT_META[dish.category] || DEFAULT_META;
+              const fcp  = dish.sellingPrice > 0 ? (dish.costPerPortion / dish.sellingPrice * 100) : 0;
               return (
-                <button
+                <RecipeCard
+                  key={dish.id}
+                  name={dish.name}
+                  category={dish.category}
+                  imgUrl={images[String(dish.id).replace(/\./g, '_')]}
+                  Icon={meta.Icon}
+                  badge={fcp > 0 ? { text: `${fcp.toFixed(0)}% FC`, color: foodCostColor(fcp) } : null}
+                  line={[dish.prepTimeMin > 0 && `${dish.prepTimeMin} דק׳`, dish.sellingPrice > 0 && `₪${dish.sellingPrice}`]}
+                  onClick={() => openDish(dish)}
+                />
+              );
+            })
+          : filteredPrep.map(recipe => {
+              const meta = CAT_META[recipe.category] || DEFAULT_META;
+              return (
+                <RecipeCard
                   key={recipe.id}
+                  name={recipe.name}
+                  category={recipe.category}
+                  imgUrl={images[String(recipe.id).replace(/\./g, '_')]}
+                  Icon={meta.Icon}
+                  line={[recipe.prepTime, `${recipe.ingredients.length} מרכיבים`]}
                   onClick={() => openRecipe(recipe)}
-                  className="glow-btn rounded-3xl overflow-hidden text-right"
-                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                >
-                  <div
-                    className="relative w-full"
-                    style={{
-                      paddingTop: '72%',
-                      background: imgUrl ? undefined : 'rgba(255,255,255,0.04)',
-                    }}
-                  >
-                    {imgUrl ? (
-                      <img src={imgUrl} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover" />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <meta.Icon size={36} strokeWidth={1.25} style={{ opacity: 0.5 }} />
-                      </div>
-                    )}
-                    <div
-                      className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-xl text-sm font-bold"
-                      style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(6px)' }}
-                    >
-                      {recipe.category}
-                    </div>
-                  </div>
-                  <div className="p-3">
-                    <h3 className="text-white font-bold text-sm leading-tight mb-1.5">{recipe.name}</h3>
-                    <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.62)' }}>
-                      {recipe.prepTime && (
-                        <span className="text-sm inline-flex items-center gap-1"><Clock size={13} strokeWidth={2} aria-hidden="true" />{recipe.prepTime}</span>
-                      )}
-                      <span className="text-sm">{recipe.prepTime ? '· ' : ''}{recipe.ingredients.length} מרכיבים</span>
-                    </div>
-                  </div>
-                </button>
+                />
               );
             })}
-          </div>
-          {filteredPrep.length === 0 && (
-            <div className="text-center py-20" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              <Search size={40} strokeWidth={1.25} className="mx-auto mb-4" style={{ opacity: 0.4 }} />
-              <div className="font-medium">לא נמצאו מתכונים</div>
-            </div>
-          )}
-        </>
+      </div>
+
+      {(isDish ? filteredDishes : filteredPrep).length === 0 && (
+        <div className="text-center py-16" style={{ color: 'var(--text-2)' }}>
+          <Search size={40} strokeWidth={1.25} className="mx-auto mb-4" style={{ opacity: 0.5 }} />
+          <div className="text-lg">{isDish ? 'לא נמצאו מנות' : 'לא נמצאו מתכונים'}</div>
+        </div>
       )}
-    </div>
-  );
-}
 
-/* ════════════════════════════════════════════════════
-   Dish Detail (Main / Assembly Recipe)
-════════════════════════════════════════════════════ */
-function DishDetail({ dish, onOpenSubRecipe, onBack, stationColor, imageUrl, onSaveImage, allPrepRecipes = RECIPES }) {
-  const [portions, setPortions]   = useState(dish.defaultPortions);
-  const [fohOpen, setFohOpen]     = useState(false);
-  const fileRef                   = useRef();
-  const [uploading, setUploading]     = useState(false);
-  const [uploadError, setUploadError] = useState(null);
-
-  const scale     = portions / dish.defaultPortions;
-  const totalCost = dish.costPerPortion * portions;
-  const fcp       = dish.sellingPrice > 0 ? (dish.costPerPortion / dish.sellingPrice * 100) : 0;
-  const fcColor   = foodCostColor(fcp);
-  const meta      = DISH_CAT_META[dish.category] || DEFAULT_META;
-
-  async function handleImageUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploading(true);
-    setUploadError(null);
-    try {
-      const base64 = await compressImage(file, 900, 0.72);
-      await onSaveImage(base64);
-    } catch (err) {
-      console.error('Upload failed', err);
-      setUploadError(err.message || 'שגיאה בהעלאה');
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  const QUICK_PORTIONS = [1, 2, 4, 6, 10];
-
-  return (
-    <div dir="rtl" className="max-w-xl mx-auto pb-10">
-
-      {/* ── Hero ── */}
-      <div
-        className="relative w-full"
-        style={{ height: '260px', background: imageUrl ? undefined : 'rgba(255,255,255,0.04)' }}
+      {/* ── Add recipe: a normal button at the end of the list (no floating button) ── */}
+      <button
+        type="button"
+        onClick={() => setShowAddModal(true)}
+        className="mt-6 w-full h-14 rounded-xl flex items-center justify-center gap-2 text-lg font-semibold"
+        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-md)', color: 'var(--text)' }}
       >
-        {imageUrl ? (
-          <img src={imageUrl} alt={dish.name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <meta.Icon size={64} strokeWidth={1} style={{ opacity: 0.3 }} />
-          </div>
-        )}
-        {imageUrl && <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.4) 100%)' }} />}
-
-        {/* Back */}
-        <button
-          onClick={onBack}
-          className="absolute top-4 right-4 w-10 h-10 rounded-2xl flex items-center justify-center active:scale-90 transition-all"
-          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)' }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
-        </button>
-
-        {/* Upload */}
-        <button
-          onClick={() => fileRef.current.click()}
-          disabled={uploading}
-          className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-bold active:scale-90 transition-all"
-          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.85)' }}
-        >
-          {uploading ? <span>מעלה...</span> : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17,8 12,3 7,8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              {imageUrl ? 'החלף תמונה' : 'הוסף תמונה'}
-            </>
-          )}
-        </button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-
-        {/* Upload error */}
-        {uploadError && (
-          <div
-            className="absolute top-16 left-4 right-4 rounded-2xl px-4 py-2 text-sm font-bold"
-            style={{ background: 'rgba(220,38,38,0.9)', color: 'white', backdropFilter: 'blur(8px)' }}
-          >
-            שגיאה: {uploadError}
-          </div>
-        )}
-
-        {/* Title overlay */}
-        <div className="absolute bottom-0 inset-x-0 p-5">
-          <span
-            className="text-sm font-bold px-2.5 py-1 rounded-xl mb-2 inline-block"
-            style={{ background: stationColor + '35', color: stationColor, border: `1px solid ${stationColor}40` }}
-          >
-            {dish.category}
-          </span>
-          <h2 className="text-2xl font-black text-white leading-tight mt-1">{dish.name}</h2>
-        </div>
-      </div>
-
-      {/* ── Content ── */}
-      <div className="px-4 space-y-4 mt-4">
-
-        {/* Info chips */}
-        <div className="flex gap-2 flex-wrap">
-          {dish.prepTimeMin > 0 && <InfoChip icon={<Clock size={14} strokeWidth={2} />} text={`${dish.prepTimeMin} דק׳`} />}
-          <InfoChip icon={<Layers size={14} />} text={`${dish.directIngredients.length + dish.subRecipes.length} רכיבים`} />
-          {dish.sellingPrice > 0 && <InfoChip icon="₪" text={`${dish.sellingPrice}`} />}
-        </div>
-
-        {/* Description */}
-        {dish.description && (
-          <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
-            {dish.description}
-          </p>
-        )}
-
-        {/* Allergens */}
-        {dish.allergens && dish.allergens.length > 0 && (
-          <div
-            className="rounded-2xl px-4 py-3"
-            style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}
-          >
-            <p className="text-sm font-bold mb-2" style={{ color: 'rgba(245,158,11,0.8)' }}><AlertTriangle size={14} className="inline ml-1" /> אלרגנים</p>
-            <div className="flex gap-2 flex-wrap">
-              {dish.allergens.map(a => {
-                return (
-                  <span
-                    key={a}
-                    className="flex items-center gap-1 text-sm font-bold px-2.5 py-1 rounded-xl"
-                    style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)' }}
-                  >
-                    {a}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Portions scaler */}
-        <div className="rounded-3xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <p className="text-white font-bold mb-3 flex items-center gap-2">
-            <Scale size={16} /> מנות
-          </p>
-          <div className="flex gap-2 mb-3">
-            {QUICK_PORTIONS.map(n => (
-              <button
-                key={n}
-                onClick={() => setPortions(n)}
-                className="flex-1 py-2.5 rounded-2xl text-sm font-bold transition-all duration-150"
-                style={{
-                  background: portions === n ? stationColor : 'rgba(255,255,255,0.06)',
-                  color:      portions === n ? '#fff' : 'rgba(255,255,255,0.5)',
-                  boxShadow:  'none',
-                }}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setPortions(p => Math.max(1, p - 1))}
-              className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl font-bold active:scale-90 transition-all"
-              style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
-            >−</button>
-            <div className="flex-1 text-center">
-              <div className="text-white font-black text-2xl">{portions}</div>
-              <div className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>מנות</div>
-            </div>
-            <button
-              onClick={() => setPortions(p => p + 1)}
-              className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl font-bold active:scale-90 transition-all"
-              style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
-            >+</button>
-          </div>
-        </div>
-
-        {/* Food Cost Card */}
-        {dish.costPerPortion > 0 && (
-          <div
-            className="rounded-3xl p-5"
-            style={{ background: 'var(--bg-card)', border: `1px solid ${fcColor}30` }}
-          >
-            <p className="text-white font-bold mb-3 flex items-center gap-2">
-              <Coins size={16} /> עלות מזון
-            </p>
-            <div className="grid grid-cols-3 gap-3 mb-3">
-              <div className="text-center">
-                <div className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>עלות למנה</div>
-                <div className="text-lg font-black text-white">₪{dish.costPerPortion.toFixed(2)}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>סה״כ ×{portions}</div>
-                <div className="text-lg font-black text-white">₪{totalCost.toFixed(2)}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}>Food Cost</div>
-                <div className="text-lg font-black" style={{ color: fcColor }}>{fcp.toFixed(0)}%</div>
-              </div>
-            </div>
-            <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, (fcp / 40) * 100)}%`, background: fcColor }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Ingredients */}
-        <div className="rounded-3xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <Salad size={16} />
-            <span className="text-white font-bold">מרכיבים</span>
-            {scale !== 1 && (
-              <span className="mr-auto text-sm font-bold px-2 py-1 rounded-xl" style={{ background: stationColor + '20', color: stationColor }}>
-                ×{fmt(scale)}
-              </span>
-            )}
-          </div>
-          <div className="px-5">
-            {/* Direct ingredients */}
-            {dish.directIngredients.map((ing, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between py-3.5"
-                style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-              >
-                <span className="text-white font-medium text-sm">{ing.name}</span>
-                <span
-                  className="text-sm font-bold px-3 py-1 rounded-xl flex-shrink-0 mr-3"
-                  style={{ background: stationColor + '18', color: stationColor }}
-                >
-                  {fmt(ing.qty * scale)} {ing.unit}
-                </span>
-              </div>
-            ))}
-
-            {/* Sub-recipe links */}
-            {dish.subRecipes.length > 0 && (
-              <div className="py-3">
-                <p className="text-sm font-bold mb-2 pt-1" style={{ color: 'rgba(255,255,255,0.62)', letterSpacing: '0.06em' }}>
-                  תת-מתכונים (הכנות)
-                </p>
-                <div className="space-y-2 pb-1">
-                  {dish.subRecipes.map(sr => {
-                    const recipe = allPrepRecipes.find(r => r.id === sr.recipeId);
-                    return (
-                      <button
-                        key={sr.recipeId}
-                        onClick={() => recipe && onOpenSubRecipe(recipe)}
-                        className="w-full flex items-center justify-between rounded-2xl px-4 py-3 text-right active:scale-98 transition-all"
-                        style={{ background: stationColor + '10', border: `1px solid ${stationColor}25` }}
-                      >
-                        <div>
-                          <p className="text-white font-bold text-sm">{sr.name}</p>
-                          <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.62)' }}>
-                            {sr.portionDesc} · ×{fmt(sr.portionsUsed * scale)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 flex-shrink-0 mr-2">
-                          <span className="text-sm font-semibold" style={{ color: stationColor }}>פתח</span>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={stationColor} strokeWidth="2.5" strokeLinecap="round">
-                            <path d="M15 18l-6-6 6-6"/>
-                          </svg>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Method */}
-        <div className="rounded-3xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <ListOrdered size={16} />
-            <span className="text-white font-bold">אופן הכנה</span>
-          </div>
-          <div className="px-5 py-4 space-y-5">
-            {dish.method.map((step, i) => (
-              <div key={i} className="flex gap-4">
-                <div
-                  className="w-8 h-8 rounded-2xl flex-shrink-0 flex items-center justify-center text-white text-sm font-black"
-                  style={{ background: stationColor, boxShadow: 'none' }}
-                >
-                  {i + 1}
-                </div>
-                <p className="text-sm leading-relaxed pt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                  {step}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* FOH Guide */}
-        <div className="rounded-3xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <button
-            onClick={() => setFohOpen(o => !o)}
-            className="w-full px-5 py-4 flex items-center justify-between"
-          >
-            <div className="flex items-center gap-2">
-              <Target size={16} />
-              <span className="text-white font-bold">מדריך FOH — מכירה והגשה</span>
-            </div>
-            <svg
-              width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round"
-              style={{ transform: fohOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
-            >
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </button>
-
-          {fohOpen && dish.foh && (
-            <div className="px-5 pb-5 pt-1 space-y-4" style={{ borderTop: '1px solid var(--border)' }}>
-              {/* Selling points */}
-              <div className="pt-3">
-                <p className="text-sm font-bold mb-2" style={{ color: 'rgba(255,255,255,0.62)', letterSpacing: '0.06em' }}>נקודות מכירה</p>
-                <div className="space-y-2">
-                  {dish.foh.sellingPoints.map((pt, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <span style={{ color: stationColor, marginTop: '2px', flexShrink: 0 }}>•</span>
-                      <span className="text-sm text-white leading-relaxed">{pt}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Pairing */}
-              <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}><Wine size={14} className="inline ml-1" /> זיווג</p>
-                <p className="text-sm text-white">{dish.foh.pairing}</p>
-              </div>
-
-              {/* Serve temp + plating */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}><Thermometer size={14} className="inline ml-1" /> הגשה</p>
-                  <p className="text-sm text-white leading-relaxed">{dish.foh.serveTemp}</p>
-                </div>
-                <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.62)' }}><UtensilsCrossed size={14} className="inline ml-1" /> פלייטינג</p>
-                  <p className="text-sm text-white leading-relaxed">{dish.foh.platingNote}</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-      </div>
+        <Plus size={22} /> הוסף מתכון
+      </button>
     </div>
   );
 }
 
-/* ════════════════════════════════════════════════════
-   Prep Recipe Detail (unchanged)
-════════════════════════════════════════════════════ */
-function RecipeDetail({ recipe, scaleFactor, batches, onUpdateBatches, onBack, stationColor, imageUrl, onSaveImage, onMarkReady, allPrepRecipes = [], onOpenSubRecipe }) {
-  const meta = CAT_META[recipe.category] || DEFAULT_META;
-  const fileRef = useRef();
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState(null);
-
-  // Group ingredients by section
-  const sections = [];
-  let curSection = undefined;
-  for (const ing of recipe.ingredients) {
-    const sec = ing.section || null;
-    if (sec !== curSection) {
-      curSection = sec;
-      sections.push({ label: sec, items: [ing] });
-    } else {
-      sections[sections.length - 1].items.push(ing);
-    }
-  }
-
-  async function handleImageUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploading(true);
-    setUploadError(null);
-    try {
-      const base64 = await compressImage(file, 900, 0.72);
-      await onSaveImage(base64);
-    } catch (err) {
-      console.error('Upload failed', err);
-      setUploadError(err.message || 'שגיאה בהעלאה');
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  const QUICK = [0.5, 1, 2, 3, 4];
-
+function RecipeCard({ name, category, imgUrl, Icon, badge, line, onClick }) {
   return (
-    <div dir="rtl" className="max-w-xl mx-auto pb-10">
-
-      {/* ── Hero image ── */}
-      <div
-        className="relative w-full"
-        style={{
-          height: '260px',
-          background: imageUrl ? undefined : 'rgba(255,255,255,0.04)',
-        }}
-      >
-        {imageUrl ? (
-          <img src={imageUrl} alt={recipe.name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <meta.Icon size={64} strokeWidth={1} style={{ opacity: 0.3 }} />
-          </div>
-        )}
-
-        {imageUrl && (
-          <div
-            className="absolute inset-0"
-            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.4) 100%)' }}
-          />
-        )}
-
-        {/* Back button */}
-        <button
-          onClick={onBack}
-          className="absolute top-4 right-4 w-10 h-10 rounded-2xl flex items-center justify-center active:scale-90 transition-all"
-          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)' }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
-        </button>
-
-        {/* Upload image button */}
-        <button
-          onClick={() => fileRef.current.click()}
-          disabled={uploading}
-          className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-bold active:scale-90 transition-all"
-          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.85)' }}
-        >
-          {uploading ? (
-            <span>מעלה...</span>
-          ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17,8 12,3 7,8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              {imageUrl ? 'החלף תמונה' : 'הוסף תמונה'}
-            </>
-          )}
-        </button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-
-        {/* Upload error */}
-        {uploadError && (
-          <div
-            className="absolute top-16 left-4 right-4 rounded-2xl px-4 py-2 text-sm font-bold"
-            style={{ background: 'rgba(220,38,38,0.9)', color: 'white', backdropFilter: 'blur(8px)' }}
-          >
-            שגיאה: {uploadError}
-          </div>
-        )}
-
-        {/* Recipe name overlay */}
-        <div className="absolute bottom-0 inset-x-0 p-5">
-          <span
-            className="text-sm font-bold px-2.5 py-1 rounded-xl mb-2 inline-block"
-            style={{ background: stationColor + '35', color: stationColor, border: `1px solid ${stationColor}40` }}
-          >
-            {recipe.category}
-          </span>
-          <h2 className="text-2xl font-black text-white leading-tight mt-1">{recipe.name}</h2>
-        </div>
-      </div>
-
-      {/* ── Content card ── */}
-      <div className="px-4 space-y-4 mt-4">
-
-        {/* Info chips */}
-        <div className="flex gap-2 flex-wrap">
-          {recipe.prepTime && <InfoChip icon={<Clock size={14} strokeWidth={2} />} text={recipe.prepTime} />}
-          <InfoChip icon={<Layers size={14} />} text={`${recipe.ingredients.length} מרכיבים`} />
-          <InfoChip icon={<Scale size={14} />} text={`${recipe.batches} ${recipe.batchUnit}`} />
-          {onMarkReady && (
-            <button
-              onClick={() => onMarkReady(recipe)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-sm font-bold"
-              style={{ background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}
-            >
-              <Check size={16} className="inline ml-1" /> סמן מוכן
-            </button>
-          )}
-        </div>
-
-        {/* Description */}
-        {recipe.description && (
-          <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
-            {recipe.description}
-          </p>
-        )}
-
-        {/* Notes */}
-        {recipe.notes && (
-          <div
-            className="flex gap-3 rounded-2xl px-4 py-3 text-sm"
-            style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#fbbf24' }}
-          >
-            <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-            <span>{recipe.notes}</span>
-          </div>
-        )}
-
-        {/* ── Scaling ── */}
-        <div
-          className="rounded-3xl p-5"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-        >
-          <p className="text-white font-bold mb-3 flex items-center gap-2">
-            <Scale size={16} /> שינוי כמויות
-          </p>
-
-          {/* Quick multipliers */}
-          <div className="flex gap-2 mb-4">
-            {QUICK.map(m => {
-              const target = recipe.batches * m;
-              const active = Math.abs(batches - target) < 0.01;
-              return (
-                <button
-                  key={m}
-                  onClick={() => onUpdateBatches(target)}
-                  className="glow-btn flex-1 py-2.5 rounded-2xl text-sm font-bold"
-                  style={{
-                    background: active ? stationColor : 'rgba(255,255,255,0.06)',
-                    color: active ? '#fff' : 'rgba(255,255,255,0.5)',
-                    boxShadow: 'none',
-                  }}
-                >
-                  ×{m}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* +/- input */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => onUpdateBatches(Math.max(0.25, batches - recipe.batches * 0.5))}
-              className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl font-bold active:scale-90 transition-all"
-              style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
-            >−</button>
-            <div className="flex-1 text-center">
-              <input
-                type="number"
-                value={batches}
-                step={recipe.batches}
-                min={0.25}
-                onChange={e => onUpdateBatches(e.target.value)}
-                className="w-20 rounded-2xl text-white text-center py-2.5 text-lg font-black focus:outline-none"
-                style={{ background: 'rgba(255,255,255,0.08)', border: `1px solid ${stationColor}40`, caretColor: stationColor }}
-              />
-              <div className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.62)' }}>{recipe.batchUnit}</div>
-            </div>
-            <button
-              onClick={() => onUpdateBatches(batches + recipe.batches * 0.5)}
-              className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl font-bold active:scale-90 transition-all"
-              style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
-            >+</button>
-
-            {scaleFactor !== 1 && (
-              <button
-                onClick={() => onUpdateBatches(recipe.batches)}
-                className="text-sm rounded-2xl px-3 py-2 font-semibold"
-                style={{ color: stationColor, background: stationColor + '18' }}
-              >
-                ×{fmt(scaleFactor)} — איפוס
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* ── Ingredients ── */}
-        <div
-          className="rounded-3xl overflow-hidden"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-        >
-          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <Salad size={16} />
-            <span className="text-white font-bold">מרכיבים</span>
-            {scaleFactor !== 1 && (
-              <span
-                className="mr-auto text-sm font-bold px-2 py-1 rounded-xl"
-                style={{ background: stationColor + '20', color: stationColor }}
-              >
-                ×{fmt(scaleFactor)}
-              </span>
-            )}
-          </div>
-
-          <div className="px-5">
-            {sections.map((sec, si) => (
-              <div key={si}>
-                {sec.label && (
-                  <div
-                    className="text-sm font-bold uppercase tracking-wider py-3 mt-1"
-                    style={{ color: stationColor }}
-                  >
-                    {sec.label}
-                  </div>
-                )}
-                {sec.items.map((ing, i) => {
-                  const isTaste = ing.unit === 'לפי טעם';
-                  const scaled  = isTaste ? null : ing.amount * scaleFactor;
-                  const isLast  = si === sections.length - 1 && i === sec.items.length - 1;
-                  // Ingredient that is itself a prep recipe → tap to open it
-                  const subRecipe = onOpenSubRecipe && allPrepRecipes.find(
-                    r => r.id !== recipe.id && r.name.trim() === ing.name.trim()
-                  );
-                  const Row = subRecipe ? 'button' : 'div';
-                  return (
-                    <Row
-                      key={i}
-                      onClick={subRecipe ? () => onOpenSubRecipe(subRecipe) : undefined}
-                      className={`w-full flex items-center justify-between py-3.5 text-right${subRecipe ? ' active:scale-98 transition-all' : ''}`}
-                      style={{ borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)' }}
-                    >
-                      <span className="text-white text-base">
-                        {ing.name}
-                        {subRecipe && (
-                          <span className="mr-2 inline-flex items-center gap-0.5 text-xs font-semibold underline underline-offset-2" style={{ color: stationColor }}>מתכון<ChevronLeft size={14} /></span>
-                        )}
-                      </span>
-                      <span
-                        className="text-base font-semibold flex-shrink-0 mr-3 tabular-nums"
-                        style={{ color: isTaste ? 'var(--text-2)' : 'var(--text)' }}
-                      >
-                        {isTaste ? 'לפי טעם' : <>{fmt(scaled)} <span className="text-sm font-normal" style={{ color: 'var(--text-2)' }}>{ing.unit}</span></>}
-                      </span>
-                    </Row>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Steps ── */}
-        <div
-          className="rounded-3xl overflow-hidden"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-        >
-          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <ListOrdered size={16} />
-            <span className="text-white font-bold">אופן הכנה</span>
-          </div>
-          <div className="px-5 py-4 space-y-5">
-            {recipe.steps.map((step, i) => (
-              <div key={i} className="flex gap-4">
-                <div
-                  className="w-8 h-8 rounded-2xl flex-shrink-0 flex items-center justify-center text-white text-sm font-black"
-                  style={{ background: stationColor, boxShadow: 'none' }}
-                >
-                  {i + 1}
-                </div>
-                <p className="text-sm leading-relaxed pt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                  {step}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
-/* ─── Compress image to base64 using Canvas ─── */
-function compressImage(file, maxWidth = 900, quality = 0.72) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const scale = Math.min(1, maxWidth / img.width);
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = () => reject(new Error('לא ניתן לקרוא את הקובץ'));
-    img.src = url;
-  });
-}
-
-function InfoChip({ icon, text }) {
-  return (
-    <div
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-sm font-medium"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'rgba(255,255,255,0.6)' }}
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-xl overflow-hidden text-right flex flex-col"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
     >
-      <span aria-hidden="true" className="inline-flex">{icon}</span>
-      <span>{text}</span>
-    </div>
+      <div className="relative w-full" style={{ paddingTop: '62%', background: imgUrl ? undefined : 'rgba(255,255,255,0.04)' }}>
+        {imgUrl ? (
+          <img src={imgUrl} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Icon size={36} strokeWidth={1.25} style={{ opacity: 0.5 }} />
+          </div>
+        )}
+        <div className="absolute top-2 right-2 px-2 py-0.5 rounded-lg text-base font-semibold" style={{ background: 'rgba(0,0,0,0.7)', color: '#fff' }}>
+          {category}
+        </div>
+        {badge && (
+          <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg text-base font-semibold" style={{ background: 'rgba(0,0,0,0.75)', color: badge.color }}>
+            {badge.text}
+          </div>
+        )}
+      </div>
+      <div className="p-3">
+        <h3 className="text-lg font-semibold leading-snug mb-1" style={{ color: 'var(--text)' }}>{name}</h3>
+        <p className="text-base flex items-center gap-1 flex-wrap" style={{ color: 'var(--text-2)' }}>
+          <Clock size={14} aria-hidden="true" />
+          {line.filter(Boolean).join(' · ')}
+        </p>
+      </div>
+    </button>
   );
 }
