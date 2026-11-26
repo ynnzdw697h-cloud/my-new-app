@@ -117,7 +117,7 @@ export default function DishDetail({
                       style={{ background: stationColor + '14', border: `1px solid ${stationColor}33` }}
                     >
                       <div>
-                        <p className="text-lg font-semibold" style={{ color: 'var(--text)' }}>{sr.name}</p>
+                        <p className="text-lg font-semibold" style={{ color: 'var(--text)' }}>{recipe?.name || sr.name}</p>
                         <p className="text-base" style={{ color: 'var(--text-2)' }}>{sr.portionDesc} · <span dir="ltr">×{fmt(sr.portionsUsed * scale)}</span></p>
                       </div>
                       <span className="flex items-center gap-1 text-base font-semibold flex-shrink-0 mr-2" style={{ color: stationColor }}>

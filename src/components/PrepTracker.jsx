@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AlertTriangle, BarChart3, Settings2, ChevronUp, ChevronDown, Trash2, Check, Clock, ThumbsDown, PackageX, Package, CircleX, CircleCheck, Sparkles } from 'lucide-react';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { RECIPES } from '../data/recipes';
+import { useRecipeEdits } from '../hooks/useRecipeEdits';
 import { SHELF_LIFE, DEFAULT_SHELF_LIFE } from '../data/shelfLife';
 import { Sheet, canAutoFocus } from './ui';
 
@@ -409,6 +410,7 @@ function MarkReadySheet({ initialRecipe, getShelfLife, onSave, onCancel }) {
   const [recipe,     setRecipe]     = useState(initialRecipe || null);
   const [batchCount, setBatchCount] = useState(1);
   const [search,     setSearch]     = useState('');
+  const { applyEdit } = useRecipeEdits();
 
   const sl        = recipe ? getShelfLife(recipe.id) : null;
   const expiresAt = sl ? new Date(Date.now() + sl.hours * 3600000) : null;
@@ -416,7 +418,7 @@ function MarkReadySheet({ initialRecipe, getShelfLife, onSave, onCancel }) {
     ? new Date(Date.now() + (sl.hours - 24) * 3600000)
     : null;
 
-  const filtered = RECIPES.filter(r =>
+  const filtered = RECIPES.map(applyEdit).filter(r =>
     r.name.includes(search) || r.category.includes(search)
   );
 
@@ -732,6 +734,7 @@ function WasteBreakdown({ wasteLog }) {
 ════════════════════════════════════════════════════ */
 function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
   const [editingId, setEditingId] = useState(null);
+  const { applyEdit } = useRecipeEdits();
   const [days,      setDays]      = useState('');
   const [hours,     setHours]     = useState('');
 
@@ -778,7 +781,7 @@ function ShelfLifeEditorSheet({ overrides, onSave, onClose }) {
           הגדר כמה זמן כל הכנה נשמרת. השינוי ישפיע על סימוני "מוכן" עתידיים.
         </p>
         <div className="space-y-2">
-          {RECIPES.map(recipe => {
+          {RECIPES.map(applyEdit).map(recipe => {
             const effectiveH = getEffective(recipe.id);
             const baseH = (SHELF_LIFE[recipe.id] || DEFAULT_SHELF_LIFE).hours;
             const isCustom = effectiveH !== baseH;
