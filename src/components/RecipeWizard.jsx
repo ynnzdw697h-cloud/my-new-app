@@ -255,7 +255,9 @@ function WeighingScreen({ ingredientList, onDone, onBack }) {
   const ingredient   = ingredientList[wIndex];
   const isUnits      = unit === 'יח׳';
   const isWeightStep = isUnits && subStep === 'weight';
-  const canNext      = rawInput.length > 0 && parseFloat(rawInput) > 0;
+  const hasValue     = rawInput.length > 0 && parseFloat(rawInput) > 0;
+  // Weighing units is optional: the weight step can be skipped with an empty value
+  const canNext      = hasValue || isWeightStep;
 
   const pressKey = useCallback((key) => {
     setRawInput(prev => {
@@ -279,8 +281,8 @@ function WeighingScreen({ ingredientList, onDone, onBack }) {
     const result = isUnits
       ? { name: ingredient.name, format: ingredient.format,
           qty: parseInt(unitCount, 10), unit: 'יח׳',
-          totalWeight: parseFloat(rawInput),
-          weightPerUnit: parseFloat(rawInput) / parseInt(unitCount, 10) }
+          totalWeight:   hasValue ? parseFloat(rawInput) : null,
+          weightPerUnit: hasValue ? parseFloat(rawInput) / parseInt(unitCount, 10) : null }
       : { name: ingredient.name, format: ingredient.format, qty: parseFloat(rawInput), unit };
 
     const newResults = [...results, result];
@@ -297,7 +299,7 @@ function WeighingScreen({ ingredientList, onDone, onBack }) {
   };
 
   const prompt = isWeightStep
-    ? 'שקול את כולם ביחד על המאזניים'
+    ? 'שקול את כולם ביחד על המאזניים (לא חובה)'
     : isUnits ? 'כמה יחידות?'
     : 'הנח על המאזניים והזן את המשקל';
 
@@ -358,10 +360,10 @@ function WeighingScreen({ ingredientList, onDone, onBack }) {
             </AnimatePresence>
             <motion.div
               className="flex items-end justify-center gap-2 rounded-3xl px-8 py-3 w-full"
-              animate={{ background: canNext ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)' }}
-              style={{ border: `1px solid ${canNext ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)'}` }}>
+              animate={{ background: hasValue ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)' }}
+              style={{ border: `1px solid ${hasValue ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)'}` }}>
               <span className="font-bold leading-none tabular-nums"
-                style={{ fontSize: '2.5rem', color: canNext ? '#fff' : 'rgba(255,255,255,0.5)',
+                style={{ fontSize: '2.5rem', color: hasValue ? '#fff' : 'rgba(255,255,255,0.5)',
                   minWidth: '4rem', textAlign: 'center' }}>
                 {rawInput || '0'}
               </span>
@@ -407,7 +409,9 @@ function WeighingScreen({ ingredientList, onDone, onBack }) {
             }}>
             {isUnits && subStep === 'count'
               ? 'המשך לשקילה →'
-              : wIndex + 1 >= ingredientList.length ? 'סיים שקילה' : 'המשך'}
+              : isWeightStep && !hasValue
+                ? (wIndex + 1 >= ingredientList.length ? 'סיים בלי משקל' : 'המשך בלי משקל')
+                : wIndex + 1 >= ingredientList.length ? 'סיים שקילה' : 'המשך'}
           </motion.button>
         </div>
       </div>
@@ -416,8 +420,8 @@ function WeighingScreen({ ingredientList, onDone, onBack }) {
 }
 
 /* ══ Phase 4: Instructions ══ */
-function InstructionsScreen({ recipeName, onDone, onBack }) {
-  const [steps, setSteps] = useState([]);
+function InstructionsScreen({ recipeName, initialSteps = [], onDone, onBack }) {
+  const [steps, setSteps] = useState(initialSteps);
   const [input, setInput] = useState('');
   const inputRef = useRef(null);
 
@@ -508,7 +512,7 @@ function InstructionsScreen({ recipeName, onDone, onBack }) {
 }
 
 /* ══ Phase 5: Summary ══ */
-function SummaryScreen({ recipe, onSave, onClose }) {
+function SummaryScreen({ recipe, onSave, onClose, onBack }) {
   const [saving,   setSaving]   = useState(false);
   const [photoUrl, setPhotoUrl] = useState(null);
   const uploadRef  = useRef(null);
@@ -535,6 +539,10 @@ function SummaryScreen({ recipe, onSave, onClose }) {
     <div className="flex flex-col h-full px-5 pt-4 pb-6" style={{ overflow: 'hidden' }}>
       <input ref={uploadRef}  type="file" accept="image/*"                       style={{ display: 'none' }} onChange={handleFile} />
       <input ref={captureRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFile} />
+
+      <div className="flex items-center flex-shrink-0 -mt-1">
+        <BackButton onBack={onBack} />
+      </div>
 
       {/* Header — centered */}
       <div className="flex flex-col items-center mb-4 flex-shrink-0 gap-1">
@@ -589,7 +597,9 @@ function SummaryScreen({ recipe, onSave, onClose }) {
             {ingredients.map((r, i) => (
               <div key={i} className="flex justify-between items-start text-sm gap-2">
                 <span className="font-bold flex-shrink-0" style={{ color: '#10B981' }}>
-                  {r.unit === 'יח׳' ? `${r.qty} יח׳ · ${r.totalWeight}g` : `${r.qty} ${r.unit}`}
+                  {r.unit === 'יח׳'
+                    ? (r.totalWeight ? `${r.qty} יח׳ · ${r.totalWeight}g` : `${r.qty} יח׳`)
+                    : `${r.qty} ${r.unit}`}
                 </span>
                 <div className="text-right min-w-0">
                   <p className="text-white font-semibold truncate">{r.name}</p>
@@ -686,7 +696,7 @@ export default function RecipeWizard({ station, onSave, onClose }) {
           name:   r.format ? `${r.name} — ${r.format}` : r.name,
           amount: r.qty,
           unit:   r.unit,
-          ...(r.unit === 'יח׳' && { weightG: r.totalWeight, weightPerUnitG: r.weightPerUnit }),
+          ...(r.unit === 'יח׳' && r.totalWeight && { weightG: r.totalWeight, weightPerUnitG: r.weightPerUnit }),
         })),
         steps,
         isCustom: true,
@@ -706,7 +716,7 @@ export default function RecipeWizard({ station, onSave, onClose }) {
         name: r.format ? `${r.name} — ${r.format}` : r.name,
         qty:  r.qty,
         unit: r.unit,
-        ...(r.unit === 'יח׳' && { weightG: r.totalWeight, weightPerUnitG: r.weightPerUnit }),
+        ...(r.unit === 'יח׳' && r.totalWeight && { weightG: r.totalWeight, weightPerUnitG: r.weightPerUnit }),
       })),
       subRecipes: [],
       costPerPortion: 0,
@@ -743,9 +753,9 @@ export default function RecipeWizard({ station, onSave, onClose }) {
           {phase === 'type'         && <TypeScreen onSelect={handleTypeSelect} onClose={onClose} />}
           {phase === 'ingredients'  && <IngredientsScreen recipeType={recipeType} recipeName={recipeName} onNext={handleIngredientsNext} onBack={goBack} />}
           {phase === 'weighing'     && <WeighingScreen ingredientList={ingredientList} onDone={handleWeighingDone} onBack={goBack} />}
-          {phase === 'instructions' && <InstructionsScreen recipeName={recipeName} onDone={handleInstructionsDone} onBack={goBack} />}
+          {phase === 'instructions' && <InstructionsScreen recipeName={recipeName} initialSteps={steps} onDone={handleInstructionsDone} onBack={goBack} />}
           {phase === 'summary'      && recipeForSummary && (
-            <SummaryScreen recipe={recipeForSummary} onSave={onSave} onClose={onClose} />
+            <SummaryScreen recipe={recipeForSummary} onSave={onSave} onClose={onClose} onBack={goBack} />
           )}
         </motion.div>
       </AnimatePresence>
