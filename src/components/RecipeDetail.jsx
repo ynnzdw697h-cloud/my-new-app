@@ -125,7 +125,7 @@ export default function RecipeDetail({
               <div key={si}>
                 {sec.label && <div className="text-lg font-semibold py-3" style={{ color: stationColor }}>{sec.label}</div>}
                 {sec.items.map((ing, i) => {
-                  const isTaste = ing.unit === 'לפי טעם';
+                  const isTaste = ing.unit === 'לפי טעם' || ing.unit === 'לפי הצורך';
                   const scaled  = isTaste ? null : ing.amount * scaleFactor;
                   const isLast  = si === sections.length - 1 && i === sec.items.length - 1;
                   const subRecipe = onOpenSubRecipe && allPrepRecipes.find(
@@ -147,7 +147,7 @@ export default function RecipeDetail({
                         )}
                       </span>
                       <span className="text-lg font-semibold flex-shrink-0 mr-3 tabular-nums" style={{ color: 'var(--text)' }}>
-                        {isTaste ? 'לפי טעם' : <>{fmt(scaled)} <span className="text-base font-normal" style={{ color: 'var(--text-2)' }}>{ing.unit}</span></>}
+                        {isTaste ? ing.unit : <>{fmt(scaled)} <span className="text-base font-normal" style={{ color: 'var(--text-2)' }}>{ing.unit}</span></>}
                       </span>
                     </Row>
                   );
