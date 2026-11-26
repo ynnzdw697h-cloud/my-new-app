@@ -8,6 +8,9 @@ import { STATIONS } from '../data/stations';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { useRecipeImages, useFullImage } from '../hooks/useRecipeImages';
 import { useRecipeSteps } from '../hooks/useRecipeSteps';
+import { useRecipeEdits } from '../hooks/useRecipeEdits';
+import RecipeEditor from './RecipeEditor';
+import { UndoToast } from './PrepCelebrations';
 import RecipeWizard from './RecipeWizard';
 import DishDetail from './DishDetail';
 import RecipeDetail from './RecipeDetail';
@@ -31,7 +34,7 @@ function saveView(v) {
    Recipe book: list screen. Detail screens live in
    DishDetail.jsx and RecipeDetail.jsx.
 ════════════════════════════════════════════════════ */
-export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpenedTarget }) {
+export default function RecipeDatabase({ station, role, onMarkReady, openTarget, onOpenedTarget }) {
   const saved = useRef(loadView()).current;
 
   const [activeTab, setActiveTab]           = useState(saved?.tab || 'dish');
@@ -53,7 +56,74 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
   const [customRecipes, setCustomRecipes] = useFirestoreArray('custom_recipes');
   const [customDishes,  setCustomDishes]  = useFirestoreArray('custom_dishes');
 
-  const allRecipes = [...RECIPES, ...customRecipes];
+  const { applyEdit, editFor, saveEdit } = useRecipeEdits();
+  const [editingRecipe, setEditingRecipe]   = useState(null);
+  const [toast, setToast]                   = useState(null);
+
+  // Saved edits are laid over the original recipes
+  const allRecipes = [...RECIPES, ...customRecipes].map(applyEdit);
+  const latest     = r => allRecipes.find(x => x.id === r.id) || r;
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const t = setTimeout(() => setToast(null), 5000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  // What is stored right now for this recipe, so a change can be undone
+  const storedFor = r => {
+    const { steps, hasEdited } = stepsFor(r.id, r.steps);
+    return { fields: editFor(r.id), steps: hasEdited ? steps : null };
+  };
+  const writeSteps = (id, steps) => (steps ? saveSteps(id, steps) : resetSteps(id));
+
+  // fields / steps: a value saves it, undefined leaves it as is, null restores the original
+  async function changeRecipe(recipe, fields, steps, text) {
+    const previous = storedFor(recipe);
+    if (fields !== undefined) await saveEdit(recipe.id, fields);
+    if (steps !== undefined) await writeSteps(recipe.id, steps);
+    setToast({
+      id: Date.now(), text, undoable: true, recipeId: recipe.id,
+      previous: {
+        ...(fields !== undefined && { fields: previous.fields }),
+        ...(steps !== undefined && { steps: previous.steps }),
+      },
+    });
+  }
+  async function undoChange() {
+    const { recipeId, previous } = toast;
+    setToast(null);
+    try {
+      if ('fields' in previous) await saveEdit(recipeId, previous.fields);
+      if ('steps' in previous) await writeSteps(recipeId, previous.steps);
+    } catch (e) {
+      console.error('[recipe_edits] undo failed', e);
+      setToast({ id: Date.now(), text: 'הביטול לא נשמר. בדוק חיבור', undoable: false });
+    }
+  }
+
+  // Only admins get the "edit recipe" button
+  const editProps = r => (role === 'admin' ? { onEdit: () => setEditingRecipe(r) } : {});
+  const editorLayer = (
+    <>
+      {editingRecipe && (() => {
+        const original = [...RECIPES, ...customRecipes].find(r => r.id === editingRecipe.id) || editingRecipe;
+        const info = stepsFor(original.id, original.steps);
+        return (
+          <RecipeEditor
+            recipe={latest(editingRecipe)}
+            steps={info.steps}
+            color={STATIONS[station].color}
+            hasEdit={!!editFor(original.id) || info.hasEdited}
+            onSave={(fields, steps) => changeRecipe(original, fields || undefined, steps || undefined, 'המתכון נשמר')}
+            onReset={() => changeRecipe(original, null, null, 'חזר למתכון המקורי')}
+            onClose={() => setEditingRecipe(null)}
+          />
+        );
+      })()}
+      <UndoToast toast={toast} onUndo={undoChange} />
+    </>
+  );
   const allDishes  = [...MAIN_DISHES, ...customDishes];
 
   const st = STATIONS[station];
@@ -210,12 +280,15 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
   });
 
   const scaleFactor = selectedRecipe ? batches / selectedRecipe.batches : 1;
+  useBackClose(!!editingRecipe, () => setEditingRecipe(null));
 
   // ── Sub-recipe drill-down (from a dish or from another prep recipe) ──
   if (drillRecipe) {
     return (
+      <>
       <RecipeDetail
-        recipe={drillRecipe}
+        {...editProps(drillRecipe)}
+        recipe={latest(drillRecipe)}
         scaleFactor={drillBatches / drillRecipe.batches}
         batches={drillBatches}
         onUpdateBatches={val => setDrillBatches(Math.max(0.25, parseFloat(val) || drillRecipe.batches))}
@@ -226,6 +299,8 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
         allPrepRecipes={allRecipes}
         stepsInfo={stepsInfoFor(drillRecipe.id, drillRecipe.steps)}
       />
+      {editorLayer}
+      </>
     );
   }
 
@@ -248,8 +323,10 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
 
   if (selectedRecipe) {
     return (
+      <>
       <RecipeDetail
-        recipe={selectedRecipe}
+        {...editProps(selectedRecipe)}
+        recipe={latest(selectedRecipe)}
         scaleFactor={scaleFactor}
         batches={batches}
         onUpdateBatches={val => setBatches(Math.max(0.25, parseFloat(val) || selectedRecipe.batches))}
@@ -262,6 +339,8 @@ export default function RecipeDatabase({ station, onMarkReady, openTarget, onOpe
         onOpenSubRecipe={openDrill}
         stepsInfo={stepsInfoFor(selectedRecipe.id, selectedRecipe.steps)}
       />
+      {editorLayer}
+      </>
     );
   }
 

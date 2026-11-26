@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, X, BookOpen, UtensilsCrossed, ChevronLeft } from 'lucide-react';
 import { RECIPES } from '../data/recipes';
+import { useRecipeEdits } from '../hooks/useRecipeEdits';
 import { MAIN_DISHES } from '../data/mainDishes';
 import { useFirestoreArray } from '../hooks/useFirestoreArray';
 import { StatusMark } from './PrepCelebrations';
@@ -100,6 +101,7 @@ export default function GlobalSearch({ prep, stationName, stationColor, onClose,
   const [customRecipes] = useFirestoreArray('custom_recipes');
   const [customDishes]  = useFirestoreArray('custom_dishes');
   const [missingItems]  = useFirestoreArray('missing_items');
+  const { applyEdit }   = useRecipeEdits();
 
   useEffect(() => { inputRef.current?.focus(); }, []);
   useEffect(() => {
@@ -110,10 +112,13 @@ export default function GlobalSearch({ prep, stationName, stationColor, onClose,
   useEffect(() => { setExpanded({}); }, [query]);
 
   const book = [
-    ...[...RECIPES, ...customRecipes].map(r => ({ kind: 'prep', item: r, ings: (r.ingredients || []).map(i => i.name) })),
+    ...[...RECIPES, ...customRecipes].map(applyEdit).map(r => ({ kind: 'prep', item: r, ings: (r.ingredients || []).map(i => i.name) })),
     ...[...MAIN_DISHES, ...customDishes].map(d => ({
       kind: 'dish', item: d,
-      ings: [...(d.directIngredients || []).map(i => i.name), ...(d.subRecipes || []).map(s => s.name)],
+      ings: [...(d.directIngredients || []).map(i => i.name), ...(d.subRecipes || []).map(s => {
+        const r = RECIPES.find(x => x.id === s.recipeId);
+        return r ? applyEdit(r).name : s.name;
+      })],
     })),
   ];
   const tasks = prep?.progress?.allTasks || [];

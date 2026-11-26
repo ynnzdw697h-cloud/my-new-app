@@ -267,6 +267,7 @@ function AppShell({ user, station, role, tenantId, onLogout, onChangeStation }) 
         {view === 'recipes'        && (
           <RecipeDatabase
             station={station}
+            role={role}
             onMarkReady={r => { setMarkReadyRecipe(r); navigate('prep_tracker'); }}
             openTarget={recipeTarget}
             onOpenedTarget={() => setRecipeTarget(null)}

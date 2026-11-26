@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWakeLock } from '../hooks/useWakeLock';
 import MethodBlock from './MethodBlock';
-import { AlertTriangle, Salad, Scale, ChevronLeft, Check, Info } from 'lucide-react';
+import { AlertTriangle, Salad, Scale, ChevronLeft, Check, Info, Pencil } from 'lucide-react';
 import {
   CAT_META, DEFAULT_META, fmt, compressImage,
   DetailTopBar, FoldSection, Block, ScaleBadge, StepperButton, QuickPicks, ImageUploadButton, HeroImage, MetaLine,
@@ -15,7 +15,7 @@ const QUICK = [0.5, 1, 2, 3, 4];
 ════════════════════════════════════════════════════ */
 export default function RecipeDetail({
   recipe, scaleFactor, batches, onUpdateBatches, onBack, stationColor, imageUrl, onSaveImage,
-  onMarkReady, allPrepRecipes = [], onOpenSubRecipe, stepsInfo,
+  onMarkReady, allPrepRecipes = [], onOpenSubRecipe, stepsInfo, onEdit,
 }) {
   const [uploading, setUploading]     = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -175,6 +175,17 @@ export default function RecipeDetail({
           <FoldSection title="תיאור" icon={Info}>
             <p className="text-lg leading-relaxed" style={{ color: 'var(--text)' }}>{recipe.description}</p>
           </FoldSection>
+        )}
+
+        {onEdit && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="w-full min-h-[56px] rounded-xl flex items-center justify-center gap-2 text-lg font-semibold"
+            style={{ background: 'var(--bg-card)', color: 'var(--text)', border: '1px solid var(--border-md)' }}
+          >
+            <Pencil size={20} /> ערוך מתכון
+          </button>
         )}
 
         <ImageUploadButton hasImage={!!imageUrl} uploading={uploading} error={uploadError} onFile={handleImageUpload} />
