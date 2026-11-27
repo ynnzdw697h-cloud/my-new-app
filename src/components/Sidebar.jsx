@@ -1,4 +1,4 @@
-import { Home, ClipboardList, BookOpen, CalendarDays, CalendarRange, CalendarCheck, FileText, Fish, ShoppingCart, LogOut, X, Timer, PackageCheck, UtensilsCrossed, NotebookText, Megaphone } from 'lucide-react';
+import { Home, ClipboardList, BookOpen, CalendarDays, CalendarRange, CalendarCheck, CalendarClock, FileText, Fish, ShoppingCart, LogOut, X, Timer, PackageCheck, UtensilsCrossed, NotebookText, Megaphone } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 import { navForProfile } from './BottomNav';
 
@@ -16,7 +16,8 @@ const NAV_META = {
   proteins:     { label: 'ספירת חיות',       Icon: Fish },
   supplier:     { label: 'הזמנות ספקים',     Icon: ShoppingCart },
   checker_hub:  { label: 'קבלת סחורה',       Icon: PackageCheck },
-  schedule:     { label: 'סידור עבודה',      Icon: CalendarRange },
+  schedule:     { label: 'בניית סידור',      Icon: CalendarRange },
+  team_schedule:{ label: 'סידור עבודה',      Icon: CalendarClock },
   shift_submit: { label: 'הגשת משמרות',      Icon: CalendarCheck },
 };
 

@@ -84,8 +84,8 @@ export function defaultProfile() {
 // Public (cooks read/write): tenants/{tenantId}/kitchen/{docId}
 export const PUBLIC_DOCS = {
   availability: (week, chefId) => `shift_avail_${week}_${chefId}`, // { chefId, name, shifts: {"0-morning": 0|1|2}, wanted, note, submittedAt }
-  published:    week           => `schedule_published_${week}`,
-  settings:     'schedule_settings',                                  // { deadline: {day, hour} } — copied from the manager template so cooks can see it    // { slots: { [slotKey]: chefId }, publishedBy, publishedAt, version }
+  published:    week           => `schedule_published_${week}`,   // { week, slots: { [slotKey]: chefId }, publishedAt }
+  settings:     'schedule_settings',                                  // { deadline: {day, hour} }, copied from the manager template so cooks can see it
 };
 // Manager only: tenantsAdmin/{tenantId}/schedule/{docId}
 export const ADMIN_DOCS = {

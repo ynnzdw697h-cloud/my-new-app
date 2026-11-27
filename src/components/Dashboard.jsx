@@ -10,6 +10,7 @@ import { StreakBadge, SegmentedBar, StatusMark } from './PrepCelebrations';
 import { MISSING_STATUS, missingStatus, isRecentOrOpen } from './ShiftNotes';
 import HandoverCard from './HandoverCard';
 import AnnouncementBanner from './AnnouncementBanner';
+import MyShifts from './schedule/MyShifts';
 import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { useTenantId } from '../context/TenantContext';
@@ -459,6 +460,8 @@ export default function Dashboard({ station, user, prep, onNavigate, role }) {
       <MyStationCard station={st} prep={prep} onOpen={() => onNavigate('prep')} />
 
       <UnreadAnnouncements user={user} onOpenAll={() => onNavigate('announcements')} />
+
+      <MyShifts user={user} onNavigate={onNavigate} />
 
       <HandoverCard user={user} />
 

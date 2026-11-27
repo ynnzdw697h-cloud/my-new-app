@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { SkeletonList } from '../ui';
 import { useFirestoreDoc } from '../../hooks/useFirestoreDoc';
 import { useAdminClaim } from '../../hooks/useAdminClaim';
-import { ADMIN_DOCS, PUBLIC_DOCS, defaultTemplate, nextWeekStart, weekStartOf, weekLabel } from '../../data/schedule';
-import { addDays } from '../../data/shifts';
+import { ADMIN_DOCS, PUBLIC_DOCS, defaultTemplate, nextWeekStart } from '../../data/schedule';
 import { useWeekAvailability } from '../../hooks/useWeekAvailability';
 import ScheduleBoard from './ScheduleBoard';
 import ChefProfiles from './ChefProfiles';
 import StaffingTemplate from './StaffingTemplate';
 import Submissions from './Submissions';
-import { Tabs, NoAccess } from './parts';
+import { Tabs, NoAccess, WeekPicker } from './parts';
 
 const TABS = [
   { id: 'board',    label: 'לוח שיבוץ' },
@@ -63,20 +61,3 @@ function ScheduleAdminInner() {
   );
 }
 
-// ‹ שבוע 6.12–12.12 › — from this week up to 4 weeks ahead
-function WeekPicker({ week, setWeek }) {
-  const first = weekStartOf();
-  const last = addDays(first, 28);
-  const btn = 'w-12 h-12 rounded-xl flex items-center justify-center text-text-primary transition-colors duration-150 active:bg-white/10 disabled:opacity-30';
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <button type="button" className={btn} style={{ border: '1px solid var(--border)' }} disabled={week <= first} onClick={() => setWeek(addDays(week, -7))} aria-label="שבוע קודם">
-        <ChevronRight size={22} strokeWidth={1.75} />
-      </button>
-      <span className="text-h3 text-text-primary">שבוע <span className="tabular-nums" dir="ltr">{weekLabel(week)}</span></span>
-      <button type="button" className={btn} style={{ border: '1px solid var(--border)' }} disabled={week >= last} onClick={() => setWeek(addDays(week, 7))} aria-label="שבוע הבא">
-        <ChevronLeft size={22} strokeWidth={1.75} />
-      </button>
-    </div>
-  );
-}

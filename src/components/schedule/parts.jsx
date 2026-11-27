@@ -1,5 +1,6 @@
-import { Minus, Plus, Lock } from 'lucide-react';
-import { SCHEDULE_STATION_INFO } from '../../data/schedule';
+import { Minus, Plus, Lock, ChevronRight, ChevronLeft } from 'lucide-react';
+import { SCHEDULE_STATION_INFO, weekStartOf, weekLabel } from '../../data/schedule';
+import { addDays } from '../../data/shifts';
 
 export function StationDot({ station, size = 10 }) {
   return <span aria-hidden="true" style={{ width: size, height: size, borderRadius: '50%', background: SCHEDULE_STATION_INFO[station]?.color, flexShrink: 0, display: 'inline-block' }} />;
@@ -71,6 +72,24 @@ export function NoAccess() {
         <p className="text-lg font-semibold text-text-primary">אין גישה לנתוני הסידור</p>
         <p className="text-base text-text-secondary">החלק הזה פתוח רק למנהלים. אם אתה מנהל, התנתק והיכנס שוב עם הקוד שלך.</p>
       </div>
+    </div>
+  );
+}
+
+// ‹ שבוע 6.12–12.12 › — from this week up to `ahead` weeks later
+export function WeekPicker({ week, setWeek, ahead = 4 }) {
+  const first = weekStartOf();
+  const last = addDays(first, ahead * 7);
+  const btn = 'w-12 h-12 rounded-xl flex items-center justify-center text-text-primary transition-colors duration-150 active:bg-white/10 disabled:opacity-30';
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <button type="button" className={btn} style={{ border: '1px solid var(--border)' }} disabled={week <= first} onClick={() => setWeek(addDays(week, -7))} aria-label="שבוע קודם">
+        <ChevronRight size={22} strokeWidth={1.75} />
+      </button>
+      <span className="text-h3 text-text-primary">שבוע <span className="tabular-nums" dir="ltr">{weekLabel(week)}</span></span>
+      <button type="button" className={btn} style={{ border: '1px solid var(--border)' }} disabled={week >= last} onClick={() => setWeek(addDays(week, 7))} aria-label="שבוע הבא">
+        <ChevronLeft size={22} strokeWidth={1.75} />
+      </button>
     </div>
   );
 }

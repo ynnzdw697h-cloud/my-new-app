@@ -1,13 +1,13 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Wand2, CheckCheck, X, AlertTriangle } from 'lucide-react';
+import { Wand2, CheckCheck, X, AlertTriangle, Send } from 'lucide-react';
 import { Button, Sheet, SkeletonList } from '../ui';
 import { UndoToast } from '../PrepCelebrations';
 import { useFirestoreDoc } from '../../hooks/useFirestoreDoc';
 import {
-  SCHEDULE_CHEFS, SCHEDULE_SHIFTS, SCHEDULE_STATION_INFO, DAY_NAMES, AVAIL, ADMIN_DOCS,
+  SCHEDULE_CHEFS, SCHEDULE_SHIFTS, SCHEDULE_STATION_INFO, DAY_NAMES, AVAIL, ADMIN_DOCS, PUBLIC_DOCS,
   weekDays, shortDate,
 } from '../../data/schedule';
-import { allSlots, autoAssign, blockReason, availabilityOf, countFor, scheduleWarnings } from '../../utils/scheduler';
+import { allSlots, autoAssign, blockReason, availabilityOf, countFor, scheduleWarnings, publishedSlots } from '../../utils/scheduler';
 import { StationDot } from './parts';
 
 const TOAST_MS = 5000;
@@ -17,6 +17,7 @@ const nameOf = id => SCHEDULE_CHEFS.find(c => c.id === id)?.displayName || id;
 // On a computer a cook can also be dragged from the top row, or from slot to slot.
 export default function ScheduleBoard({ week, template, profiles, availability, availabilityLoaded }) {
   const [draft, setDraft, draftState] = useFirestoreDoc(ADMIN_DOCS.draft(week), { assignments: {} }, 'admin');
+  const [published, setPublished, publishedState] = useFirestoreDoc(PUBLIC_DOCS.published(week), null);
   const [openKey, setOpenKey] = useState(null); // slot whose cook list is open
   const [dragging, setDragging] = useState(null); // chefId being dragged (lights up slots)
   const [toast, setToast] = useState(null);
@@ -110,7 +111,17 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
   const emptyCount = slots.filter(s => !assignments[s.key]).length;
   const problems = warnings.filter(w => !(w.level === 'warn' && w.key));
 
-  if (!draftState.loaded || !availabilityLoaded) return <SkeletonList />;
+  // Publish what is on the board (approved placements only) so cooks see it
+  const toPublish = publishedSlots(assignments);
+  const changedSincePublish = !!published && JSON.stringify(published.slots || {}) !== JSON.stringify(toPublish);
+  function publish() {
+    const before = published;
+    setPublished({ week, slots: toPublish, publishedAt: new Date().toISOString() });
+    const n = Object.keys(toPublish).length;
+    showToast(`${before ? 'הסידור עודכן' : 'הסידור פורסם'}: ${n} משמרות${emptyCount ? `, ${emptyCount} ריקות` : ''}`, () => setPublished(before));
+  }
+
+  if (!draftState.loaded || !availabilityLoaded || !publishedState.loaded) return <SkeletonList />;
   if (!slots.length) return <p className="text-base text-text-secondary">אין משבצות. קבע בלשונית כוח אדם כמה טבחים צריך בכל משמרת.</p>;
 
   const days = weekDays(week);
@@ -190,6 +201,25 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
             ))}
       </div>
 
+
+      {/* Publish */}
+      <div className="rounded-xl px-5 py-4 space-y-3" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-h3 text-text-primary">פרסום לטבחים</span>
+          {!published ? <span className="text-base" style={{ color: '#F59E0B' }}>עוד לא פורסם</span>
+            : changedSincePublish ? <span className="text-base" style={{ color: '#F59E0B' }}>יש שינויים שלא פורסמו</span>
+            : <span className="text-base" style={{ color: '#5ee3a8' }}>פורסם</span>}
+        </div>
+        {published && <p className="text-base text-text-secondary">פורסם לאחרונה: <span className="tabular-nums">{stamp(published.publishedAt)}</span></p>}
+        {autoCount > 0
+          ? <p className="text-base text-text-secondary">קודם צריך לאשר או למחוק את <span className="tabular-nums">{autoCount}</span> ההצעות האוטומטיות.</p>
+          : <p className="text-base text-text-secondary">אחרי הפרסום כל טבח רואה את המשמרות שלו במסך הבית.</p>}
+        <Button fullWidth icon={Send} onClick={publish} disabled={autoCount > 0 || !Object.keys(toPublish).length || (published && !changedSincePublish) || !!publishedState.error}>
+          {published ? 'עדכון הסידור' : 'פרסום הסידור'}
+        </Button>
+        {publishedState.error && <p className="text-base text-sem-danger">הפרסום נכשל. בדוק חיבור לאינטרנט ונסה שוב.</p>}
+      </div>
+
       <Sheet open={!!openSlotObj} onClose={() => setOpenKey(null)} title={openSlotObj ? slotTitle(openSlotObj, days) : ''}>
         {openSlotObj && (
           <CookPicker
@@ -245,6 +275,12 @@ function Slot({ slot, a, selected, ctx, onTap, onDragStart, onDragEnd, onDrop })
       <span className="text-base font-semibold truncate max-w-full">{who}</span>
     </button>
   );
+}
+
+// "6.12 14:30"
+function stamp(isoTime) {
+  const t = new Date(isoTime);
+  return `${t.getDate()}.${t.getMonth() + 1} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
 }
 
 function slotTitle(slot, days) {

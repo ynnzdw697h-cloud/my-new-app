@@ -146,3 +146,23 @@ export function scheduleWarnings({ template, assignments, profiles, availability
   }
   return out;
 }
+
+// ── Published schedule ──
+// The published board is { slots: { [slotKey]: chefId }, publishedAt }.
+export function publishedSlots(assignments) {
+  return Object.fromEntries(Object.entries(assignments).filter(([, a]) => a?.chefId && !a.auto).map(([k, a]) => [k, a.chefId]));
+}
+// One cook's shifts in a published week, in order, with who else works that shift.
+export function shiftsOf(slots, chefId) {
+  const mine = Object.entries(slots || {}).filter(([, id]) => id === chefId).map(([key]) => parseSlotKey(key));
+  const shiftOrder = { morning: 0, evening: 1 };
+  return mine
+    .sort((a, b) => a.day - b.day || shiftOrder[a.shift] - shiftOrder[b.shift])
+    .map(s => ({
+      ...s,
+      mates: Object.entries(slots)
+        .filter(([key, id]) => id !== chefId && key.startsWith(`${s.day}-${s.shift}-`))
+        .map(([, id]) => id)
+        .filter((id, i, all) => all.indexOf(id) === i),
+    }));
+}

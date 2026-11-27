@@ -105,3 +105,20 @@ test('drag a cook onto a slot, then drag them to another slot', () => {
   expect(draft()['0-morning-hot-0']).toEqual({ chefId: 'keshem' });
   expect(draft()['0-morning-cold-0']).toBeUndefined();
 });
+
+test('publish: only after suggestions are approved, then cooks get the slots', () => {
+  renderBoard();
+  fireEvent.click(screen.getByRole('button', { name: 'שיבוץ אוטומטי' }));
+  expect(screen.getByRole('button', { name: 'פרסום הסידור' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'אישור 2 הצעות' }));
+  fireEvent.click(screen.getByRole('button', { name: 'פרסום הסידור' }));
+  expect(mockStore[`schedule_published_${WEEK}`].slots).toEqual({ '0-morning-hot-0': 'ofek', '0-morning-cold-0': 'keshem' });
+  expect(screen.getByRole('button', { name: 'עדכון הסידור' })).toBeDisabled();
+
+  // A change after publishing can be published again
+  fireEvent.click(screen.getByRole('button', { name: 'פס חם: אופק' }));
+  fireEvent.click(screen.getByRole('button', { name: 'הוצאת אופק מהמשבצת' }));
+  expect(screen.getByText('יש שינויים שלא פורסמו')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'עדכון הסידור' }));
+  expect(mockStore[`schedule_published_${WEEK}`].slots).toEqual({ '0-morning-cold-0': 'keshem' });
+});

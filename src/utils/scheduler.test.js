@@ -118,3 +118,19 @@ describe('submission deadline', () => {
     expect(submissionWeek(new Date(2026, 11, 3, 12, 0), dl)).toBe('2026-12-13');
   });
 });
+
+describe('published schedule', () => {
+  test('only approved placements are published', () => {
+    const { publishedSlots } = require('./scheduler');
+    expect(publishedSlots({ '0-morning-hot-0': { chefId: 'ofek' }, '0-morning-cold-0': { chefId: 'keshem', auto: true } }))
+      .toEqual({ '0-morning-hot-0': 'ofek' });
+  });
+  test('a cook sees their shifts in order, with who else works', () => {
+    const { shiftsOf } = require('./scheduler');
+    const slots = { '2-evening-hot-0': 'ofek', '0-evening-cold-0': 'ofek', '0-evening-hot-0': 'keshem', '0-morning-hot-0': 'ofek', '2-morning-hot-0': 'keshem' };
+    const mine = shiftsOf(slots, 'ofek');
+    expect(mine.map(s => `${s.day}-${s.shift}-${s.station}`)).toEqual(['0-morning-hot', '0-evening-cold', '2-evening-hot']);
+    expect(mine[1].mates).toEqual(['keshem']);
+    expect(mine[2].mates).toEqual([]);
+  });
+});
