@@ -28,6 +28,7 @@ const CHEFS = [
   { id: 'kedar',  displayName: 'קידר',     role: 'chef', tenantId: 'villa-acadia' },
   { id: 'keshem', displayName: 'קסם ברכה', role: 'chef', tenantId: 'villa-acadia' },
   { id: 'ofek',   displayName: 'אופק',     role: 'chef', tenantId: 'villa-acadia' },
+  { id: 'andrei', displayName: 'אנדריי',   role: 'chef', tenantId: 'villa-acadia' },
 ];
 
 function loadPins() {
