@@ -14,6 +14,13 @@ export const defaultStart = shiftId => SCHEDULE_SHIFTS.find(s => s.id === shiftI
 // Arrival time of a shift on one day: the day's own time if the managers changed it, else the usual one.
 // times: { "<day>-<shiftId>": "HH:MM" }
 export const shiftStart = (times, day, shiftId) => times?.[`${day}-${shiftId}`] || defaultStart(shiftId);
+// Stations that always arrive at their own time in a shift, whatever the shift's time that day
+// (evening checker comes at 12:00). A cook's own time in the slot still wins.
+export const STATION_STARTS = { 'evening-checker': '12:00' };
+// Usual arrival time of one station in a shift
+export const defaultSlotStart = (shiftId, station) => STATION_STARTS[`${shiftId}-${station}`] || defaultStart(shiftId);
+// Arrival time of one slot when the cook has no time of their own
+export const slotStart = (times, day, shiftId, station) => STATION_STARTS[`${shiftId}-${station}`] || shiftStart(times, day, shiftId);
 // "07:45" -> "7:45"
 export const fmtTime = t => (t ? t.replace(/^0(\d)/, '$1') : '');
 export const SCHEDULE_STATIONS = ['hot', 'cold', 'air', 'checker'];

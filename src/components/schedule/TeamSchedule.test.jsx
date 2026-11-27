@@ -35,3 +35,13 @@ test('shows arrival times, a changed day time, and a cook note', () => {
   expect(screen.getByText('10:00')).toBeInTheDocument();
   expect(screen.getByText('אחרי הספק')).toBeInTheDocument();
 });
+
+test('evening checker arrives at 12:00 unless the cook has an own time', () => {
+  mockStore[`schedule_published_${WEEK}`] = {
+    slots: { '0-evening-checker-0': 'keshem', '1-evening-checker-0': 'ofek' },
+    details: { '1-evening-checker-0': { time: '13:00' } },
+  };
+  render(<WeekView week={WEEK} me="ofek" />);
+  expect(screen.getByText('12:00')).toBeInTheDocument();
+  expect(screen.getByText('13:00')).toBeInTheDocument();
+});

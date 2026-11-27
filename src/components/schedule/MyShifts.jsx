@@ -3,7 +3,7 @@ import { useFirestoreDoc } from '../../hooks/useFirestoreDoc';
 import { useChefId } from '../../hooks/useChefId';
 import {
   SCHEDULE_CHEFS, SCHEDULE_SHIFTS, SCHEDULE_STATION_INFO, DAY_NAMES, PUBLIC_DOCS,
-  weekStartOf, nextWeekStart, weekDays, weekLabel, shortDate, submissionWeek, iso, slotKey, shiftStart, defaultStart, fmtTime,
+  weekStartOf, nextWeekStart, weekDays, weekLabel, shortDate, submissionWeek, iso, slotKey, slotStart, defaultSlotStart, fmtTime,
 } from '../../data/schedule';
 import { addDays } from '../../data/shifts';
 import { shiftsOf } from '../../utils/scheduler';
@@ -36,7 +36,7 @@ function MyShiftsCard({ chefId, onNavigate }) {
     const days = weekDays(week);
     return shiftsOf(pub.slots, chefId).map(s => {
       const detail = pub.details?.[slotKey(s.day, s.shift, s.station, s.n)] || {};
-      return { ...s, date: days[s.day], time: detail.time || shiftStart(pub.times, s.day, s.shift), note: detail.note };
+      return { ...s, date: days[s.day], time: detail.time || slotStart(pub.times, s.day, s.shift, s.station), note: detail.note };
     }).filter(s => s.date >= today);
   });
   const rows = upcoming.slice(0, MAX_ROWS);
@@ -62,7 +62,7 @@ function MyShiftsCard({ chefId, onNavigate }) {
                 <span className="font-medium text-text-primary">{dayName(s.date)}</span>
                 <span className="text-text-tertiary tabular-nums">{shortDate(s.date)}</span>
                 <span className="text-text-secondary">· {SCHEDULE_SHIFTS.find(x => x.id === s.shift).short}</span>
-                <span className="tabular-nums font-medium" style={{ color: s.time !== defaultStart(s.shift) ? '#F59E0B' : 'var(--text-2)' }}>{fmtTime(s.time)}</span>
+                <span className="tabular-nums font-medium" style={{ color: s.time !== defaultSlotStart(s.shift, s.station) ? '#F59E0B' : 'var(--text-2)' }}>{fmtTime(s.time)}</span>
                 <span className="mr-auto flex items-center gap-1.5 text-base text-text-secondary"><StationDot station={s.station} size={8} />{info.name}</span>
               </div>
               {s.note && <div className="text-base truncate" style={{ color: '#F59E0B' }}>{s.note}</div>}

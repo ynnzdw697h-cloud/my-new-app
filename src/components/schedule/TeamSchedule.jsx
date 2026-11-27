@@ -5,7 +5,7 @@ import { useFirestoreDoc } from '../../hooks/useFirestoreDoc';
 import { useChefId } from '../../hooks/useChefId';
 import {
   SCHEDULE_CHEFS, SCHEDULE_SHIFTS, SCHEDULE_STATIONS, SCHEDULE_STATION_INFO, DAY_NAMES, PUBLIC_DOCS,
-  weekStartOf, weekDays, shortDate, parseSlotKey, iso, shiftStart, defaultStart, fmtTime,
+  weekStartOf, weekDays, shortDate, parseSlotKey, iso, shiftStart, slotStart, defaultStart, fmtTime,
 } from '../../data/schedule';
 import { StationDot, WeekPicker } from './parts';
 
@@ -63,6 +63,7 @@ export function WeekView({ week, me }) {
                     ? <div className="text-base text-text-dis">אין שיבוץ</div>
                     : people.map(p => {
                         const mine = p.chefId === me;
+                        const time = p.time || slotStart(published.times, d, sh.id, p.station);
                         return (
                           <div key={`${p.station}-${p.n}`} className="flex items-center flex-wrap gap-x-2 min-h-[36px] text-lg">
                             <StationDot station={p.station} size={8} />
@@ -70,7 +71,7 @@ export function WeekView({ week, me }) {
                             <span className={mine ? 'font-bold' : 'font-medium text-text-primary'} style={mine ? { color: '#5ee3a8' } : undefined}>
                               {nameOf(p.chefId)}{mine ? ' (אתה)' : ''}
                             </span>
-                            {p.time && p.time !== start && <span className="tabular-nums text-base font-semibold" style={{ color: '#F59E0B' }}>{fmtTime(p.time)}</span>}
+                            {time !== start && <span className="tabular-nums text-base font-semibold" style={{ color: p.time ? '#F59E0B' : 'var(--text-2)' }}>{fmtTime(time)}</span>}
                             {p.note && <span className="basis-full text-base pr-[1.1rem]" style={{ color: '#F59E0B' }}>{p.note}</span>}
                           </div>
                         );

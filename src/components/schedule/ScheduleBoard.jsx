@@ -5,7 +5,7 @@ import { UndoToast } from '../PrepCelebrations';
 import { useFirestoreDoc } from '../../hooks/useFirestoreDoc';
 import {
   SCHEDULE_CHEFS, SCHEDULE_SHIFTS, SCHEDULE_STATIONS, SCHEDULE_STATION_INFO, DAY_NAMES, AVAIL, ADMIN_DOCS, PUBLIC_DOCS,
-  weekDays, shortDate, iso, shiftKey, shiftStart, defaultStart, fmtTime,
+  weekDays, shortDate, iso, shiftKey, shiftStart, slotStart, defaultStart, fmtTime, STATION_STARTS,
 } from '../../data/schedule';
 import { allSlots, autoAssign, blockReason, availabilityOf, countFor, scheduleWarnings, publishedSlots, publishedDetails } from '../../utils/scheduler';
 import { StationDot } from './parts';
@@ -75,7 +75,7 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
     const a = assignments[slot.key];
     if (!a) return;
     const next = { ...a };
-    if (time && time !== shiftStart(times, slot.day, slot.shift)) next.time = time; else delete next.time;
+    if (time && time !== slotStart(times, slot.day, slot.shift, slot.station)) next.time = time; else delete next.time;
     if (note) next.note = note; else delete next.note;
     save({ ...assignments, [slot.key]: next });
     showToast(`נשמר ל${nameOf(a.chefId)}`);
@@ -174,7 +174,7 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
   const openSlotObj = openKey ? slots.find(sl => sl.key === openKey) : null;
   const submitted = SCHEDULE_CHEFS.filter(c => availability[c.id]).length;
   const slotFor = (slot, compact) => (
-    <Slot key={slot.key} slot={slot} a={assignments[slot.key]} start={shiftStart(times, slot.day, slot.shift)} selected={dragging} ctx={ctx} compact={compact} onTap={() => setOpenKey(slot.key)}
+    <Slot key={slot.key} slot={slot} a={assignments[slot.key]} start={slotStart(times, slot.day, slot.shift, slot.station)} selected={dragging} ctx={ctx} compact={compact} onTap={() => setOpenKey(slot.key)}
       onDragStart={e => dragStart(e, assignments[slot.key].chefId, slot.key)} onDragEnd={dragEnd} onDrop={() => drop(slot)} />
   );
 
@@ -323,7 +323,7 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
             key={`${openSlotObj.key}-${assignments[openSlotObj.key]?.chefId || ''}`}
             slot={openSlotObj}
             current={assignments[openSlotObj.key]}
-            start={shiftStart(times, openSlotObj.day, openSlotObj.shift)}
+            start={slotStart(times, openSlotObj.day, openSlotObj.shift, openSlotObj.station)}
             onSaveDetails={d => saveDetails(openSlotObj, d)}
             ctx={ctx}
             onPick={id => { place(openSlotObj, id); setOpenKey(null); }}
@@ -481,6 +481,7 @@ function WeekGrid({ days, slots, times, onTime, renderSlot }) {
               <div key={st} className="grid gap-1.5" style={cols}>
                 <div className="flex items-center gap-1.5 text-sm text-text-secondary min-w-0">
                   <StationDot station={st} size={8} /><span className="truncate">{SCHEDULE_STATION_INFO[st].name}</span>
+                  {STATION_STARTS[`${sh.id}-${st}`] && <span className="tabular-nums text-text-tertiary">{fmtTime(STATION_STARTS[`${sh.id}-${st}`])}</span>}
                 </div>
                 {days.map((isoDay, d) => {
                   const cell = slots.filter(s => s.day === d && s.shift === sh.id && s.station === st);
