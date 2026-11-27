@@ -1,16 +1,31 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Wand2, CheckCheck, X, AlertTriangle, Send, Eraser } from 'lucide-react';
 import { Button, Sheet, SkeletonList } from '../ui';
 import { UndoToast } from '../PrepCelebrations';
 import { useFirestoreDoc } from '../../hooks/useFirestoreDoc';
 import {
-  SCHEDULE_CHEFS, SCHEDULE_SHIFTS, SCHEDULE_STATION_INFO, DAY_NAMES, AVAIL, ADMIN_DOCS, PUBLIC_DOCS,
-  weekDays, shortDate,
+  SCHEDULE_CHEFS, SCHEDULE_SHIFTS, SCHEDULE_STATIONS, SCHEDULE_STATION_INFO, DAY_NAMES, AVAIL, ADMIN_DOCS, PUBLIC_DOCS,
+  weekDays, shortDate, iso,
 } from '../../data/schedule';
 import { allSlots, autoAssign, blockReason, availabilityOf, countFor, scheduleWarnings, publishedSlots } from '../../utils/scheduler';
 import { StationDot } from './parts';
 
 const TOAST_MS = 5000;
+const WIDE_QUERY = '(min-width: 1024px)';
+
+// Computer screen: the week is shown as one wide table instead of day cards.
+function useIsWide() {
+  const get = () => typeof window !== 'undefined' && !!window.matchMedia?.(WIDE_QUERY).matches;
+  const [wide, setWide] = useState(get);
+  useEffect(() => {
+    const mq = window.matchMedia?.(WIDE_QUERY);
+    if (!mq) return undefined;
+    const on = () => setWide(mq.matches);
+    mq.addEventListener?.('change', on);
+    return () => mq.removeEventListener?.('change', on);
+  }, []);
+  return wide;
+}
 const nameOf = id => SCHEDULE_CHEFS.find(c => c.id === id)?.displayName || id;
 
 // לוח שיבוץ: tap a slot, then pick a cook from the list (colored by what each cook submitted).
@@ -21,6 +36,7 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
   const [openKey, setOpenKey] = useState(null); // slot whose cook list is open
   const [dragging, setDragging] = useState(null); // chefId being dragged (lights up slots)
   const [toast, setToast] = useState(null);
+  const wide = useIsWide();
   const toastTimer = useRef(null);
 
   const slots = useMemo(() => allSlots(template), [template]);
@@ -131,9 +147,15 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
   const days = weekDays(week);
   const openSlotObj = openKey ? slots.find(sl => sl.key === openKey) : null;
   const submitted = SCHEDULE_CHEFS.filter(c => availability[c.id]).length;
+  const slotFor = (slot, compact) => (
+    <Slot key={slot.key} slot={slot} a={assignments[slot.key]} selected={dragging} ctx={ctx} compact={compact} onTap={() => setOpenKey(slot.key)}
+      onDragStart={e => dragStart(e, assignments[slot.key].chefId, slot.key)} onDragEnd={dragEnd} onDrop={() => drop(slot)} />
+  );
 
   return (
     <div className="space-y-4">
+      {/* Cooks and actions: one row on a computer */}
+      <div className="space-y-4 lg:space-y-0 lg:flex lg:items-start lg:justify-between lg:gap-6">
       {/* Cooks: shifts so far. On a computer, drag a name onto a slot. */}
       <div className="space-y-2">
         <div className="flex flex-wrap gap-2">
@@ -162,68 +184,109 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
       </div>
 
       {/* Actions */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 lg:flex-shrink-0 lg:justify-end">
         <Button variant="secondary" size="sm" icon={Wand2} onClick={runAuto}>שיבוץ אוטומטי</Button>
         {autoCount > 0 && <Button variant="secondary" size="sm" icon={CheckCheck} onClick={approveAll}>אישור {autoCount} הצעות</Button>}
         {autoCount > 0 && <Button variant="ghost" size="sm" icon={X} onClick={clearAuto}>מחיקת הצעות</Button>}
         {Object.keys(assignments).length > 0 && <Button variant="ghost" size="sm" icon={Eraser} onClick={clearAll}>ניקוי הלוח</Button>}
       </div>
+      </div>
 
-      {/* Days */}
-      {days.map((isoDay, d) => (
-        <div key={isoDay} className="rounded-xl px-4 py-4 space-y-3" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
-          <div className="text-h3 text-text-primary">{DAY_NAMES[d]} <span className="text-base font-normal text-text-tertiary tabular-nums">{shortDate(isoDay)}</span></div>
-          {SCHEDULE_SHIFTS.map(sh => {
-            const shiftSlots = slots.filter(s => s.day === d && s.shift === sh.id);
-            if (!shiftSlots.length) return null;
-            return (
-              <div key={sh.id} className="space-y-2">
-                <div className="text-base text-text-secondary">{sh.name}</div>
-                <div className="grid grid-cols-4 gap-2">
-                  {shiftSlots.map(slot => (
-                    <Slot key={slot.key} slot={slot} a={assignments[slot.key]} selected={dragging} ctx={ctx} onTap={() => setOpenKey(slot.key)}
-                      onDragStart={e => dragStart(e, assignments[slot.key].chefId, slot.key)} onDragEnd={dragEnd} onDrop={() => drop(slot)} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ))}
-
-      {/* Checks */}
-      <div className="rounded-xl px-5 py-4 space-y-2" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
-        <div className="text-h3 text-text-primary">בדיקות</div>
-        <p className="text-base text-text-secondary">
-          {emptyCount ? <><span className="tabular-nums">{emptyCount}</span> משבצות עוד ריקות.</> : 'כל המשבצות מלאות.'}
-        </p>
-        {problems.length === 0
-          ? <p className="text-base" style={{ color: '#5ee3a8' }}>אין בעיות בשיבוץ.</p>
-          : problems.map((w, i) => (
-              <p key={i} className="flex items-start gap-2 text-base" style={{ color: w.level === 'error' ? '#F87171' : '#F59E0B' }}>
-                <AlertTriangle size={18} strokeWidth={1.75} className="flex-shrink-0 mt-1" />{w.text}
+      {wide ? (
+        <div className="grid gap-4 items-start" style={{ gridTemplateColumns: 'minmax(0,1fr) 300px' }}>
+          <WeekGrid days={days} slots={slots} renderSlot={slot => slotFor(slot, true)} />
+          <div className="space-y-4">
+            {/* Checks */}
+            <div className="rounded-xl px-5 py-4 space-y-2" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
+              <div className="text-h3 text-text-primary">בדיקות</div>
+              <p className="text-base text-text-secondary">
+                {emptyCount ? <><span className="tabular-nums">{emptyCount}</span> משבצות עוד ריקות.</> : 'כל המשבצות מלאות.'}
               </p>
-            ))}
-      </div>
+              {problems.length === 0
+                ? <p className="text-base" style={{ color: '#5ee3a8' }}>אין בעיות בשיבוץ.</p>
+                : problems.map((w, i) => (
+                    <p key={i} className="flex items-start gap-2 text-base" style={{ color: w.level === 'error' ? '#F87171' : '#F59E0B' }}>
+                      <AlertTriangle size={18} strokeWidth={1.75} className="flex-shrink-0 mt-1" />{w.text}
+                    </p>
+                  ))}
+            </div>
 
 
-      {/* Publish */}
-      <div className="rounded-xl px-5 py-4 space-y-3" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-h3 text-text-primary">פרסום לטבחים</span>
-          {!published ? <span className="text-base" style={{ color: '#F59E0B' }}>עוד לא פורסם</span>
-            : changedSincePublish ? <span className="text-base" style={{ color: '#F59E0B' }}>יש שינויים שלא פורסמו</span>
-            : <span className="text-base" style={{ color: '#5ee3a8' }}>פורסם</span>}
+            {/* Publish */}
+            <div className="rounded-xl px-5 py-4 space-y-3" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-h3 text-text-primary">פרסום לטבחים</span>
+                {!published ? <span className="text-base" style={{ color: '#F59E0B' }}>עוד לא פורסם</span>
+                  : changedSincePublish ? <span className="text-base" style={{ color: '#F59E0B' }}>יש שינויים שלא פורסמו</span>
+                  : <span className="text-base" style={{ color: '#5ee3a8' }}>פורסם</span>}
+              </div>
+              {published && <p className="text-base text-text-secondary">פורסם לאחרונה: <span className="tabular-nums">{stamp(published.publishedAt)}</span></p>}
+              {autoCount > 0
+                ? <p className="text-base text-text-secondary">קודם צריך לאשר או למחוק את <span className="tabular-nums">{autoCount}</span> ההצעות האוטומטיות.</p>
+                : <p className="text-base text-text-secondary">אחרי הפרסום כל טבח רואה את המשמרות שלו במסך הבית.</p>}
+              <Button fullWidth icon={Send} onClick={publish} disabled={autoCount > 0 || !Object.keys(toPublish).length || (published && !changedSincePublish) || !!publishedState.error}>
+                {published ? 'עדכון הסידור' : 'פרסום הסידור'}
+              </Button>
+              {publishedState.error && <p className="text-base text-sem-danger">הפרסום נכשל. בדוק חיבור לאינטרנט ונסה שוב.</p>}
+            </div>
+          </div>
         </div>
-        {published && <p className="text-base text-text-secondary">פורסם לאחרונה: <span className="tabular-nums">{stamp(published.publishedAt)}</span></p>}
-        {autoCount > 0
-          ? <p className="text-base text-text-secondary">קודם צריך לאשר או למחוק את <span className="tabular-nums">{autoCount}</span> ההצעות האוטומטיות.</p>
-          : <p className="text-base text-text-secondary">אחרי הפרסום כל טבח רואה את המשמרות שלו במסך הבית.</p>}
-        <Button fullWidth icon={Send} onClick={publish} disabled={autoCount > 0 || !Object.keys(toPublish).length || (published && !changedSincePublish) || !!publishedState.error}>
-          {published ? 'עדכון הסידור' : 'פרסום הסידור'}
-        </Button>
-        {publishedState.error && <p className="text-base text-sem-danger">הפרסום נכשל. בדוק חיבור לאינטרנט ונסה שוב.</p>}
-      </div>
+      ) : (
+        <>
+        {/* Days */}
+        {days.map((isoDay, d) => (
+          <div key={isoDay} className="rounded-xl px-4 py-4 space-y-3" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
+            <div className="text-h3 text-text-primary">{DAY_NAMES[d]} <span className="text-base font-normal text-text-tertiary tabular-nums">{shortDate(isoDay)}</span></div>
+            {SCHEDULE_SHIFTS.map(sh => {
+              const shiftSlots = slots.filter(s => s.day === d && s.shift === sh.id);
+              if (!shiftSlots.length) return null;
+              return (
+                <div key={sh.id} className="space-y-2">
+                  <div className="text-base text-text-secondary">{sh.name}</div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {shiftSlots.map(slot => slotFor(slot, false))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+
+        {/* Checks */}
+        <div className="rounded-xl px-5 py-4 space-y-2" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
+          <div className="text-h3 text-text-primary">בדיקות</div>
+          <p className="text-base text-text-secondary">
+            {emptyCount ? <><span className="tabular-nums">{emptyCount}</span> משבצות עוד ריקות.</> : 'כל המשבצות מלאות.'}
+          </p>
+          {problems.length === 0
+            ? <p className="text-base" style={{ color: '#5ee3a8' }}>אין בעיות בשיבוץ.</p>
+            : problems.map((w, i) => (
+                <p key={i} className="flex items-start gap-2 text-base" style={{ color: w.level === 'error' ? '#F87171' : '#F59E0B' }}>
+                  <AlertTriangle size={18} strokeWidth={1.75} className="flex-shrink-0 mt-1" />{w.text}
+                </p>
+              ))}
+        </div>
+
+
+        {/* Publish */}
+        <div className="rounded-xl px-5 py-4 space-y-3" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-h3 text-text-primary">פרסום לטבחים</span>
+            {!published ? <span className="text-base" style={{ color: '#F59E0B' }}>עוד לא פורסם</span>
+              : changedSincePublish ? <span className="text-base" style={{ color: '#F59E0B' }}>יש שינויים שלא פורסמו</span>
+              : <span className="text-base" style={{ color: '#5ee3a8' }}>פורסם</span>}
+          </div>
+          {published && <p className="text-base text-text-secondary">פורסם לאחרונה: <span className="tabular-nums">{stamp(published.publishedAt)}</span></p>}
+          {autoCount > 0
+            ? <p className="text-base text-text-secondary">קודם צריך לאשר או למחוק את <span className="tabular-nums">{autoCount}</span> ההצעות האוטומטיות.</p>
+            : <p className="text-base text-text-secondary">אחרי הפרסום כל טבח רואה את המשמרות שלו במסך הבית.</p>}
+          <Button fullWidth icon={Send} onClick={publish} disabled={autoCount > 0 || !Object.keys(toPublish).length || (published && !changedSincePublish) || !!publishedState.error}>
+            {published ? 'עדכון הסידור' : 'פרסום הסידור'}
+          </Button>
+          {publishedState.error && <p className="text-base text-sem-danger">הפרסום נכשל. בדוק חיבור לאינטרנט ונסה שוב.</p>}
+        </div>
+        </>
+      )}
 
       <Sheet open={!!openSlotObj} onClose={() => setOpenKey(null)} title={openSlotObj ? slotTitle(openSlotObj, days) : ''}>
         {openSlotObj && (
@@ -242,7 +305,7 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
   );
 }
 
-function Slot({ slot, a, selected, ctx, onTap, onDragStart, onDragEnd, onDrop }) {
+function Slot({ slot, a, selected, ctx, compact, onTap, onDragStart, onDragEnd, onDrop }) {
   const info = SCHEDULE_STATION_INFO[slot.station];
   let style = { background: 'var(--bg-inset)', border: '1px dashed var(--border-strong, rgba(255,255,255,0.18))', color: 'var(--text-dis)' };
   if (a) style = a.auto
@@ -261,7 +324,7 @@ function Slot({ slot, a, selected, ctx, onTap, onDragStart, onDragEnd, onDrop })
     }
   }
 
-  const who = a ? nameOf(a.chefId) : 'ריק';
+  const who = a ? (compact ? nameOf(a.chefId).split(' ')[0] : nameOf(a.chefId)) : 'ריק';
   return (
     <button
       type="button"
@@ -273,10 +336,10 @@ function Slot({ slot, a, selected, ctx, onTap, onDragStart, onDragEnd, onDrop })
       onDrop={e => { e.preventDefault(); onDrop(); }}
       title={a?.reason || undefined}
       aria-label={`${info.name}: ${a ? nameOf(a.chefId) : 'ריק'}${a?.auto ? ' (הצעה)' : ''}`}
-      className="min-h-[60px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-opacity duration-150 min-w-0"
+      className={`${compact ? 'min-h-[40px] w-full' : 'min-h-[60px]'} px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-opacity duration-150 min-w-0`}
       style={{ ...style, opacity: dim ? 0.35 : 1 }}
     >
-      <span className="flex items-center gap-1 text-xs whitespace-nowrap" style={{ opacity: 0.85 }}><StationDot station={slot.station} size={8} />{info.name.replace('פס ', '')}</span>
+      {!compact && <span className="flex items-center gap-1 text-xs whitespace-nowrap" style={{ opacity: 0.85 }}><StationDot station={slot.station} size={8} />{info.name.replace('פס ', '')}</span>}
       <span className="text-base font-semibold truncate max-w-full">{who}</span>
     </button>
   );
@@ -286,6 +349,49 @@ function Slot({ slot, a, selected, ctx, onTap, onDragStart, onDragEnd, onDrop })
 function stamp(isoTime) {
   const t = new Date(isoTime);
   return `${t.getDate()}.${t.getMonth() + 1} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+}
+
+// The whole week in one table: days across, each shift's stations down the side.
+function WeekGrid({ days, slots, renderSlot }) {
+  const cols = { gridTemplateColumns: '92px repeat(7, minmax(0, 1fr))' };
+  const todayIso = iso(new Date());
+  return (
+    <div className="rounded-xl p-3 space-y-1" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
+      <div className="grid gap-1.5 items-end" style={cols}>
+        <div />
+        {days.map((isoDay, d) => (
+          <div key={isoDay} className="text-center pb-1">
+            <div className="text-base font-semibold" style={{ color: isoDay === todayIso ? '#5ee3a8' : undefined }}>{DAY_NAMES[d]}</div>
+            <div className="text-sm text-text-tertiary tabular-nums">{shortDate(isoDay)}</div>
+          </div>
+        ))}
+      </div>
+      {SCHEDULE_SHIFTS.map(sh => {
+        const stations = SCHEDULE_STATIONS.filter(st => slots.some(s => s.shift === sh.id && s.station === st));
+        if (!stations.length) return null;
+        return (
+          <div key={sh.id} className="space-y-1 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+            <div className="text-base font-medium text-text-secondary">{sh.name}</div>
+            {stations.map(st => (
+              <div key={st} className="grid gap-1.5" style={cols}>
+                <div className="flex items-center gap-1.5 text-sm text-text-secondary min-w-0">
+                  <StationDot station={st} size={8} /><span className="truncate">{SCHEDULE_STATION_INFO[st].name}</span>
+                </div>
+                {days.map((isoDay, d) => {
+                  const cell = slots.filter(s => s.day === d && s.shift === sh.id && s.station === st);
+                  return (
+                    <div key={isoDay} className="flex flex-col gap-1 min-w-0">
+                      {cell.length ? cell.map(renderSlot) : <div className="min-h-[40px] rounded-xl" style={{ background: 'rgba(255,255,255,0.02)' }} />}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function slotTitle(slot, days) {

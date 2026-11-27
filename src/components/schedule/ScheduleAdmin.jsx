@@ -17,12 +17,15 @@ const TABS = [
   { id: 'template', label: 'כוח אדם' },
 ];
 
+// Only the board uses the full width on a computer; the other tabs stay a readable column.
+const NARROW = 'max-w-3xl mx-auto space-y-4';
+
 // "סידור עבודה" — managers only (דורון, קידר).
 // Nothing under tenantsAdmin/ is requested until the login token proves the user is a manager.
 export default function ScheduleAdmin() {
   const isAdmin = useAdminClaim();
   return (
-    <div className="p-5 md:p-6 space-y-5 max-w-3xl mx-auto" dir="rtl">
+    <div className="p-5 md:p-6 space-y-5 max-w-3xl lg:max-w-[1600px] mx-auto" dir="rtl">
       {isAdmin === 'loading' ? <SkeletonList />
         : isAdmin ? <ScheduleAdminInner />
         : <NoAccess />}
@@ -50,13 +53,17 @@ function ScheduleAdminInner() {
 
   return (
     <>
-      <Tabs tabs={TABS} value={tab} onChange={setTab} />
+      {/* On a computer the week arrows sit beside the tabs, so the board fits on one screen */}
+      <div className={tab === 'board' ? 'space-y-4 lg:space-y-0 lg:flex lg:items-center lg:gap-6' : NARROW}>
+        <div className={tab === 'board' ? 'lg:flex-1 lg:max-w-3xl' : ''}><Tabs tabs={TABS} value={tab} onChange={setTab} /></div>
+        {tab === 'board' && !denied && !loading && <div className="lg:w-[380px]"><WeekPicker week={week} setWeek={setWeek} /></div>}
+      </div>
       {denied ? <NoAccess />
         : loading ? <SkeletonList />
-        : tab === 'cooks' ? <ChefProfiles profiles={profiles} setProfiles={setProfiles} />
-        : tab === 'submissions' ? <><WeekPicker week={week} setWeek={setWeek} /><Submissions week={week} deadline={deadline} /></>
-        : tab === 'template' ? <StaffingTemplate template={template} setTemplate={setTemplate} />
-        : <><WeekPicker week={week} setWeek={setWeek} /><ScheduleBoard key={week} week={week} template={template?.days ? template : defaultTemplate()} profiles={profiles || {}} availability={availability} availabilityLoaded={availabilityLoaded} /></>}
+        : tab === 'cooks' ? <div className={NARROW}><ChefProfiles profiles={profiles} setProfiles={setProfiles} /></div>
+        : tab === 'submissions' ? <div className={NARROW}><WeekPicker week={week} setWeek={setWeek} /><Submissions week={week} deadline={deadline} /></div>
+        : tab === 'template' ? <div className={NARROW}><StaffingTemplate template={template} setTemplate={setTemplate} /></div>
+        : <><ScheduleBoard key={week} week={week} template={template?.days ? template : defaultTemplate()} profiles={profiles || {}} availability={availability} availabilityLoaded={availabilityLoaded} /></>}
     </>
   );
 }
