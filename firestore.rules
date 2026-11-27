@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Existing app data. Unchanged (still open), copied from the live rules on 2026-11-27.
+    match /tenants/{tenantId}/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Manager-only data: cook ratings and notes, staffing template, schedule drafts.
+    // Only a signed-in user whose server-issued token has admin: true for this tenant.
+    match /tenantsAdmin/{tenantId}/{document=**} {
+      allow read, write: if request.auth != null
+        && request.auth.token.admin == true
+        && request.auth.token.tenantId == tenantId;
+    }
+  }
+}

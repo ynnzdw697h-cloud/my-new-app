@@ -22,10 +22,12 @@ if (!admin.apps.length) {
 // They come from the CHEF_PINS env var (set in Vercel), e.g. {"yamski":"4821","kaydi":"9307",...}
 // In a future version this can be fetched from Firestore per-tenant.
 // Token role stays 'chef' for everyone (same claims Firestore has always seen);
-// the extra admin access for דורון/קידר is decided client-side in src/data/chefs.js.
+// the extra admin screens for דורון/קידר are decided client-side in src/data/chefs.js.
+// `admin: true` is a separate claim: Firestore Rules use it to lock manager-only data
+// (cook ratings, schedule drafts) under tenantsAdmin/{tenantId}/...
 const CHEFS = [
-  { id: 'yamski', displayName: 'דורון',    role: 'chef', tenantId: 'villa-acadia' },
-  { id: 'kedar',  displayName: 'קידר',     role: 'chef', tenantId: 'villa-acadia' },
+  { id: 'yamski', displayName: 'דורון',    role: 'chef', tenantId: 'villa-acadia', admin: true },
+  { id: 'kedar',  displayName: 'קידר',     role: 'chef', tenantId: 'villa-acadia', admin: true },
   { id: 'keshem', displayName: 'קסם ברכה', role: 'chef', tenantId: 'villa-acadia' },
   { id: 'ofek',   displayName: 'אופק',     role: 'chef', tenantId: 'villa-acadia' },
 ];
@@ -71,6 +73,8 @@ module.exports = async function handler(req, res) {
       tenantId:    chef.tenantId,
       role:        chef.role,
       displayName: chef.displayName,
+      chefId:      chef.id,
+      admin:       chef.admin === true,
     });
 
     return res.status(200).json({

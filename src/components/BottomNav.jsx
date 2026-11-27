@@ -1,7 +1,7 @@
 import { useBackClose } from '../hooks/useBackClose';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Timer, Fish, ShoppingCart, LogOut, NotebookText, Megaphone } from 'lucide-react';
+import { Timer, Fish, ShoppingCart, LogOut, NotebookText, Megaphone, CalendarRange } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 
 /* ── Role → navigation profile mapping ── */
@@ -17,6 +17,7 @@ export function navForProfile(role) {
         { id: 'supplier',  label: 'ספקים',   Icon: TruckIcon },
       ],
       more: [
+        { id: 'schedule',      label: 'סידור עבודה',         Icon: CalendarRange },
         { id: 'shift_log',     label: 'יומן משמרת',          Icon: NotebookText },
         { id: 'announcements', label: 'הודעות לצוות',        Icon: Megaphone },
         { id: 'weekly',       label: 'משימות שבועיות',      Icon: CalIcon },
