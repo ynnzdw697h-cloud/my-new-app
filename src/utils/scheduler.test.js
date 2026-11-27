@@ -33,9 +33,9 @@ describe('blockReason', () => {
   it('blocks a cook who did not submit', () => {
     expect(blockReason('a', slot, { ...base, availability: {} })).toMatch('לא הגיש');
   });
-  it('blocks morning after closing the evening before', () => {
+  it('allows morning after closing the evening before', () => {
     const ctx = { ...base, availability: { a: av(['0-evening', '1-morning']) }, assignments: { [slotKey(0, 'evening', 'hot', 0)]: { chefId: 'a' } } };
-    expect(blockReason('a', slot, ctx)).toMatch('סגר');
+    expect(blockReason('a', slot, ctx)).toBeNull();
   });
   it('blocks two stations in the same shift', () => {
     const ctx = { ...base, profiles: { a: prof({ hot: 8, cold: 8 }) }, assignments: { [slotKey(1, 'morning', 'cold', 0)]: { chefId: 'a' } } };

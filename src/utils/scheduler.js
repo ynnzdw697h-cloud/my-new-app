@@ -46,8 +46,6 @@ export function blockReason(chefId, slot, ctx, ignoreKey = slot.key) {
   if (!(avail.shifts?.[shiftKey(slot.day, slot.shift)] > 0)) return 'סימן שלא יכול';
   const mine = cookShifts(ctx.assignments, chefId, ignoreKey);
   if (mine.has(shiftKey(slot.day, slot.shift))) return 'כבר משובץ במשמרת הזו';
-  if (slot.shift === 'morning' && mine.has(shiftKey(slot.day - 1, 'evening'))) return 'סגר משמרת ערב יום קודם';
-  if (slot.shift === 'evening' && mine.has(shiftKey(slot.day + 1, 'morning'))) return 'פותח משמרת בוקר למחרת';
   const max = Number(profile.max ?? 6);
   if (mine.size >= max) return `הגיע למקסימום (${max})`;
   return null;

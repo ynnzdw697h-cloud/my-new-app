@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Wand2, CheckCheck, X, AlertTriangle, Send } from 'lucide-react';
+import { Wand2, CheckCheck, X, AlertTriangle, Send, Eraser } from 'lucide-react';
 import { Button, Sheet, SkeletonList } from '../ui';
 import { UndoToast } from '../PrepCelebrations';
 import { useFirestoreDoc } from '../../hooks/useFirestoreDoc';
@@ -102,6 +102,10 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
     const next = Object.fromEntries(Object.entries(assignments).map(([k, a]) => [k, a?.auto ? { chefId: a.chefId } : a]));
     change(next, `${autoCount} הצעות אושרו`);
   }
+  function clearAll() {
+    const n = Object.keys(assignments).length;
+    change({}, `הלוח נוקה (${n} משבצות)`);
+  }
   function clearAuto() {
     const next = Object.fromEntries(Object.entries(assignments).filter(([, a]) => !a?.auto));
     change(next, `${autoCount} הצעות נמחקו`);
@@ -162,6 +166,7 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
         <Button variant="secondary" size="sm" icon={Wand2} onClick={runAuto}>שיבוץ אוטומטי</Button>
         {autoCount > 0 && <Button variant="secondary" size="sm" icon={CheckCheck} onClick={approveAll}>אישור {autoCount} הצעות</Button>}
         {autoCount > 0 && <Button variant="ghost" size="sm" icon={X} onClick={clearAuto}>מחיקת הצעות</Button>}
+        {Object.keys(assignments).length > 0 && <Button variant="ghost" size="sm" icon={Eraser} onClick={clearAll}>ניקוי הלוח</Button>}
       </div>
 
       {/* Days */}

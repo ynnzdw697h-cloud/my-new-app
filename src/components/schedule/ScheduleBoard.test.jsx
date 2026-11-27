@@ -122,3 +122,13 @@ test('publish: only after suggestions are approved, then cooks get the slots', (
   fireEvent.click(screen.getByRole('button', { name: 'עדכון הסידור' }));
   expect(mockStore[`schedule_published_${WEEK}`].slots).toEqual({ '0-morning-cold-0': 'keshem' });
 });
+
+test('clear the whole board in one tap, with undo', () => {
+  renderBoard();
+  fireEvent.click(screen.getByRole('button', { name: 'שיבוץ אוטומטי' }));
+  fireEvent.click(screen.getByRole('button', { name: 'ניקוי הלוח' }));
+  expect(draft()).toEqual({});
+  expect(screen.getByText('הלוח נוקה (2 משבצות)')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'ביטול' }));
+  expect(Object.keys(draft())).toHaveLength(2);
+});
