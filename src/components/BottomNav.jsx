@@ -1,7 +1,7 @@
 import { useBackClose } from '../hooks/useBackClose';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Timer, Fish, ShoppingCart, LogOut, NotebookText, Megaphone, CalendarRange } from 'lucide-react';
+import { Timer, Fish, ShoppingCart, LogOut, NotebookText, Megaphone, CalendarRange, CalendarCheck } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 
 /* ── Role → navigation profile mapping ── */
@@ -18,6 +18,7 @@ export function navForProfile(role) {
       ],
       more: [
         { id: 'schedule',      label: 'סידור עבודה',         Icon: CalendarRange },
+        { id: 'shift_submit',  label: 'הגשת משמרות',         Icon: CalendarCheck },
         { id: 'shift_log',     label: 'יומן משמרת',          Icon: NotebookText },
         { id: 'announcements', label: 'הודעות לצוות',        Icon: Megaphone },
         { id: 'weekly',       label: 'משימות שבועיות',      Icon: CalIcon },
@@ -49,6 +50,7 @@ export function navForProfile(role) {
       { id: 'shift',     label: 'חוסרים',  Icon: NoteIcon },
     ],
     more: [
+      { id: 'shift_submit',  label: 'הגשת משמרות',          Icon: CalendarCheck },
       { id: 'shift_log',     label: 'יומן משמרת',           Icon: NotebookText },
       { id: 'announcements', label: 'הודעות לצוות',         Icon: Megaphone },
       { id: 'prep_tracker', label: 'תפוגה ובזבוז',          Icon: Timer },

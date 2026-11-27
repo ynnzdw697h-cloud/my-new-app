@@ -28,7 +28,7 @@ export const AVAIL_LABELS = ['לא יכול', 'יכול', 'מעדיף'];
 // Cooks that can appear in the schedule (everyone who logs in with a PIN and works a station)
 export const SCHEDULE_CHEFS = CHEFS.filter(c => c.role !== 'checker');
 
-function iso(date) {
+export function iso(date) {
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${mm}-${dd}`;
@@ -84,7 +84,8 @@ export function defaultProfile() {
 // Public (cooks read/write): tenants/{tenantId}/kitchen/{docId}
 export const PUBLIC_DOCS = {
   availability: (week, chefId) => `shift_avail_${week}_${chefId}`, // { chefId, name, shifts: {"0-morning": 0|1|2}, wanted, note, submittedAt }
-  published:    week           => `schedule_published_${week}`,    // { slots: { [slotKey]: chefId }, publishedBy, publishedAt, version }
+  published:    week           => `schedule_published_${week}`,
+  settings:     'schedule_settings',                                  // { deadline: {day, hour} } — copied from the manager template so cooks can see it    // { slots: { [slotKey]: chefId }, publishedBy, publishedAt, version }
 };
 // Manager only: tenantsAdmin/{tenantId}/schedule/{docId}
 export const ADMIN_DOCS = {
@@ -92,3 +93,19 @@ export const ADMIN_DOCS = {
   template: 'template',                 // defaultTemplate() shape
   draft:    week => `draft_${week}`,    // { slots: { [slotKey]: { chefId, auto, reason } }, updatedBy, updatedAt }
 };
+
+// ── Submission deadline ──
+// The deadline for week `weekStart` is on `deadline.day` at `deadline.hour` in the week BEFORE it.
+export function deadlineDate(weekStart, deadline = { day: 4, hour: 12 }) {
+  const [y, m, d] = addDays(weekStart, -7 + Number(deadline.day ?? 4)).split('-').map(Number);
+  return new Date(y, m - 1, d, Number(deadline.hour ?? 12), 0, 0);
+}
+// The week cooks submit for now: next week, or the week after once next week's deadline has passed.
+export function submissionWeek(now = new Date(), deadline) {
+  const next = nextWeekStart(now);
+  return now < deadlineDate(next, deadline) ? next : addDays(next, 7);
+}
+// "חמישי 12:00"
+export function deadlineLabel(deadline = { day: 4, hour: 12 }) {
+  return `${DAY_NAMES[Number(deadline.day ?? 4)]} ${String(Number(deadline.hour ?? 12)).padStart(2, '0')}:00`;
+}

@@ -103,3 +103,18 @@ describe('scheduleWarnings', () => {
     expect(w.some(x => x.text.includes('בכיר'))).toBe(true);
   });
 });
+
+describe('submission deadline', () => {
+  const { deadlineDate, submissionWeek } = require('../data/schedule');
+  const dl = { day: 4, hour: 12 }; // Thursday 12:00 of the week before
+  it('deadline for week of Sun 6.12.2026 is Thu 3.12 at 12:00', () => {
+    const d = deadlineDate('2026-12-06', dl);
+    expect([d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours()]).toEqual([2026, 12, 3, 12]);
+  });
+  it('before the deadline cooks submit for next week', () => {
+    expect(submissionWeek(new Date(2026, 11, 3, 11, 59), dl)).toBe('2026-12-06');
+  });
+  it('after the deadline cooks submit for the week after', () => {
+    expect(submissionWeek(new Date(2026, 11, 3, 12, 0), dl)).toBe('2026-12-13');
+  });
+});

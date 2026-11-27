@@ -24,6 +24,7 @@ import CheckerHub from './components/checker/CheckerHub';
 import CheckerDetail from './components/checker/CheckerDetail';
 import GlobalSearch from './components/GlobalSearch';
 import ScheduleAdmin from './components/schedule/ScheduleAdmin';
+import ShiftSubmit from './components/schedule/ShiftSubmit';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Sheet } from './components/ui/Sheet';
 import { useBackClose } from './hooks/useBackClose';
@@ -47,6 +48,7 @@ const PAGE_TITLES = {
   checker_hub:    'קבלת סחורה',
   checker_detail: 'בדיקת משלוח',
   schedule:       'סידור עבודה',
+  shift_submit:   'הגשת משמרות',
 };
 
 // ── Responsive breakpoint hook ──
@@ -290,6 +292,7 @@ function AppShell({ user, station, role, tenantId, onLogout, onChangeStation }) 
         {view === 'proteins'       && <ProteinCount />}
         {view === 'supplier'       && <SupplierOrder />}
         {view === 'schedule'       && role === 'admin' && <ScheduleAdmin />}
+        {view === 'shift_submit'   && role !== 'checker' && <ShiftSubmit user={user} />}
         {view === 'checker_hub'    && <CheckerHub user={user} onOpenDelivery={openDelivery} />}
         {view === 'checker_detail' && <CheckerDetail deliveryId={activeDeliveryId} user={user} onBack={() => navigate('checker_hub')} />}
       </ErrorBoundary>

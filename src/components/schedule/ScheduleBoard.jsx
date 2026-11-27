@@ -1,0 +1,316 @@
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Wand2, CheckCheck, X, AlertTriangle } from 'lucide-react';
+import { Button, Sheet, SkeletonList } from '../ui';
+import { UndoToast } from '../PrepCelebrations';
+import { useFirestoreDoc } from '../../hooks/useFirestoreDoc';
+import {
+  SCHEDULE_CHEFS, SCHEDULE_SHIFTS, SCHEDULE_STATION_INFO, DAY_NAMES, AVAIL, ADMIN_DOCS,
+  weekDays, shortDate,
+} from '../../data/schedule';
+import { allSlots, autoAssign, blockReason, availabilityOf, countFor, scheduleWarnings } from '../../utils/scheduler';
+import { StationDot } from './parts';
+
+const TOAST_MS = 5000;
+const nameOf = id => SCHEDULE_CHEFS.find(c => c.id === id)?.displayName || id;
+
+// לוח שיבוץ: tap a slot, then pick a cook from the list (colored by what each cook submitted).
+// On a computer a cook can also be dragged from the top row, or from slot to slot.
+export default function ScheduleBoard({ week, template, profiles, availability, availabilityLoaded }) {
+  const [draft, setDraft, draftState] = useFirestoreDoc(ADMIN_DOCS.draft(week), { assignments: {} }, 'admin');
+  const [openKey, setOpenKey] = useState(null); // slot whose cook list is open
+  const [dragging, setDragging] = useState(null); // chefId being dragged (lights up slots)
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
+
+  const slots = useMemo(() => allSlots(template), [template]);
+  // Only slots that still exist in the staffing template (a lowered count leaves old keys behind)
+  const assignments = useMemo(() => {
+    const all = draft?.assignments || {};
+    return Object.fromEntries(slots.filter(s => all[s.key]).map(s => [s.key, all[s.key]]));
+  }, [draft, slots]);
+  const ctx = useMemo(() => ({ profiles, availability, assignments }), [profiles, availability, assignments]);
+  const autoCount = slots.filter(s => assignments[s.key]?.auto).length;
+
+  const showToast = useCallback((text, undo) => {
+    clearTimeout(toastTimer.current);
+    setToast({ id: Date.now(), text, undoable: !!undo, undo });
+    toastTimer.current = setTimeout(() => setToast(null), TOAST_MS);
+  }, []);
+  function handleUndo() {
+    toast?.undo?.();
+    clearTimeout(toastTimer.current);
+    setToast(null);
+  }
+
+  const save = next => setDraft(prev => ({ ...(prev || {}), assignments: next, updatedAt: new Date().toISOString() }));
+  // Change the board and offer to undo it
+  function change(next, text) {
+    const before = assignments;
+    save(next);
+    showToast(text, () => save(before));
+  }
+
+  // Put chefId in slot (fromKey: the slot they are moved out of). Placing against a rule is allowed, with undo.
+  function place(slot, chefId, fromKey) {
+    const next = { ...assignments };
+    if (fromKey) delete next[fromKey];
+    const why = blockReason(chefId, slot, { ...ctx, assignments: next });
+    next[slot.key] = { chefId };
+    const prev = assignments[slot.key];
+    if (why) change(next, `${nameOf(chefId)} שובץ למרות: ${why}`);
+    else if (prev && prev.chefId !== chefId) change(next, `${nameOf(chefId)} במקום ${nameOf(prev.chefId)}`);
+    else if (fromKey) change(next, `${nameOf(chefId)} הועבר`);
+    else save(next);
+  }
+  function clearSlot(slot) {
+    const current = assignments[slot.key];
+    if (!current) return;
+    const next = { ...assignments };
+    delete next[slot.key];
+    change(next, `${nameOf(current.chefId)} הוצא מהמשבצת`);
+  }
+
+  // ── Mouse dragging (computer) ──
+  const dragRef = useRef(null); // { chefId, fromKey }
+  function dragStart(e, chefId, fromKey) {
+    dragRef.current = { chefId, fromKey };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', chefId);
+    setDragging(chefId);
+  }
+  function dragEnd() {
+    dragRef.current = null;
+    setDragging(null);
+  }
+  function drop(slot) {
+    const d = dragRef.current;
+    dragEnd();
+    if (!d || d.fromKey === slot.key || assignments[slot.key]?.chefId === d.chefId) return;
+    place(slot, d.chefId, d.fromKey);
+  }
+
+  function runAuto() {
+    const inSchedule = Object.fromEntries(
+      SCHEDULE_CHEFS.filter(c => profiles[c.id]).map(c => [c.id, profiles[c.id]]),
+    );
+    const { assignments: next, filled, unfilled } = autoAssign({ template, assignments, profiles: inSchedule, availability });
+    if (!filled) { showToast(unfilled.length ? 'לא נמצא טבח מתאים למשבצות הריקות' : 'אין משבצות ריקות'); return; }
+    change(next, `שובצו ${filled} משבצות${unfilled.length ? `, ${unfilled.length} נשארו ריקות` : ''}`);
+  }
+  function approveAll() {
+    const next = Object.fromEntries(Object.entries(assignments).map(([k, a]) => [k, a?.auto ? { chefId: a.chefId } : a]));
+    change(next, `${autoCount} הצעות אושרו`);
+  }
+  function clearAuto() {
+    const next = Object.fromEntries(Object.entries(assignments).filter(([, a]) => !a?.auto));
+    change(next, `${autoCount} הצעות נמחקו`);
+  }
+
+  const warnings = useMemo(() => scheduleWarnings({ template, assignments, profiles, availability, chefName: nameOf }), [template, assignments, profiles, availability]);
+  const emptyCount = slots.filter(s => !assignments[s.key]).length;
+  const problems = warnings.filter(w => !(w.level === 'warn' && w.key));
+
+  if (!draftState.loaded || !availabilityLoaded) return <SkeletonList />;
+  if (!slots.length) return <p className="text-base text-text-secondary">אין משבצות. קבע בלשונית כוח אדם כמה טבחים צריך בכל משמרת.</p>;
+
+  const days = weekDays(week);
+  const openSlotObj = openKey ? slots.find(sl => sl.key === openKey) : null;
+  const submitted = SCHEDULE_CHEFS.filter(c => availability[c.id]).length;
+
+  return (
+    <div className="space-y-4">
+      {/* Cooks: shifts so far. On a computer, drag a name onto a slot. */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-2">
+          {SCHEDULE_CHEFS.map(c => {
+            const sent = !!availability[c.id];
+            return (
+              <div
+                key={c.id}
+                draggable
+                onDragStart={e => dragStart(e, c.id)}
+                onDragEnd={dragEnd}
+                className="min-h-[44px] px-3 rounded-xl flex items-center gap-2 text-base font-semibold md:cursor-grab"
+                style={{ background: 'var(--bg-card-solid)', color: sent ? '#fff' : 'var(--text-2)', border: '1px solid var(--border)' }}
+              >
+                {c.displayName}
+                <span className="tabular-nums font-medium" style={{ opacity: 0.7 }}>
+                  {sent ? `${countFor(assignments, c.id)}/${profiles[c.id]?.max ?? 6}` : 'לא הגיש'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-base text-text-secondary">
+          לוחצים על משבצת ובוחרים טבח מהרשימה (במחשב אפשר גם לגרור). הגישו <span className="tabular-nums">{submitted}</span> מתוך <span className="tabular-nums">{SCHEDULE_CHEFS.length}</span>.
+        </p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" size="sm" icon={Wand2} onClick={runAuto}>שיבוץ אוטומטי</Button>
+        {autoCount > 0 && <Button variant="secondary" size="sm" icon={CheckCheck} onClick={approveAll}>אישור {autoCount} הצעות</Button>}
+        {autoCount > 0 && <Button variant="ghost" size="sm" icon={X} onClick={clearAuto}>מחיקת הצעות</Button>}
+      </div>
+
+      {/* Days */}
+      {days.map((isoDay, d) => (
+        <div key={isoDay} className="rounded-xl px-4 py-4 space-y-3" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
+          <div className="text-h3 text-text-primary">{DAY_NAMES[d]} <span className="text-base font-normal text-text-tertiary tabular-nums">{shortDate(isoDay)}</span></div>
+          {SCHEDULE_SHIFTS.map(sh => {
+            const shiftSlots = slots.filter(s => s.day === d && s.shift === sh.id);
+            if (!shiftSlots.length) return null;
+            return (
+              <div key={sh.id} className="space-y-2">
+                <div className="text-base text-text-secondary">{sh.name}</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {shiftSlots.map(slot => (
+                    <Slot key={slot.key} slot={slot} a={assignments[slot.key]} selected={dragging} ctx={ctx} onTap={() => setOpenKey(slot.key)}
+                      onDragStart={e => dragStart(e, assignments[slot.key].chefId, slot.key)} onDragEnd={dragEnd} onDrop={() => drop(slot)} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
+      {/* Checks */}
+      <div className="rounded-xl px-5 py-4 space-y-2" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
+        <div className="text-h3 text-text-primary">בדיקות</div>
+        <p className="text-base text-text-secondary">
+          {emptyCount ? <><span className="tabular-nums">{emptyCount}</span> משבצות עוד ריקות.</> : 'כל המשבצות מלאות.'}
+        </p>
+        {problems.length === 0
+          ? <p className="text-base" style={{ color: '#5ee3a8' }}>אין בעיות בשיבוץ.</p>
+          : problems.map((w, i) => (
+              <p key={i} className="flex items-start gap-2 text-base" style={{ color: w.level === 'error' ? '#F87171' : '#F59E0B' }}>
+                <AlertTriangle size={18} strokeWidth={1.75} className="flex-shrink-0 mt-1" />{w.text}
+              </p>
+            ))}
+      </div>
+
+      <Sheet open={!!openSlotObj} onClose={() => setOpenKey(null)} title={openSlotObj ? slotTitle(openSlotObj, days) : ''}>
+        {openSlotObj && (
+          <CookPicker
+            slot={openSlotObj}
+            current={assignments[openSlotObj.key]}
+            ctx={ctx}
+            onPick={id => { place(openSlotObj, id); setOpenKey(null); }}
+            onClear={() => { clearSlot(openSlotObj); setOpenKey(null); }}
+            onClose={() => setOpenKey(null)}
+          />
+        )}
+      </Sheet>
+      <UndoToast toast={toast} onUndo={handleUndo} />
+    </div>
+  );
+}
+
+function Slot({ slot, a, selected, ctx, onTap, onDragStart, onDragEnd, onDrop }) {
+  const info = SCHEDULE_STATION_INFO[slot.station];
+  let style = { background: 'var(--bg-inset)', border: '1px dashed var(--border-strong, rgba(255,255,255,0.18))', color: 'var(--text-dis)' };
+  if (a) style = a.auto
+    ? { background: 'rgba(245,158,11,0.10)', border: '1.5px dashed #F59E0B', color: '#fff' }
+    : { background: 'var(--bg-elevated, #272727)', border: '1px solid var(--border-strong, rgba(255,255,255,0.18))', color: '#fff' };
+
+  let dim = false;
+  if (selected) {
+    if (a?.chefId === selected) style = { ...style, outline: '2px solid #fff', outlineOffset: 1 };
+    else if (blockReason(selected, slot, ctx)) dim = true;
+    else {
+      const pref = availabilityOf(selected, slot, ctx) === AVAIL.PREFER;
+      style = pref
+        ? { background: '#10B981', border: '1.5px solid #10B981', color: '#0b2a1e' }
+        : { background: 'rgba(16,185,129,0.10)', border: '1.5px solid rgba(16,185,129,0.5)', color: a ? '#fff' : '#7fd3a3' };
+    }
+  }
+
+  const who = a ? nameOf(a.chefId) : 'ריק';
+  return (
+    <button
+      type="button"
+      onClick={onTap}
+      draggable={!!a}
+      onDragStart={a ? onDragStart : undefined}
+      onDragEnd={onDragEnd}
+      onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+      onDrop={e => { e.preventDefault(); onDrop(); }}
+      title={a?.reason || undefined}
+      aria-label={`${info.name}: ${a ? nameOf(a.chefId) : 'ריק'}${a?.auto ? ' (הצעה)' : ''}`}
+      className="min-h-[60px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-opacity duration-150 min-w-0"
+      style={{ ...style, opacity: dim ? 0.35 : 1 }}
+    >
+      <span className="flex items-center gap-1 text-xs whitespace-nowrap" style={{ opacity: 0.85 }}><StationDot station={slot.station} size={8} />{info.name.replace('פס ', '')}</span>
+      <span className="text-base font-semibold truncate max-w-full">{who}</span>
+    </button>
+  );
+}
+
+function slotTitle(slot, days) {
+  return `${DAY_NAMES[slot.day]} ${shortDate(days[slot.day])} · ${SCHEDULE_SHIFTS.find(s => s.id === slot.shift).name} · ${SCHEDULE_STATION_INFO[slot.station].name}`;
+}
+
+// Every cook for one slot, best first, colored by what they submitted.
+const KIND_ORDER = { here: 0, pref: 1, can: 2, blocked: 3, no: 4, none: 5 };
+const KIND_LOOK = {
+  here:    { row: { background: 'var(--bg-elevated, #272727)', border: '2px solid #fff' },                   label: '#fff' },
+  pref:    { row: { background: '#10B981', border: '1.5px solid #10B981', color: '#0b2a1e' },                label: '#0b2a1e' },
+  can:     { row: { background: 'rgba(16,185,129,0.10)', border: '1.5px solid rgba(16,185,129,0.5)' },      label: '#7fd3a3' },
+  blocked: { row: { background: 'var(--bg-inset)', border: '1px solid var(--border)' },                     label: '#F87171' },
+  no:      { row: { background: 'var(--bg-inset)', border: '1px solid var(--border)' },                     label: 'var(--text-dis)' },
+  none:    { row: { background: 'var(--bg-inset)', border: '1px dashed var(--border)' },                    label: '#F59E0B' },
+};
+
+export function cookOptions(slot, ctx, currentId) {
+  return SCHEDULE_CHEFS.map(c => {
+    const level = Number(ctx.profiles[c.id]?.ratings?.[slot.station] || 0);
+    const v = availabilityOf(c.id, slot, ctx);
+    let kind; let label;
+    if (c.id === currentId) { kind = 'here'; label = 'משובץ כאן'; }
+    else if (!ctx.availability[c.id]) { kind = 'none'; label = 'לא הגיש'; }
+    else {
+      const why = blockReason(c.id, slot, ctx);
+      if (!why) { kind = v === AVAIL.PREFER ? 'pref' : 'can'; label = v === AVAIL.PREFER ? 'מעדיף' : 'יכול'; }
+      else if (v === AVAIL.NO) { kind = 'no'; label = 'לא יכול'; }
+      else { kind = 'blocked'; label = why; }
+    }
+    return { id: c.id, name: c.displayName, level, kind, label };
+  }).sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || b.level - a.level || a.name.localeCompare(b.name, 'he'));
+}
+
+function CookPicker({ slot, current, ctx, onPick, onClear, onClose }) {
+  const options = cookOptions(slot, ctx, current?.chefId);
+  const stationName = SCHEDULE_STATION_INFO[slot.station].name;
+  return (
+    <div className="space-y-2">
+      {current?.auto && current.reason && <p className="text-base text-text-secondary">הצעה אוטומטית: {current.reason}</p>}
+      {options.map(o => {
+        const look = KIND_LOOK[o.kind];
+        const strong = o.kind === 'pref';
+        return (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => (o.kind === 'here' ? onClose() : onPick(o.id))}
+            aria-label={`${o.name}: ${o.label}`}
+            className="w-full min-h-[64px] px-4 rounded-xl flex items-center justify-between gap-3 text-right transition-opacity duration-150 active:opacity-80"
+            style={{ color: '#fff', ...look.row }}
+          >
+            <span className="min-w-0">
+              <span className="block text-lg font-semibold truncate">{o.name}</span>
+              <span className="block text-sm" style={{ opacity: strong ? 0.85 : 0.6 }}>
+                {o.level ? `רמה ${o.level} ב${stationName}` : `לא עובד ב${stationName}`} · {countFor(ctx.assignments, o.id)}/{ctx.profiles[o.id]?.max ?? 6} משמרות
+              </span>
+            </span>
+            <span className={`flex-shrink-0 text-base ${strong ? 'font-bold' : 'font-medium'}`} style={{ color: look.label }}>
+              {o.label}
+            </span>
+          </button>
+        );
+      })}
+      {current && <Button variant="danger" fullWidth size="sm" onClick={onClear}>הוצאת {nameOf(current.chefId)} מהמשבצת</Button>}
+      <p className="text-sm text-text-tertiary pt-1">אפשר לבחור גם מי שמסומן באדום. אחרי השיבוץ יופיע כפתור ביטול.</p>
+    </div>
+  );
+}

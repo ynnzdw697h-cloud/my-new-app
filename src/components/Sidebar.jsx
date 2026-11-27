@@ -1,4 +1,4 @@
-import { Home, ClipboardList, BookOpen, CalendarDays, CalendarRange, FileText, Fish, ShoppingCart, LogOut, X, Timer, PackageCheck, UtensilsCrossed, NotebookText, Megaphone } from 'lucide-react';
+import { Home, ClipboardList, BookOpen, CalendarDays, CalendarRange, CalendarCheck, FileText, Fish, ShoppingCart, LogOut, X, Timer, PackageCheck, UtensilsCrossed, NotebookText, Megaphone } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 import { navForProfile } from './BottomNav';
 
@@ -17,6 +17,7 @@ const NAV_META = {
   supplier:     { label: 'הזמנות ספקים',     Icon: ShoppingCart },
   checker_hub:  { label: 'קבלת סחורה',       Icon: PackageCheck },
   schedule:     { label: 'סידור עבודה',      Icon: CalendarRange },
+  shift_submit: { label: 'הגשת משמרות',      Icon: CalendarCheck },
 };
 
 export default function Sidebar({ currentView, onNavigate, station, user, onLogout, role, isOpen, onClose, badges = {} }) {
