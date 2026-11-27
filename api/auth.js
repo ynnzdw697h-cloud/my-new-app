@@ -33,7 +33,13 @@ const CHEFS = [
 
 function loadPins() {
   try {
-    return JSON.parse(process.env.CHEF_PINS || '{}');
+    const pins = JSON.parse(process.env.CHEF_PINS || '{}');
+    // Per-chef PIN env vars (CHEF_PINS_<ID>) are merged in; they win over CHEF_PINS.
+    for (const c of CHEFS) {
+      const single = process.env['CHEF_PINS_' + c.id.toUpperCase()];
+      if (single) pins[c.id] = single;
+    }
+    return pins;
   } catch {
     console.error('[Auth] CHEF_PINS is not valid JSON');
     return {};
