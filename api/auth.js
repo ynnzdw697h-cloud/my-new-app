@@ -30,15 +30,28 @@ const CHEFS = [
   { id: 'kedar',  displayName: 'קידר',     role: 'chef', tenantId: 'villa-acadia', admin: true },
   { id: 'keshem', displayName: 'קסם ברכה', role: 'chef', tenantId: 'villa-acadia' },
   { id: 'ofek',   displayName: 'אופק',     role: 'chef', tenantId: 'villa-acadia' },
+  { id: 'andrei', displayName: 'אנדריי',   role: 'chef', tenantId: 'villa-acadia' },
 ];
 
+// Extra cooks can get their own variable instead of editing CHEF_PINS:
+// CHEF_PINS_ANDREI = "1234" (or {"andrei":"1234"}) adds the PIN for chef id 'andrei'.
 function loadPins() {
+  let pins = {};
   try {
-    return JSON.parse(process.env.CHEF_PINS || '{}');
+    pins = JSON.parse(process.env.CHEF_PINS || '{}');
   } catch {
     console.error('[Auth] CHEF_PINS is not valid JSON');
-    return {};
   }
+  Object.keys(process.env).filter(k => k.startsWith('CHEF_PINS_')).forEach(k => {
+    const id = k.slice('CHEF_PINS_'.length).toLowerCase();
+    const raw = String(process.env[k] || '').trim();
+    try {
+      const v = JSON.parse(raw);
+      if (v && typeof v === 'object') { Object.assign(pins, v); return; }
+    } catch { /* plain PIN */ }
+    if (raw) pins[id] = raw.replace(/^['"]|['"]$/g, '');
+  });
+  return pins;
 }
 
 module.exports = async function handler(req, res) {
