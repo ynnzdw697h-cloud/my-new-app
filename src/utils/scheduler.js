@@ -150,6 +150,12 @@ export function scheduleWarnings({ template, assignments, profiles, availability
 export function publishedSlots(assignments) {
   return Object.fromEntries(Object.entries(assignments).filter(([, a]) => a?.chefId && !a.auto).map(([k, a]) => [k, a.chefId]));
 }
+// A cook's own arrival time / note per slot, for the published schedule (approved placements only)
+export function publishedDetails(assignments) {
+  return Object.fromEntries(Object.entries(assignments)
+    .filter(([, a]) => a?.chefId && !a.auto && (a.time || a.note))
+    .map(([k, a]) => [k, { ...(a.time ? { time: a.time } : {}), ...(a.note ? { note: a.note } : {}) }]));
+}
 // One cook's shifts in a published week, in order, with who else works that shift.
 export function shiftsOf(slots, chefId) {
   const mine = Object.entries(slots || {}).filter(([, id]) => id === chefId).map(([key]) => parseSlotKey(key));

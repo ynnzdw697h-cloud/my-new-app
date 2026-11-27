@@ -5,7 +5,7 @@ import { useFirestoreDoc } from '../../hooks/useFirestoreDoc';
 import { useChefId } from '../../hooks/useChefId';
 import {
   SCHEDULE_CHEFS, SCHEDULE_SHIFTS, SCHEDULE_STATIONS, SCHEDULE_STATION_INFO, DAY_NAMES, PUBLIC_DOCS,
-  weekStartOf, weekDays, shortDate, parseSlotKey, iso,
+  weekStartOf, weekDays, shortDate, parseSlotKey, iso, shiftStart, defaultStart, fmtTime,
 } from '../../data/schedule';
 import { StationDot, WeekPicker } from './parts';
 
@@ -34,7 +34,7 @@ export function WeekView({ week, me }) {
   const byShift = {};
   Object.entries(published.slots || {}).forEach(([key, chefId]) => {
     const s = parseSlotKey(key);
-    ((byShift[s.day] ||= {})[s.shift] ||= []).push({ ...s, chefId });
+    ((byShift[s.day] ||= {})[s.shift] ||= []).push({ ...s, chefId, ...(published.details?.[key] || {}) });
   });
   const stationOrder = st => SCHEDULE_STATIONS.indexOf(st);
   const today = iso(new Date());
@@ -53,20 +53,25 @@ export function WeekView({ week, me }) {
             </div>
             {SCHEDULE_SHIFTS.map(sh => {
               const people = (shifts[sh.id] || []).sort((a, b) => stationOrder(a.station) - stationOrder(b.station) || a.n - b.n);
+              const start = shiftStart(published.times, d, sh.id);
               return (
                 <div key={sh.id} className="space-y-1">
-                  <div className="text-base text-text-secondary">{sh.name}</div>
+                  <div className="text-base text-text-secondary">
+                    {sh.name} · <span className="tabular-nums" style={start !== defaultStart(sh.id) ? { color: '#F59E0B' } : undefined}>הגעה {fmtTime(start)}</span>
+                  </div>
                   {people.length === 0
                     ? <div className="text-base text-text-dis">אין שיבוץ</div>
                     : people.map(p => {
                         const mine = p.chefId === me;
                         return (
-                          <div key={`${p.station}-${p.n}`} className="flex items-center gap-2 min-h-[36px] text-lg">
+                          <div key={`${p.station}-${p.n}`} className="flex items-center flex-wrap gap-x-2 min-h-[36px] text-lg">
                             <StationDot station={p.station} size={8} />
                             <span className="text-text-secondary w-24 flex-shrink-0">{SCHEDULE_STATION_INFO[p.station].name}</span>
                             <span className={mine ? 'font-bold' : 'font-medium text-text-primary'} style={mine ? { color: '#5ee3a8' } : undefined}>
                               {nameOf(p.chefId)}{mine ? ' (אתה)' : ''}
                             </span>
+                            {p.time && p.time !== start && <span className="tabular-nums text-base font-semibold" style={{ color: '#F59E0B' }}>{fmtTime(p.time)}</span>}
+                            {p.note && <span className="basis-full text-base pr-[1.1rem]" style={{ color: '#F59E0B' }}>{p.note}</span>}
                           </div>
                         );
                       })}

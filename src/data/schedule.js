@@ -6,9 +6,16 @@ import { STATIONS } from './stations';
 // Separate from SHIFTS in shifts.js (used by the checklist / shift log): the schedule
 // names the two shifts משמרת בוקר / משמרת ערב.
 export const SCHEDULE_SHIFTS = [
-  { id: 'morning', name: 'משמרת בוקר', short: 'בוקר' },
-  { id: 'evening', name: 'משמרת ערב',  short: 'ערב' },
+  { id: 'morning', name: 'משמרת בוקר', short: 'בוקר', start: '07:45' },
+  { id: 'evening', name: 'משמרת ערב',  short: 'ערב',  start: '14:45' },
 ];
+// Usual arrival time of a shift ("07:45")
+export const defaultStart = shiftId => SCHEDULE_SHIFTS.find(s => s.id === shiftId)?.start || '';
+// Arrival time of a shift on one day: the day's own time if the managers changed it, else the usual one.
+// times: { "<day>-<shiftId>": "HH:MM" }
+export const shiftStart = (times, day, shiftId) => times?.[`${day}-${shiftId}`] || defaultStart(shiftId);
+// "07:45" -> "7:45"
+export const fmtTime = t => (t ? t.replace(/^0(\d)/, '$1') : '');
 export const SCHEDULE_STATIONS = ['hot', 'cold', 'air', 'checker'];
 // Station names/colors for the schedule. פס אוויר exists only in the schedule
 // (not in the login station picker), so it is defined here and not in stations.js.
@@ -84,14 +91,14 @@ export function defaultProfile() {
 // Public (cooks read/write): tenants/{tenantId}/kitchen/{docId}
 export const PUBLIC_DOCS = {
   availability: (week, chefId) => `shift_avail_${week}_${chefId}`, // { chefId, name, shifts: {"0-morning": 0|1|2}, wanted, note, submittedAt }
-  published:    week           => `schedule_published_${week}`,   // { week, slots: { [slotKey]: chefId }, publishedAt }
+  published:    week           => `schedule_published_${week}`,   // { week, slots: { [slotKey]: chefId }, details: { [slotKey]: { time, note } }, times: { [shiftKey]: 'HH:MM' }, publishedAt }
   settings:     'schedule_settings',                                  // { deadline: {day, hour} }, copied from the manager template so cooks can see it
 };
 // Manager only: tenantsAdmin/{tenantId}/schedule/{docId}
 export const ADMIN_DOCS = {
   profiles: 'profiles',                 // { [chefId]: profile }
   template: 'template',                 // defaultTemplate() shape
-  draft:    week => `draft_${week}`,    // { slots: { [slotKey]: { chefId, auto, reason } }, updatedBy, updatedAt }
+  draft:    week => `draft_${week}`,    // { assignments: { [slotKey]: { chefId, auto, reason, time, note } }, times: { [shiftKey]: 'HH:MM' }, updatedAt }
 };
 
 // ── Submission deadline ──

@@ -132,3 +132,34 @@ test('clear the whole board in one tap, with undo', () => {
   fireEvent.click(screen.getByRole('button', { name: 'ביטול' }));
   expect(Object.keys(draft())).toHaveLength(2);
 });
+
+test('change the arrival time of one shift, then back to the usual time', () => {
+  renderBoard();
+  fireEvent.click(screen.getByRole('button', { name: 'שעת הגעה ראשון בוקר: 7:45' }));
+  fireEvent.change(screen.getByLabelText('שעת הגעה לכל המשמרת ביום הזה'), { target: { value: '09:00' } });
+  fireEvent.click(screen.getByRole('button', { name: 'שמירה' }));
+  expect(mockStore[`draft_${WEEK}`].times).toEqual({ '0-morning': '09:00' });
+  fireEvent.click(screen.getByRole('button', { name: 'שעת הגעה ראשון בוקר: 9:00' }));
+  fireEvent.click(screen.getByRole('button', { name: 'חזרה לשעה הרגילה (7:45)' }));
+  expect(mockStore[`draft_${WEEK}`].times).toEqual({});
+});
+
+test('a cook gets their own time and note, and both are published', () => {
+  renderBoard();
+  fireEvent.click(screen.getByRole('button', { name: 'פס חם: ריק' }));
+  fireEvent.click(screen.getByRole('button', { name: 'אופק: מעדיף' }));
+  fireEvent.click(screen.getByRole('button', { name: 'פס חם: אופק' }));
+  fireEvent.change(screen.getByLabelText(/שעת הגעה של אופק/), { target: { value: '10:00' } });
+  fireEvent.change(screen.getByLabelText(/הערה לאופק/), { target: { value: 'אחרי הספק ' } });
+  fireEvent.click(screen.getByRole('button', { name: 'שמירת שעה והערה' }));
+  expect(draft()['0-morning-hot-0']).toEqual({ chefId: 'ofek', time: '10:00', note: 'אחרי הספק' });
+
+  fireEvent.click(screen.getByRole('button', { name: 'פרסום הסידור' }));
+  expect(mockStore[`schedule_published_${WEEK}`].details).toEqual({ '0-morning-hot-0': { time: '10:00', note: 'אחרי הספק' } });
+
+  // Replacing the cook drops the note; the board shows unpublished changes
+  fireEvent.click(screen.getByRole('button', { name: 'פס חם: אופק' }));
+  fireEvent.click(screen.getByRole('button', { name: 'קסם ברכה: יכול' }));
+  expect(draft()['0-morning-hot-0']).toEqual({ chefId: 'keshem' });
+  expect(screen.getByText('יש שינויים שלא פורסמו')).toBeInTheDocument();
+});

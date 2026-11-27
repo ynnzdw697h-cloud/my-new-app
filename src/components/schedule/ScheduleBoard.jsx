@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Wand2, CheckCheck, X, AlertTriangle, Send, Eraser } from 'lucide-react';
+import { Wand2, CheckCheck, X, AlertTriangle, Send, Eraser, Clock, MessageSquare } from 'lucide-react';
 import { Button, Sheet, SkeletonList } from '../ui';
 import { UndoToast } from '../PrepCelebrations';
 import { useFirestoreDoc } from '../../hooks/useFirestoreDoc';
 import {
   SCHEDULE_CHEFS, SCHEDULE_SHIFTS, SCHEDULE_STATIONS, SCHEDULE_STATION_INFO, DAY_NAMES, AVAIL, ADMIN_DOCS, PUBLIC_DOCS,
-  weekDays, shortDate, iso,
+  weekDays, shortDate, iso, shiftKey, shiftStart, defaultStart, fmtTime,
 } from '../../data/schedule';
-import { allSlots, autoAssign, blockReason, availabilityOf, countFor, scheduleWarnings, publishedSlots } from '../../utils/scheduler';
+import { allSlots, autoAssign, blockReason, availabilityOf, countFor, scheduleWarnings, publishedSlots, publishedDetails } from '../../utils/scheduler';
 import { StationDot } from './parts';
 
 const TOAST_MS = 5000;
@@ -34,6 +34,7 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
   const [draft, setDraft, draftState] = useFirestoreDoc(ADMIN_DOCS.draft(week), { assignments: {} }, 'admin');
   const [published, setPublished, publishedState] = useFirestoreDoc(PUBLIC_DOCS.published(week), null);
   const [openKey, setOpenKey] = useState(null); // slot whose cook list is open
+  const [timeKey, setTimeKey] = useState(null); // shift ("0-morning") whose arrival time is being changed
   const [dragging, setDragging] = useState(null); // chefId being dragged (lights up slots)
   const [toast, setToast] = useState(null);
   const wide = useIsWide();
@@ -59,7 +60,26 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
     setToast(null);
   }
 
+  const times = useMemo(() => draft?.times || {}, [draft]);
   const save = next => setDraft(prev => ({ ...(prev || {}), assignments: next, updatedAt: new Date().toISOString() }));
+  // Arrival time of one shift on one day (empty = back to the usual time)
+  function saveTime(key, value) {
+    const [d, shift] = key.split('-');
+    const next = { ...times };
+    if (!value || value === defaultStart(shift)) delete next[key]; else next[key] = value;
+    setDraft(prev => ({ ...(prev || {}), times: next, updatedAt: new Date().toISOString() }));
+    showToast(`${DAY_NAMES[Number(d)]} ${SCHEDULE_SHIFTS.find(s => s.id === shift).short}: הגעה ב-${fmtTime(next[key] || defaultStart(shift))}`);
+  }
+  // A cook's own arrival time and note in one slot
+  function saveDetails(slot, { time, note }) {
+    const a = assignments[slot.key];
+    if (!a) return;
+    const next = { ...a };
+    if (time && time !== shiftStart(times, slot.day, slot.shift)) next.time = time; else delete next.time;
+    if (note) next.note = note; else delete next.note;
+    save({ ...assignments, [slot.key]: next });
+    showToast(`נשמר ל${nameOf(a.chefId)}`);
+  }
   // Change the board and offer to undo it
   function change(next, text) {
     const before = assignments;
@@ -70,9 +90,11 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
   // Put chefId in slot (fromKey: the slot they are moved out of). Placing against a rule is allowed, with undo.
   function place(slot, chefId, fromKey) {
     const next = { ...assignments };
+    // A cook moved by dragging keeps their own time and note
+    const moved = fromKey ? assignments[fromKey] : null;
     if (fromKey) delete next[fromKey];
     const why = blockReason(chefId, slot, { ...ctx, assignments: next });
-    next[slot.key] = { chefId };
+    next[slot.key] = { chefId, ...(moved?.time ? { time: moved.time } : {}), ...(moved?.note ? { note: moved.note } : {}) };
     const prev = assignments[slot.key];
     if (why) change(next, `${nameOf(chefId)} שובץ למרות: ${why}`);
     else if (prev && prev.chefId !== chefId) change(next, `${nameOf(chefId)} במקום ${nameOf(prev.chefId)}`);
@@ -115,7 +137,8 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
     change(next, `שובצו ${filled} משבצות${unfilled.length ? `, ${unfilled.length} נשארו ריקות` : ''}`);
   }
   function approveAll() {
-    const next = Object.fromEntries(Object.entries(assignments).map(([k, a]) => [k, a?.auto ? { chefId: a.chefId } : a]));
+    // eslint-disable-next-line no-unused-vars
+    const next = Object.fromEntries(Object.entries(assignments).map(([k, a]) => { if (!a?.auto) return [k, a]; const { auto, reason, ...rest } = a; return [k, rest]; }));
     change(next, `${autoCount} הצעות אושרו`);
   }
   function clearAll() {
@@ -133,10 +156,13 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
 
   // Publish what is on the board (approved placements only) so cooks see it
   const toPublish = publishedSlots(assignments);
-  const changedSincePublish = !!published && JSON.stringify(published.slots || {}) !== JSON.stringify(toPublish);
+  const detailsToPublish = publishedDetails(assignments);
+  const same = (x, y) => JSON.stringify(x || {}) === JSON.stringify(y || {});
+  const changedSincePublish = !!published
+    && (!same(published.slots, toPublish) || !same(published.details, detailsToPublish) || !same(published.times, times));
   function publish() {
     const before = published;
-    setPublished({ week, slots: toPublish, publishedAt: new Date().toISOString() });
+    setPublished({ week, slots: toPublish, details: detailsToPublish, times, publishedAt: new Date().toISOString() });
     const n = Object.keys(toPublish).length;
     showToast(`${before ? 'הסידור עודכן' : 'הסידור פורסם'}: ${n} משמרות${emptyCount ? `, ${emptyCount} ריקות` : ''}`, () => setPublished(before));
   }
@@ -148,7 +174,7 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
   const openSlotObj = openKey ? slots.find(sl => sl.key === openKey) : null;
   const submitted = SCHEDULE_CHEFS.filter(c => availability[c.id]).length;
   const slotFor = (slot, compact) => (
-    <Slot key={slot.key} slot={slot} a={assignments[slot.key]} selected={dragging} ctx={ctx} compact={compact} onTap={() => setOpenKey(slot.key)}
+    <Slot key={slot.key} slot={slot} a={assignments[slot.key]} start={shiftStart(times, slot.day, slot.shift)} selected={dragging} ctx={ctx} compact={compact} onTap={() => setOpenKey(slot.key)}
       onDragStart={e => dragStart(e, assignments[slot.key].chefId, slot.key)} onDragEnd={dragEnd} onDrop={() => drop(slot)} />
   );
 
@@ -194,7 +220,7 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
 
       {wide ? (
         <div className="grid gap-4 items-start" style={{ gridTemplateColumns: 'minmax(0,1fr) 300px' }}>
-          <WeekGrid days={days} slots={slots} renderSlot={slot => slotFor(slot, true)} />
+          <WeekGrid days={days} slots={slots} times={times} onTime={setTimeKey} renderSlot={slot => slotFor(slot, true)} />
           <div className="space-y-4">
             {/* Checks */}
             <div className="rounded-xl px-5 py-4 space-y-2" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
@@ -242,7 +268,10 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
               if (!shiftSlots.length) return null;
               return (
                 <div key={sh.id} className="space-y-2">
-                  <div className="text-base text-text-secondary">{sh.name}</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-base text-text-secondary">{sh.name}</span>
+                    <TimeChip day={d} shift={sh.id} times={times} onTap={setTimeKey} />
+                  </div>
                   <div className="grid grid-cols-4 gap-2">
                     {shiftSlots.map(slot => slotFor(slot, false))}
                   </div>
@@ -291,12 +320,25 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
       <Sheet open={!!openSlotObj} onClose={() => setOpenKey(null)} title={openSlotObj ? slotTitle(openSlotObj, days) : ''}>
         {openSlotObj && (
           <CookPicker
+            key={`${openSlotObj.key}-${assignments[openSlotObj.key]?.chefId || ''}`}
             slot={openSlotObj}
             current={assignments[openSlotObj.key]}
+            start={shiftStart(times, openSlotObj.day, openSlotObj.shift)}
+            onSaveDetails={d => saveDetails(openSlotObj, d)}
             ctx={ctx}
             onPick={id => { place(openSlotObj, id); setOpenKey(null); }}
             onClear={() => { clearSlot(openSlotObj); setOpenKey(null); }}
             onClose={() => setOpenKey(null)}
+          />
+        )}
+      </Sheet>
+      <Sheet open={!!timeKey} onClose={() => setTimeKey(null)} title={timeKey ? `${DAY_NAMES[Number(timeKey.split('-')[0])]} ${shortDate(days[Number(timeKey.split('-')[0])])} · ${SCHEDULE_SHIFTS.find(s => s.id === timeKey.split('-')[1]).name}` : ''}>
+        {timeKey && (
+          <ShiftTimeEditor
+            key={timeKey}
+            value={times[timeKey] || defaultStart(timeKey.split('-')[1])}
+            usual={defaultStart(timeKey.split('-')[1])}
+            onSave={v => { saveTime(timeKey, v); setTimeKey(null); }}
           />
         )}
       </Sheet>
@@ -305,7 +347,61 @@ export default function ScheduleBoard({ week, template, profiles, availability, 
   );
 }
 
-function Slot({ slot, a, selected, ctx, compact, onTap, onDragStart, onDragEnd, onDrop }) {
+// Arrival time of one shift on one day; tap to change it.
+function TimeChip({ day, shift, times, onTap, compact }) {
+  const t = shiftStart(times, day, shift);
+  const changed = t !== defaultStart(shift);
+  return (
+    <button
+      type="button"
+      onClick={() => onTap(shiftKey(day, shift))}
+      aria-label={`שעת הגעה ${DAY_NAMES[day]} ${SCHEDULE_SHIFTS.find(s => s.id === shift).short}: ${fmtTime(t)}`}
+      className={`${compact ? 'min-h-[32px] w-full justify-center text-sm' : 'min-h-[40px] px-3 text-base'} rounded-lg flex items-center gap-1.5 tabular-nums transition-opacity active:opacity-70`}
+      style={{ background: 'var(--bg-inset)', border: `1px solid ${changed ? '#F59E0B' : 'var(--border)'}`, color: changed ? '#F59E0B' : 'var(--text-2)' }}
+    >
+      <Clock size={compact ? 13 : 15} strokeWidth={1.75} />{fmtTime(t)}
+    </button>
+  );
+}
+
+const TIME_INPUT = 'w-full min-h-[56px] px-4 rounded-2xl text-lg text-text-primary outline-none tabular-nums';
+const INPUT_STYLE = { background: 'var(--bg-inset)', border: '1px solid var(--border)', colorScheme: 'dark' };
+
+function ShiftTimeEditor({ value, usual, onSave }) {
+  const [v, setV] = useState(value);
+  return (
+    <div className="space-y-3">
+      <label htmlFor="shift-time" className="text-label text-text-secondary block">שעת הגעה לכל המשמרת ביום הזה</label>
+      <input id="shift-time" type="time" value={v} onChange={e => setV(e.target.value)} className={TIME_INPUT} style={INPUT_STYLE} dir="ltr" />
+      <Button fullWidth onClick={() => onSave(v)} disabled={!v}>שמירה</Button>
+      {value !== usual && <Button variant="ghost" fullWidth size="sm" onClick={() => onSave('')}>חזרה לשעה הרגילה ({fmtTime(usual)})</Button>}
+    </div>
+  );
+}
+
+// A cook's own arrival time and note for this slot
+function SlotDetails({ current, start, onSave }) {
+  const [time, setTime] = useState(current.time || start);
+  const [note, setNote] = useState(current.note || '');
+  const dirty = time !== (current.time || start) || note.trim() !== (current.note || '');
+  const first = nameOf(current.chefId).split(' ')[0];
+  return (
+    <div className="rounded-xl px-4 py-4 space-y-3" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
+      <div className="space-y-1.5">
+        <label htmlFor="slot-time" className="text-label text-text-secondary block">שעת הגעה של {first} <span className="text-text-tertiary">(רגיל: {fmtTime(start)})</span></label>
+        <input id="slot-time" type="time" value={time} onChange={e => setTime(e.target.value)} className={TIME_INPUT} style={INPUT_STYLE} dir="ltr" />
+      </div>
+      <div className="space-y-1.5">
+        <label htmlFor="slot-note" className="text-label text-text-secondary block">הערה ל{first} (לא חובה)</label>
+        <input id="slot-note" type="text" maxLength={80} value={note} onChange={e => setNote(e.target.value)} placeholder="למשל: מסיים ב-20:00"
+          className="w-full min-h-[56px] px-4 rounded-2xl text-lg text-text-primary placeholder:text-text-tertiary outline-none" style={INPUT_STYLE} />
+      </div>
+      {dirty && <Button fullWidth size="sm" onClick={() => onSave({ time, note: note.trim() })}>שמירת שעה והערה</Button>}
+    </div>
+  );
+}
+
+function Slot({ slot, a, start, selected, ctx, compact, onTap, onDragStart, onDragEnd, onDrop }) {
   const info = SCHEDULE_STATION_INFO[slot.station];
   let style = { background: 'var(--bg-inset)', border: '1px dashed var(--border-strong, rgba(255,255,255,0.18))', color: 'var(--text-dis)' };
   if (a) style = a.auto
@@ -334,13 +430,19 @@ function Slot({ slot, a, selected, ctx, compact, onTap, onDragStart, onDragEnd, 
       onDragEnd={onDragEnd}
       onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
       onDrop={e => { e.preventDefault(); onDrop(); }}
-      title={a?.reason || undefined}
+      title={[a?.time && a.time !== start ? `הגעה ${fmtTime(a.time)}` : '', a?.note, a?.reason].filter(Boolean).join(' · ') || undefined}
       aria-label={`${info.name}: ${a ? nameOf(a.chefId) : 'ריק'}${a?.auto ? ' (הצעה)' : ''}`}
       className={`${compact ? 'min-h-[40px] w-full' : 'min-h-[60px]'} px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-opacity duration-150 min-w-0`}
       style={{ ...style, opacity: dim ? 0.35 : 1 }}
     >
       {!compact && <span className="flex items-center gap-1 text-xs whitespace-nowrap" style={{ opacity: 0.85 }}><StationDot station={slot.station} size={8} />{info.name.replace('פס ', '')}</span>}
       <span className="text-base font-semibold truncate max-w-full">{who}</span>
+      {a && (a.time || a.note) && (
+        <span className="flex items-center gap-1 text-xs font-semibold max-w-full min-w-0" style={{ color: '#F59E0B' }}>
+          {a.time && <span className="tabular-nums">{fmtTime(a.time)}</span>}
+          {a.note && (compact || a.time ? <MessageSquare size={11} strokeWidth={2} className="flex-shrink-0" /> : <span className="truncate font-medium">{a.note}</span>)}
+        </span>
+      )}
     </button>
   );
 }
@@ -352,7 +454,7 @@ function stamp(isoTime) {
 }
 
 // The whole week in one table: days across, each shift's stations down the side.
-function WeekGrid({ days, slots, renderSlot }) {
+function WeekGrid({ days, slots, times, onTime, renderSlot }) {
   const cols = { gridTemplateColumns: '92px repeat(7, minmax(0, 1fr))' };
   const todayIso = iso(new Date());
   return (
@@ -371,7 +473,10 @@ function WeekGrid({ days, slots, renderSlot }) {
         if (!stations.length) return null;
         return (
           <div key={sh.id} className="space-y-1 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
-            <div className="text-base font-medium text-text-secondary">{sh.name}</div>
+            <div className="grid gap-1.5 items-center" style={cols}>
+              <div className="text-base font-medium text-text-secondary">{sh.name}</div>
+              {days.map((isoDay, d) => <TimeChip key={isoDay} day={d} shift={sh.id} times={times} onTap={onTime} compact />)}
+            </div>
             {stations.map(st => (
               <div key={st} className="grid gap-1.5" style={cols}>
                 <div className="flex items-center gap-1.5 text-sm text-text-secondary min-w-0">
@@ -426,11 +531,12 @@ export function cookOptions(slot, ctx, currentId) {
   }).sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || b.level - a.level || a.name.localeCompare(b.name, 'he'));
 }
 
-function CookPicker({ slot, current, ctx, onPick, onClear, onClose }) {
+function CookPicker({ slot, current, start, ctx, onPick, onClear, onClose, onSaveDetails }) {
   const options = cookOptions(slot, ctx, current?.chefId);
   const stationName = SCHEDULE_STATION_INFO[slot.station].name;
   return (
     <div className="space-y-2">
+      {current && <SlotDetails current={current} start={start} onSave={onSaveDetails} />}
       {current?.auto && current.reason && <p className="text-base text-text-secondary">הצעה אוטומטית: {current.reason}</p>}
       {options.map(o => {
         const look = KIND_LOOK[o.kind];
