@@ -1,6 +1,6 @@
 // Weekly schedule logic: which cook may take which slot, auto-assign, and warnings.
 // Pure functions, no Firestore. Used by the board for highlighting, manual placement and auto-fill.
-import { SCHEDULE_SHIFTS, SCHEDULE_STATIONS, SCHEDULE_STATION_INFO, slotKey, parseSlotKey, shiftKey, AVAIL } from '../data/schedule';
+import { SCHEDULE_SHIFTS, SCHEDULE_STATIONS, SCHEDULE_STATION_INFO, OPTIONAL_STATIONS, slotKey, parseSlotKey, shiftKey, AVAIL } from '../data/schedule';
 
 export const SENIOR_LEVEL = 7;
 
@@ -120,6 +120,7 @@ export function scheduleWarnings({ template, assignments, profiles, availability
 
   for (const slot of slots) {
     const a = assignments[slot.key];
+    if (!a && OPTIONAL_STATIONS.includes(slot.station)) continue;
     if (!a) { out.push({ level: 'warn', key: slot.key, text: `${label(slot.day, slot.shift)}, ${SCHEDULE_STATION_INFO[slot.station]?.name}: לא משובץ` }); continue; }
     const why = blockReason(a.chefId, slot, ctx);
     if (why) out.push({ level: 'error', key: slot.key, text: `${chefName(a.chefId)} ב${label(slot.day, slot.shift)}: ${why}` });

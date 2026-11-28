@@ -23,12 +23,15 @@ export const defaultSlotStart = (shiftId, station) => STATION_STARTS[`${shiftId}
 export const slotStart = (times, day, shiftId, station) => STATION_STARTS[`${shiftId}-${station}`] || shiftStart(times, day, shiftId);
 // "07:45" -> "7:45"
 export const fmtTime = t => (t ? t.replace(/^0(\d)/, '$1') : '');
-export const SCHEDULE_STATIONS = ['hot', 'cold', 'air', 'checker'];
-// Station names/colors for the schedule. פס אוויר exists only in the schedule
-// (not in the login station picker), so it is defined here and not in stations.js.
+export const SCHEDULE_STATIONS = ['hot', 'cold', 'trainee', 'air', 'checker'];
+// Stations whose slot may stay empty: no "לא משובץ" warning (a trainee works next to the cold cook)
+export const OPTIONAL_STATIONS = ['trainee'];
+// Station names/colors for the schedule. פס אוויר and התלמדות exist only in the schedule
+// (not in the login station picker), so they are defined here and not in stations.js.
 export const SCHEDULE_STATION_INFO = {
   hot:     { name: STATIONS.hot.name,     color: STATIONS.hot.color },
   cold:    { name: STATIONS.cold.name,    color: STATIONS.cold.color },
+  trainee: { name: 'התלמדות פס קר',        color: '#7DD3FC' },
   air:     { name: 'פס אוויר',             color: '#8B5CF6' },
   checker: { name: STATIONS.checker.name, color: STATIONS.checker.color },
 };
@@ -80,7 +83,8 @@ export function parseSlotKey(key) {
 }
 
 // Default staffing: one cook per station in every shift. Managers change it on the template screen.
-// Shape: { days: [ { morning: {hot, cold, air, checker}, evening: {...} } x7 ], deadline: { day, hour } }
+// Shape: { days: [ { morning: {hot, cold, trainee, air, checker}, evening: {...} } x7 ], deadline: { day, hour } }
+// trainee is 0 unless the managers add it.
 export function defaultTemplate() {
   const shift = () => ({ hot: 1, cold: 1, air: 1, checker: 1 });
   return {

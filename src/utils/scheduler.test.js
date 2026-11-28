@@ -141,3 +141,13 @@ describe('published schedule', () => {
     expect(mine[2].mates).toEqual([]);
   });
 });
+
+test('an empty trainee slot is not reported as missing, a filled one is shown like any slot', () => {
+  const template = { days: Array.from({ length: 7 }, (_, i) => ({ morning: i === 0 ? { cold: 1, trainee: 1 } : {}, evening: {} })) };
+  const profiles = { ofek: { ratings: { cold: 8 }, senior: true, max: 6 }, guy: { ratings: { trainee: 1 }, max: 6 } };
+  const availability = { ofek: { shifts: { '0-morning': 1 } }, guy: { shifts: { '0-morning': 1 } } };
+  const empty = scheduleWarnings({ template, assignments: { '0-morning-cold-0': { chefId: 'ofek' } }, profiles, availability });
+  expect(empty).toEqual([]);
+  const full = scheduleWarnings({ template, assignments: { '0-morning-cold-0': { chefId: 'ofek' }, '0-morning-trainee-0': { chefId: 'guy' } }, profiles, availability });
+  expect(full).toEqual([]);
+});
