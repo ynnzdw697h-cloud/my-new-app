@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UtensilsCrossed, Snowflake, Flame, PackageCheck, Delete } from 'lucide-react';
 import { STATIONS } from '../data/stations';
 import { CHEFS } from '../data/chefs';
+import ChoosePin from './ChoosePin';
 
 const STATION_ICONS = {
   cold:    <Snowflake    size={36} strokeWidth={1.25} />,
@@ -11,7 +12,8 @@ const STATION_ICONS = {
 };
 
 export default function LoginFlow({ onLogin }) {
-  const [step, setStep]                 = useState(1); // 1=pin, 2=welcome + station
+  const [step, setStep]                 = useState(1); // 1=pin, 2=welcome + station, 3=choose own code (first login)
+  const [enteredPin, setEnteredPin]     = useState('');
   const [selectedChef, setSelectedChef] = useState(null);
   const [authPayload, setAuthPayload]   = useState(null); // { token, tenantId, role, chefId }
 
@@ -20,13 +22,23 @@ export default function LoginFlow({ onLogin }) {
   });
 
   // The PIN alone identifies the user — the server tells us who it is.
-  function onPinSuccess(payload) {
-    const chef = CHEFS.find(c => c.id === payload.chefId)
-      || { id: payload.chefId, displayName: payload.displayName, role: payload.role };
+  function onPinSuccess(payload, pin) {
+    const known = CHEFS.find(c => c.id === payload.chefId);
+    // Name, stations and manager right come from the server, so a cook added today works at once
+    const chef = {
+      ...(known || {}),
+      id: payload.chefId,
+      displayName: payload.displayName,
+      role: known?.role === 'checker' ? 'checker' : (payload.admin ? 'admin' : (payload.role || 'chef')),
+      stations: payload.stations || known?.stations,
+    };
     setSelectedChef(chef);
     setAuthPayload(payload);
+    setEnteredPin(pin);
     if (chef.role === 'checker') {
       onLogin(chef.displayName, 'checker', 'checker', payload.tenantId, payload.token);
+    } else if (payload.mustChangePin) {
+      setStep(3);
     } else {
       setStep(2);
     }
@@ -70,6 +82,11 @@ export default function LoginFlow({ onLogin }) {
         {step === 1 && (
           <motion.div key="step1" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="w-full flex justify-center">
             <PinStep onSuccess={onPinSuccess} />
+          </motion.div>
+        )}
+        {step === 3 && selectedChef && (
+          <motion.div key="step3" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="w-full flex justify-center">
+            <ChoosePin currentPin={enteredPin} onDone={() => setStep(2)} />
           </motion.div>
         )}
         {step === 2 && selectedChef && (
@@ -122,7 +139,7 @@ function PinStep({ onSuccess }) {
       });
       if (res.ok) {
         const data = await res.json();
-        onSuccess(data); // passes { token, chefId, tenantId, role, displayName }
+        onSuccess(data, entered); // data: { token, chefId, tenantId, role, admin, stations, displayName, mustChangePin }
         return;
       }
       // Only a real "wrong code" answer is shown as a wrong code

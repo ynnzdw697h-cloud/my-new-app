@@ -6,6 +6,7 @@ import { ADMIN_DOCS, PUBLIC_DOCS, defaultTemplate, nextWeekStart } from '../../d
 import { useWeekAvailability } from '../../hooks/useWeekAvailability';
 import ScheduleBoard from './ScheduleBoard';
 import ChefProfiles from './ChefProfiles';
+import TeamManager from './TeamManager';
 import StaffingTemplate from './StaffingTemplate';
 import Submissions from './Submissions';
 import { Tabs, NoAccess, WeekPicker } from './parts';
@@ -15,6 +16,7 @@ const TABS = [
   { id: 'submissions', label: 'הגשות' },
   { id: 'cooks',    label: 'טבחים' },
   { id: 'template', label: 'כוח אדם' },
+  { id: 'team',    label: 'צוות' },
 ];
 
 // Only the board uses the full width on a computer; the other tabs stay a readable column.
@@ -62,6 +64,7 @@ function ScheduleAdminInner() {
         : loading ? <SkeletonList />
         : tab === 'cooks' ? <div className={NARROW}><ChefProfiles profiles={profiles} setProfiles={setProfiles} /></div>
         : tab === 'submissions' ? <div className={NARROW}><WeekPicker week={week} setWeek={setWeek} /><Submissions week={week} deadline={deadline} /></div>
+        : tab === 'team' ? <div className={NARROW}><TeamManager /></div>
         : tab === 'template' ? <div className={NARROW}><StaffingTemplate template={template} setTemplate={setTemplate} /></div>
         : <><ScheduleBoard key={week} week={week} template={template?.days ? template : defaultTemplate()} profiles={profiles || {}} availability={availability} availabilityLoaded={availabilityLoaded} /></>}
     </>

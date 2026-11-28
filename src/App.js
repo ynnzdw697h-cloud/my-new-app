@@ -3,7 +3,7 @@ import WeighingDemo from './demo/WeighingDemo';
 import FohDemo from './demo/FohDemo';
 import { motion, MotionConfig } from 'framer-motion';
 import { Utensils, Search, ArrowRight, Check, LogOut } from 'lucide-react';
-import { signInWithCustomToken, signOut } from 'firebase/auth';
+import { signInWithCustomToken, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 import { TenantProvider } from './context/TenantContext';
 import { DEFAULT_TENANT_ID } from './data/tenants';
@@ -34,6 +34,8 @@ import { useFirestoreArray } from './hooks/useFirestoreArray';
 import { LOG_DOCS } from './data/shifts';
 import { STATIONS } from './data/stations';
 import { SESSION_KEY, CHEFS } from './data/chefs';
+import { applyRoster } from './data/roster';
+import { teamCall } from './utils/teamApi';
 
 const PAGE_TITLES = {
   dashboard:      'וילה אכדיה',
@@ -390,6 +392,24 @@ function AppShell({ user, station, role, tenantId, onLogout, onChangeStation }) 
   );
 }
 
+// Loads the team list from the server before the screens appear, so a cook added
+// today is known everywhere (schedule, names, stations). If it fails, the built-in list stays.
+function RosterGate({ children }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const done = () => setReady(true);
+    const timer = setTimeout(done, 3000);
+    const off = onAuthStateChanged(auth, async user => {
+      if (user) {
+        try { applyRoster((await teamCall({ action: 'list' })).chefs); } catch (_) { /* keep the built-in list */ }
+      }
+      done();
+    });
+    return () => { clearTimeout(timer); off(); };
+  }, []);
+  return ready ? children : null;
+}
+
 // ── Root component ──
 function App() {
   const [session, setSession]     = useState(null); // { user, station, role, tenantId }
@@ -465,14 +485,16 @@ function App() {
   return (
     <MotionConfig reducedMotion="user">
     <TenantProvider tenantId={session.tenantId}>
-      <AppShell
-        user={session.user}
-        station={session.station}
-        role={session.role}
-        tenantId={session.tenantId}
-        onLogout={handleLogout}
-        onChangeStation={handleChangeStation}
-      />
+      <RosterGate>
+        <AppShell
+          user={session.user}
+          station={session.station}
+          role={session.role}
+          tenantId={session.tenantId}
+          onLogout={handleLogout}
+          onChangeStation={handleChangeStation}
+        />
+      </RosterGate>
     </TenantProvider>
     </MotionConfig>
   );
