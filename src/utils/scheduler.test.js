@@ -114,8 +114,15 @@ describe('submission deadline', () => {
   it('before the deadline cooks submit for next week', () => {
     expect(submissionWeek(new Date(2026, 11, 3, 11, 59), dl)).toBe('2026-12-06');
   });
-  it('after the deadline cooks submit for the week after', () => {
-    expect(submissionWeek(new Date(2026, 11, 3, 12, 0), dl)).toBe('2026-12-13');
+  it('after the deadline cooks can still submit (late) for next week', () => {
+    const { isLate } = require('../data/schedule');
+    expect(submissionWeek(new Date(2026, 11, 3, 12, 0), dl)).toBe('2026-12-06');
+    expect(submissionWeek(new Date(2026, 11, 5, 23, 59), dl)).toBe('2026-12-06');
+    expect(isLate('2026-12-06', dl, new Date(2026, 11, 3, 11, 59))).toBe(false);
+    expect(isLate('2026-12-06', dl, new Date(2026, 11, 3, 12, 0))).toBe(true);
+  });
+  it('on Sunday the next week opens', () => {
+    expect(submissionWeek(new Date(2026, 11, 6, 8, 0), dl)).toBe('2026-12-13');
   });
 });
 

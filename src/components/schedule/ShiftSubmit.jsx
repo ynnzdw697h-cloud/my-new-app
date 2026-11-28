@@ -5,7 +5,7 @@ import { useFirestoreDoc } from '../../hooks/useFirestoreDoc';
 import { useChefId } from '../../hooks/useChefId';
 import {
   SCHEDULE_SHIFTS, SCHEDULE_CHEFS, DAY_NAMES, AVAIL, AVAIL_LABELS, PUBLIC_DOCS,
-  shiftKey, weekDays, weekLabel, shortDate, submissionWeek, deadlineDate, deadlineLabel, iso,
+  shiftKey, weekDays, weekLabel, shortDate, submissionWeek, deadlineDate, deadlineLabel, iso, isLate,
 } from '../../data/schedule';
 import { Stepper } from './parts';
 
@@ -84,9 +84,13 @@ function SubmitForm({ chefId, user, week, deadline }) {
             ? <span className="flex items-center gap-1.5 text-base font-medium" style={{ color: '#5ee3a8' }}><Check size={18} strokeWidth={2} />נשלח</span>
             : <span className="text-base font-medium" style={{ color: '#F59E0B' }}>עוד לא נשלח</span>}
         </div>
-        <p className="text-base text-text-secondary">
-          אפשר לשלוח ולעדכן עד יום {deadlineLabel(deadline)} ({shortDate(iso(deadlineDate(week, deadline)))}).
-        </p>
+        {isLate(week, deadline)
+          ? <p className="text-base" style={{ color: '#F59E0B' }}>
+              ההגשה הייתה עד יום {deadlineLabel(deadline)} ({shortDate(iso(deadlineDate(week, deadline)))}). עדיין אפשר לשלוח, אבל ייתכן שהסידור כבר נבנה.
+            </p>
+          : <p className="text-base text-text-secondary">
+              שולחים עד יום {deadlineLabel(deadline)} ({shortDate(iso(deadlineDate(week, deadline)))}). עד אז אפשר לעדכן.
+            </p>}
         <p className="text-base text-text-secondary">לחיצה על משמרת מחליפה: לא יכול ← יכול ← מעדיף.</p>
       </div>
 

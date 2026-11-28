@@ -114,10 +114,15 @@ export function deadlineDate(weekStart, deadline = { day: 4, hour: 12 }) {
   const [y, m, d] = addDays(weekStart, -7 + Number(deadline.day ?? 4)).split('-').map(Number);
   return new Date(y, m - 1, d, Number(deadline.hour ?? 12), 0, 0);
 }
-// The week cooks submit for now: next week, or the week after once next week's deadline has passed.
+// The week cooks submit for now: always next week. After the deadline they can still send it (late),
+// until that week starts on Sunday.
+// eslint-disable-next-line no-unused-vars
 export function submissionWeek(now = new Date(), deadline) {
-  const next = nextWeekStart(now);
-  return now < deadlineDate(next, deadline) ? next : addDays(next, 7);
+  return nextWeekStart(now);
+}
+// Sent (or sending now) after the deadline for that week
+export function isLate(week, deadline, when = new Date()) {
+  return new Date(when) >= deadlineDate(week, deadline);
 }
 // "חמישי 12:00"
 export function deadlineLabel(deadline = { day: 4, hour: 12 }) {

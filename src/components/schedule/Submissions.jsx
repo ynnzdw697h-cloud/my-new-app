@@ -4,7 +4,7 @@ import { Sheet } from '../ui';
 import { useFirestoreDoc } from '../../hooks/useFirestoreDoc';
 import {
   SCHEDULE_CHEFS, SCHEDULE_SHIFTS, DAY_NAMES, AVAIL, AVAIL_LABELS, PUBLIC_DOCS,
-  shiftKey, weekLabel, shortDate, weekDays, deadlineLabel, deadlineDate, iso,
+  shiftKey, weekLabel, shortDate, weekDays, deadlineLabel, deadlineDate, iso, isLate,
 } from '../../data/schedule';
 
 // Managers: who has sent their shifts for the coming week, and what they sent.
@@ -18,7 +18,7 @@ export default function Submissions({ week, deadline }) {
         ההגשה לשבוע הזה נסגרת ביום {deadlineLabel(deadline)} ({shortDate(iso(closes))}).
       </p>
       {SCHEDULE_CHEFS.map(chef => (
-        <Row key={chef.id} chef={chef} week={week} onOpen={data => setOpen({ chef, data })} />
+        <Row key={chef.id} chef={chef} week={week} deadline={deadline} onOpen={data => setOpen({ chef, data })} />
       ))}
       <Sheet open={!!open} onClose={() => setOpen(null)} title={open ? `${open.chef.displayName} · ${weekLabel(week)}` : ''}>
         {open && <Detail data={open.data} week={week} />}
@@ -27,7 +27,7 @@ export default function Submissions({ week, deadline }) {
   );
 }
 
-function Row({ chef, week, onOpen }) {
+function Row({ chef, week, deadline, onOpen }) {
   const [data, , state] = useFirestoreDoc(PUBLIC_DOCS.availability(week, chef.id), null);
   const sent = !!data?.submittedAt;
   const n = sent ? Object.values(data.shifts || {}).filter(v => v > 0).length : 0;
@@ -44,6 +44,7 @@ function Row({ chef, week, onOpen }) {
         {!state.loaded ? <span className="text-text-tertiary">…</span>
           : sent ? <>
               <span className="flex items-center gap-1" style={{ color: '#5ee3a8' }}><Check size={18} strokeWidth={2} />הגיש</span>
+              {isLate(week, deadline, data.submittedAt) && <span style={{ color: '#F59E0B' }}>באיחור</span>}
               <span className="text-text-secondary tabular-nums">{n} משמרות</span>
               <ChevronLeft size={20} strokeWidth={1.75} className="text-text-tertiary" />
             </>
